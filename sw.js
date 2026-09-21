@@ -1,5 +1,5 @@
 /* Airmanship Briefings service worker. Change CACHE_VERSION on every release so devices drop the old files. */
-const CACHE_VERSION='1.5.0';
+const CACHE_VERSION='1.6.0';
 const CACHE='airmanship-briefings-'+CACHE_VERSION;
 const ASSETS=[
   "./",
