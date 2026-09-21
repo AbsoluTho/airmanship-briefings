@@ -167,6 +167,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .cabov .r{display:flex;gap:6px 14px;flex-wrap:wrap;align-items:baseline;padding:8px 12px;border-bottom:1px solid var(--line);font:500 13px/1.4 var(--f-mono)}
 .cabov .r:last-child{border-bottom:0}
 .cabov .r b{color:var(--accent)}
+.blk{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.blk .wxb{margin-left:auto}
 .cabov .r span.m{color:var(--ink3)}
 
 /* import */
@@ -260,7 +262,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded. Version 1.1.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded. Version 1.2.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -271,6 +273,9 @@ const $=(s,r)=>(r||document).querySelector(s);
 const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='airmanship-briefings.v1';
+const WXKEY='line-brief.wxkey.v1';
+let wxApiKey='';try{wxApiKey=localStorage.getItem(WXKEY)||''}catch(e){}
+function saveWxKey(k){wxApiKey=k;try{localStorage.setItem(WXKEY,k)}catch(e){}}
 const MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
 /*PARSER_START*/
@@ -750,6 +755,43 @@ function ntHTML(s){
 }
 function renderNt(){const e=$('#ntOut');if(e)e.innerHTML=ntHTML(S())}
 
+/* ---------- live weather (CheckWX) ---------- */
+const WX_ICAOKEY={dep:'dep_icao',arr:'dest_icao',alt:'alt_icao'};
+const setWxMsg=(t,warn)=>{const e=$('#wxMsg');if(e){e.textContent=t;e.className='status'+(warn?' warn':'')}};
+function wxPick(list,icao){
+  if(!Array.isArray(list)||!list.length)return '';
+  const hit=list.find(t=>typeof t==='string'&&t.trim().split(/\s+/)[1]===icao);
+  if(hit)return hit;
+  /* only fall back to the sole result when a single ICAO was requested; never guess among several */
+  return list.length===1&&typeof list[0]==='string'?list[0]:'';
+}
+async function wxDownload(kind){
+  if(!wxApiKey){setWxMsg('Add your CheckWX API key below first, then download again.',true);return}
+  const kinds=kind==='all'?['dep','arr','alt']:[kind];
+  const s=S(),map={};
+  kinds.forEach(k=>{const ic=(s.v[WX_ICAOKEY[k]]||'').trim().toUpperCase();if(ic)map[k]=ic});
+  const icaos=[...new Set(Object.values(map))];
+  if(!icaos.length){setWxMsg('No ICAO set yet for '+kinds.join(', ').toUpperCase()+'. Fill it in above or import the OFP first.',true);return}
+  setWxMsg('Downloading METAR / TAF for '+icaos.join(', ')+'…',false);
+  try{
+    const q='?x-api-key='+encodeURIComponent(wxApiKey);
+    const [mr,tr]=await Promise.all([
+      fetch('https://api.checkwx.com/v2/metar/'+icaos.join(',')+q).then(r=>r.json()),
+      fetch('https://api.checkwx.com/v2/taf/'+icaos.join(',')+q).then(r=>r.json())
+    ]);
+    const got=[];
+    Object.entries(map).forEach(([k,ic])=>{
+      const mt=wxPick(mr&&mr.data,ic),tf=wxPick(tr&&tr.data,ic);
+      if(mt){s.v['wx_'+k+'_metar']=mt;delete s.src['wx_'+k+'_metar'];got.push(k.toUpperCase()+' METAR')}
+      if(tf){s.v['wx_'+k+'_taf']=tf;delete s.src['wx_'+k+'_taf'];got.push(k.toUpperCase()+' TAF')}
+    });
+    render();save();
+    setWxMsg(got.length?('Downloaded '+got.join(', ')+'. Check the observation time before you brief it — this is live data, not stored for you.'):('No current report for '+icaos.join(', ')+'. Check the ICAO or paste it by hand below.'),!got.length);
+  }catch(e){
+    setWxMsg('Could not reach the weather service. Check your connection and your API key, or paste the METAR / TAF by hand below.',true);
+  }
+}
+
 /* ---------- views ---------- */
 function dspHTML(){
   const imp=`<section class="imp"><h2>Import OFP</h2><p class="lead">Drop the Mission Plus OFP PDF. The Computer Flight Plan page (page 3) is read first and fills this sector. Drop several PDFs to fill consecutive sectors, oldest departure first. The NOTAM PDF goes in the same box: it is matched to the sector with the same route. Files stay in your browser.</p>
@@ -774,7 +816,11 @@ function dspHTML(){
    <div class="gr c4">${seg('sigmet','SIGMET',[['NO','No'],['YES','Yes']])}${seg('gps','GPS spoofing & interference',[['NO','No'],['YES','Yes']])}${grp('IHRAM ZONE','ihram',[['no','No'],['yes','Yes']])}${fld('ihram','Ihram zone details')}</div>
    <div class="gr c3">${grp('ESCAT','escat',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}${grp('TIBA (122.8 MHz)','tiba',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}${grp('FRS (133.5 MHz)','frs',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}</div>
    ${fld('escat_txt','ESCAT details')}`;
-  const wxb=[['dep','DEP','dep_icao'],['arr','ARR','dest_icao'],['alt','ALT','alt_icao']].map(x=>`<h3 class="blk">${x[1]} <span class="mir" data-mirror="${x[2]}"></span></h3>
+  const wxKeyBox=`<details class="paste"${wxApiKey?'':' open'}><summary>Weather source: CheckWX API key</summary><div class="inner">
+   <p class="note">Downloads the latest METAR and TAF straight from CheckWX for the ICAOs above. Get a free key (no card, 200 lookups a day) at <a href="https://www.checkwxapi.com/signup" target="_blank" rel="noopener">checkwxapi.com/signup</a>, then paste it here once. It is saved only in this browser, never in the app’s files.</p>
+   <div class="fld"><label for="wxApiKey"><span class="fl">CheckWX API key</span></label><input id="wxApiKey" type="password" autocomplete="off" value="${esc(wxApiKey)}" placeholder="Paste your key"></div></div></details>`;
+  const wxTools=`${wxKeyBox}<div class="row"><button type="button" class="btn" data-act="wx-dl" data-wx="all">Download all weather (DEP · ARR · ALT)</button></div><div class="status" id="wxMsg" role="status"></div>`;
+  const wxb=wxTools+[['dep','DEP','dep_icao'],['arr','ARR','dest_icao'],['alt','ALT','alt_icao']].map(x=>`<h3 class="blk">${x[1]} <span class="mir" data-mirror="${x[2]}"></span><button type="button" class="chip wxb" data-act="wx-dl" data-wx="${x[0]}">Download</button></h3>
    <div class="gr c4">${fld('wx_'+x[0]+'_t','Time (day / UTC)',{ph:'dd/hhmm'})}${fld('wx_'+x[0]+'_rwy','RWY')}</div>${fld('wx_'+x[0]+'_metar','METAR',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_taf','TAF',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_tempo','BECMG / TEMPO',{area:1,rows:2,cls:'wide'})}`).join('');
   const clr=`<p class="note">Filled in the aircraft, once the clearance and the ATIS are received.</p>
    <div class="gr c4">${fld('clr_rwy','RWY')}${fld('clr_sid','SID')}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>
@@ -1045,6 +1091,7 @@ function copyText(txt,btn){
 const main=$('#main');
 main.addEventListener('input',e=>{
   const t=e.target;let k;const s=S();
+  if(t.id==='wxApiKey'){saveWxKey(t.value.trim());return}
   if((k=t.dataset.v)){s.v[k]=UP.has(k)?t.value.toUpperCase():t.value;delete s.src[k]}
   else if((k=t.dataset.tem)){const p=k.split('.');s.tem[+p[0]][p[1]]=t.value}
   else if((k=t.dataset.tv)){state.trip.v[k]=t.value}
@@ -1084,6 +1131,7 @@ document.addEventListener('click',e=>{
   if(a==='add-tem'){s.tem.push({t:'',c:''});$('#temWrap').innerHTML=temHTML();refreshLive();save();return}
   if(a==='rm-tem'){s.tem.splice(+b.dataset.i,1);$('#temWrap').innerHTML=temHTML();refreshLive();save();return}
   if(a==='preset'){const p=TEM_PRESETS[+b.dataset.i];s.tem.push({t:p[0],c:p[1]});$('#temWrap').innerHTML=temHTML();refreshLive();save();return}
+  if(a==='wx-dl'){wxDownload(b.dataset.wx);return}
 });
 render();
 })();
