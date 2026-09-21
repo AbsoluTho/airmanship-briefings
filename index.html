@@ -262,7 +262,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded. Version 1.4.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded. Version 1.5.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -659,10 +659,14 @@ function loadCalc(s){
   else if(mT!=null){under=mT;by='T/O'}else if(mL!=null){under=mL;by='LDG'}
   return {total,taxi,trip,zfm,usedActual:act!=null,tom,ldm,maxTom,maxLdm,maxZfm,mT,mL,under,by,crew};
 }
+function tkNextFuel(i){
+  const nx=state.secs[i+1];if(!nx)return null;
+  const nr=num(nx.v.ofp_ramp);return nr!=null?nr:loadCalc(nx).total;
+}
 function tankCalc(i){
-  const s=state.secs[i],L=loadCalc(s),nx=state.secs[i+1];
+  const s=state.secs[i],L=loadCalc(s);
   let next=num(s.v.tk_next),from='typed value';
-  if(next==null&&nx){const nr=num(nx.v.ofp_ramp);next=nr!=null?nr:loadCalc(nx).total;from='sector '+(i+2)}
+  if(next==null){const nf=tkNextFuel(i);if(nf!=null){next=nf;from='sector '+(i+2)}}
   const miss=[];
   if(L.total==null)miss.push('planned fuel');if(L.taxi==null)miss.push('taxi fuel');if(L.trip==null)miss.push('trip fuel');if(L.tom==null)miss.push('ZF mass');
   if(L.maxTom==null)miss.push('max T/O mass');if(L.maxLdm==null)miss.push('max LDG mass');
@@ -935,6 +939,7 @@ function dspHTML(){
    <h3 class="blk">Round-trip tankering</h3>
    <p class="lead">Compares what this sector lands with against the total fuel the next sector needs, then checks how much more you can load before the T/O or LDG limit stops you. The next sector is read from the sector chip that follows this one.</p>
    <div class="gr c4">${seg('tk_on','Round-trip tankering',[['Not planned','No'],['Planned: full','Full'],['Planned: partial','Partial'],['Not possible','N/A']],'w2')}${fld('tk_next','Next leg total fuel, override (kg)',{num:1,cls:'w2'})}${fld('tk_taxiin','Taxi-in at destination (kg)',{num:1})}${fld('tk_cap','Max fuel capacity, optional (kg)',{num:1})}${fld('tk_pen','Burn penalty, optional (% per flight hour)',{num:1,cls:'w2',ph:'e.g. 3'})}</div>
+   <p class="note">Selecting Full or Partial fills the next leg total fuel from Sector ${state.sec+2}, if that field is still empty. It is still an override you can edit — for example if the next sector is not filled in yet.</p>
    <div class="out" id="tankOut"></div>
    <div class="chks">${['Tankering economics confirmed with Dispatch and the fuel policy (price difference against burn penalty)','Landing performance at the destination checked for the extra weight: runway condition, brake cooling, go-around climb','Take-off performance rechecked at the higher T/O mass: runway, obstacles, climb gradient','Tanker fuel entered in the fuel order and loadsheet; fuel density confirmed','Return-leg fuel plan and any uplift at the outstation agreed with Dispatch'].map((t,i)=>chk('dsp.tank.'+i,t)).join('')}</div>`;
   const req=`${tgs('Requirements for this flight',[['req.er','Extended range'],['req.rvsm','RVSM'],['req.pbn','PBN'],['req.nr','Narrow RWY'],['req.spa','Simultaneous parallel approach']])}`;
@@ -1220,7 +1225,12 @@ document.addEventListener('click',e=>{
   if(b.dataset.tab){state.tab=b.dataset.tab;render();save();try{window.scrollTo({top:0})}catch(_){}return}
   if(b.dataset.go){state.tab=b.dataset.go;render();save();try{window.scrollTo({top:0})}catch(_){}return}
   if(b.dataset.sec!==undefined){state.sec=+b.dataset.sec;render();save();return}
-  if(b.dataset.seg){const k=b.dataset.seg;if(s.v[k]===b.dataset.val)delete s.v[k];else s.v[k]=b.dataset.val;delete s.src[k];syncDom();refreshLive();save();return}
+  if(b.dataset.seg){const k=b.dataset.seg;const was=s.v[k];if(was===b.dataset.val)delete s.v[k];else s.v[k]=b.dataset.val;delete s.src[k];
+    if(k==='tk_on'&&was!==s.v[k]&&/^Planned/.test(s.v[k]||'')&&!s.v.tk_next){
+      const nf=tkNextFuel(state.sec);
+      if(nf!=null){s.v.tk_next=String(Math.round(nf));const el=$('#v_tk_next');if(el)el.value=s.v.tk_next}
+    }
+    syncDom();refreshLive();save();return}
   if(b.dataset.xseg){const p=xs(b.dataset.xseg),v=state.secs[p[0]].v;if(v[p[1]]===b.dataset.val)delete v[p[1]];else v[p[1]]=b.dataset.val;syncDom();refreshLive();save();return}
   if(b.dataset.xtog){const p=xs(b.dataset.xtog),c=state.secs[p[0]].c;c[p[1]]=!c[p[1]];syncDom();refreshLive();save();return}
   if(b.dataset.tog){const k=b.dataset.tog;s.c[k]=!s.c[k];if(s.c[k]&&b.dataset.clr)b.dataset.clr.split(',').filter(Boolean).forEach(x=>{s.c[x]=false});syncDom();refreshLive();save();return}
