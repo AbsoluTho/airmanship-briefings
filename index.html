@@ -262,7 +262,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded. Version 1.2.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded. Version 1.4.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -592,9 +592,9 @@ const EX1={flt:'FAD124',dom:'DOM',reg:'HZ-XXX',dep_icao:'OETB',dep_iata:'TUU',de
 function fresh(ex){const secs=[newSec(),newSec(),newSec(),newSec()];
   if(ex){Object.assign(secs[0].v,EX0);secs[0].c={'mel.no':true,'why.tank':true,'efb.flysmart':true,'dsp.tank.0':false};Object.assign(secs[1].v,EX1);Object.assign(secs[0].v,EXC0);Object.assign(secs[1].v,EXC1);secs[0].c['cab.turb.rte']=true;secs[0].nt=parseNotams(EX_NT);secs[0].tem=[{t:TEM_PRESETS[0][0],c:TEM_PRESETS[0][1]},{t:TEM_PRESETS[1][0],c:TEM_PRESETS[1][1]}]}
   const trip=newTrip();if(ex)Object.assign(trip.v,{names:'CM1 Capt. Example, CM2 FO Example. SCCM Example, 4 cabin crew.'});
-  return {example:!!ex,sec:0,tab:'dsp',secs,trip,raw:{},impMsg:'',impWarn:false}}
-function load(){try{const s=localStorage.getItem(KEY);if(!s)return null;const o=JSON.parse(s);const f=fresh(false);f.example=!!o.example;f.sec=o.sec||0;f.tab=o.tab||'dsp';f.trip=Object.assign(newTrip(),o.trip||{});f.trip.v=f.trip.v||{};f.trip.c=f.trip.c||{};(o.secs||[]).slice(0,4).forEach((x,i)=>{f.secs[i]=Object.assign(newSec(),x)});return f}catch(e){return null}}
-let saveT;const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify({example:state.example,sec:state.sec,tab:state.tab,secs:state.secs,trip:state.trip}))}catch(e){}},250)};
+  return {example:!!ex,sec:0,tab:'dsp',secs,trip,raw:{},impMsg:'',impWarn:false,open:{}}}
+function load(){try{const s=localStorage.getItem(KEY);if(!s)return null;const o=JSON.parse(s);const f=fresh(false);f.example=!!o.example;f.sec=o.sec||0;f.tab=o.tab||'dsp';f.trip=Object.assign(newTrip(),o.trip||{});f.trip.v=f.trip.v||{};f.trip.c=f.trip.c||{};f.open=o.open&&typeof o.open==='object'?o.open:{};(o.secs||[]).slice(0,4).forEach((x,i)=>{f.secs[i]=Object.assign(newSec(),x)});return f}catch(e){return null}}
+let saveT;const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify({example:state.example,sec:state.sec,tab:state.tab,secs:state.secs,trip:state.trip,open:state.open}))}catch(e){}},250)};
 let state=load()||fresh(true);
 const S=()=>state.secs[state.sec];
 const V=k=>S().v[k]||'';
@@ -636,7 +636,8 @@ const cabList=k=>actSecs().filter(i=>state.secs[i].v[k]==='Y').map(i=>'S'+(i+1))
 const CAB_LBL={fit:'Is everyone fit for duty?',docs:'Documents OK',names:'Names and positions',reg:'A/C registration and position',mel:'Cabin technical status: MELs',nsec:'Number of sectors',ftime:'Flight times',fl:'Flight altitudes',refuel:'Refueling operation',refsec:'Refueling sectors',tank:'Tankering sectors',refpax:'Refueling with PAX',taxi:'Taxi times',wx:'Expected weather and turbulence',hijack:'Hijack code',entry:'Cockpit entry procedure',unruly:'Unruly passenger',emerg:'Emergency procedures',q:'Questions?'};
 const calc=(id,l,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="calc" data-calc="${id}">—</div></div>`;
 const mir=(k,l,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="calc" data-mirror="${k}">—</div></div>`;
-const sec=(title,body,mode,open)=>`<details class="sec"${open===false?'':' open'} data-count="${mode||'fields'}"><summary><span class="st">${title}</span><span class="scount"></span></summary><div class="sbody">${body}</div></details>`;
+/* sections default closed; a key lets the open/closed state survive re-renders (e.g. after a download or import) */
+const sec=(title,body,mode,key)=>`<details class="sec"${key&&state.open[key]?' open':''} data-count="${mode||'fields'}" data-seckey="${key||''}"><summary><span class="st">${title}</span><span class="scount"></span></summary><div class="sbody">${body}</div></details>`;
 
 /* ---------- load calculation and tankering ---------- */
 function loadCalc(s){
@@ -765,6 +766,88 @@ function wxPick(list,icao){
   /* only fall back to the sole result when a single ICAO was requested; never guess among several */
   return list.length===1&&typeof list[0]==='string'?list[0]:'';
 }
+/* ---------- TAF BECMG/TEMPO relevant-period extraction ---------- */
+const pad2=n=>String(n).padStart(2,'0');
+function tafParse(raw){
+  const toks=String(raw||'').trim().split(/\s+/).filter(Boolean);
+  let i=0;
+  while(i<toks.length&&/^(TAF|AMD|COR)$/.test(toks[i]))i++;
+  if(i<toks.length&&/^[A-Z]{4}$/.test(toks[i]))i++;
+  if(i<toks.length&&/^\d{6}Z$/.test(toks[i]))i++;
+  let valFrom=null,valTo=null;
+  if(i<toks.length&&/^\d{4}\/\d{4}$/.test(toks[i])){
+    const[f,t]=toks[i].split('/');valFrom={d:+f.slice(0,2),h:+f.slice(2,4)};valTo={d:+t.slice(0,2),h:+t.slice(2,4)};i++
+  }
+  const base={type:'Baseline',from:valFrom,to:valTo,text:[]};
+  const segs=[base];let cur=base;
+  for(;i<toks.length;i++){
+    const tk=toks[i];
+    if(/^BECMG$/.test(tk)||/^TEMPO$/.test(tk)){
+      let rng=null;if(toks[i+1]&&/^\d{4}\/\d{4}$/.test(toks[i+1]))rng=toks[++i];
+      let from=null,to=null;if(rng){const[f,t]=rng.split('/');from={d:+f.slice(0,2),h:+f.slice(2,4)};to={d:+t.slice(0,2),h:+t.slice(2,4)}}
+      cur={type:tk,from,to,text:[]};segs.push(cur);continue
+    }
+    if(/^PROB(30|40)$/.test(tk)){
+      let type=tk,j=i+1;
+      if(toks[j]==='TEMPO'){type+=' TEMPO';j++}
+      let rng=null;if(toks[j]&&/^\d{4}\/\d{4}$/.test(toks[j])){rng=toks[j];j++}
+      let from=null,to=null;if(rng){const[f,t]=rng.split('/');from={d:+f.slice(0,2),h:+f.slice(2,4)};to={d:+t.slice(0,2),h:+t.slice(2,4)}}
+      cur={type,from,to,text:[]};segs.push(cur);i=j-1;continue
+    }
+    if(/^FM\d{6}$/.test(tk)){
+      cur={type:'FM',from:{d:+tk.slice(2,4),h:+tk.slice(4,6)},to:null,text:[]};segs.push(cur);continue
+    }
+    cur.text.push(tk)
+  }
+  for(let k=0;k<segs.length;k++)if(segs[k].type==='FM'&&!segs[k].to)segs[k].to=(segs[k+1]&&segs[k+1].from)?segs[k+1].from:base.to;
+  segs.forEach(s=>s.text=s.text.join(' '));
+  return segs;
+}
+function tafRelevant(raw,day,hour){
+  const segs=tafParse(raw);
+  if(!segs.length||!segs[0].from)return null;
+  const day0=segs[0].from.d;
+  const norm=dh=>((dh.d-day0+31)%31)*24+dh.h;
+  const ref=((day-day0+31)%31)*24+hour;
+  const hits=segs.filter(s=>{
+    if(s.type==='Baseline')return true;
+    if(!s.from||!s.to)return true;
+    const f=norm(s.from),t=norm(s.to);
+    return ref>=f&&ref<t
+  });
+  if(hits.length<=1&&hits[0]&&hits[0].type==='Baseline'&&segs.length===1)return null;
+  return hits.map(s=>{
+    const rng=s.from&&s.to?` ${pad2(s.from.d)}/${pad2(s.from.h)}00–${pad2(s.to.d)}/${pad2(s.to.h)}00Z`:'';
+    return `${s.type}${rng}: ${s.text||'(no change)'}`
+  }).join('\n')
+}
+function wxRefTime(kind,v){
+  const dm=String(v.date||'').match(/^\d{4}-\d{2}-(\d{2})$/);
+  if(!dm)return null;
+  const day0=+dm[1];
+  const hm=hours(kind==='dep'?v.etd:v.eta);
+  if(hm==null)return null;
+  let day=day0;
+  if(kind!=='dep'&&v.etd&&v.eta&&hours(v.eta)<hours(v.etd))day=day0+1; // arrival/alt after local midnight
+  return {day,hour:Math.floor(hm)}
+}
+function applyTempoExtract(kind){
+  /* pure: fills s.v['wx_'+kind+'_tempo'] and returns a short status, without rendering/saving */
+  const s=S(),v=s.v,raw=v['wx_'+kind+'_taf'];
+  if(!raw)return {ok:false,msg:'No TAF in the '+kind.toUpperCase()+' field yet. Download or paste it first.'};
+  const rt=wxRefTime(kind,v);
+  if(!rt)return {ok:false,msg:'Set the sector date and '+(kind==='dep'?'ETD':'ETA')+' first, so the relevant period can be worked out.'};
+  const rel=tafRelevant(raw,rt.day,rt.hour);
+  const ref=kind==='dep'?'ETD':(kind==='alt'?'ETA (same as arrival, no separate alternate time)':'ETA');
+  if(rel==null)s.v['wx_'+kind+'_tempo']='No BECMG / TEMPO / PROB affects '+ref+' '+pad2(rt.day)+'/'+pad2(rt.hour)+'00Z. Baseline TAF conditions apply.';
+  else s.v['wx_'+kind+'_tempo']='Around '+ref+' '+pad2(rt.day)+'/'+pad2(rt.hour)+'00Z —\n'+rel;
+  return {ok:true,msg:'Worked out the '+kind.toUpperCase()+' BECMG / TEMPO for '+ref+'. Read it together with the full TAF above.'}
+}
+function wxExtractTempo(kind){
+  const r=applyTempoExtract(kind);
+  if(r.ok){state.open['dsp.wx']=true;render();save()}
+  setWxMsg(r.msg,!r.ok);
+}
 async function wxDownload(kind){
   if(!wxApiKey){setWxMsg('Add your CheckWX API key below first, then download again.',true);return}
   const kinds=kind==='all'?['dep','arr','alt']:[kind];
@@ -783,10 +866,10 @@ async function wxDownload(kind){
     Object.entries(map).forEach(([k,ic])=>{
       const mt=wxPick(mr&&mr.data,ic),tf=wxPick(tr&&tr.data,ic);
       if(mt){s.v['wx_'+k+'_metar']=mt;delete s.src['wx_'+k+'_metar'];got.push(k.toUpperCase()+' METAR')}
-      if(tf){s.v['wx_'+k+'_taf']=tf;delete s.src['wx_'+k+'_taf'];got.push(k.toUpperCase()+' TAF')}
+      if(tf){s.v['wx_'+k+'_taf']=tf;delete s.src['wx_'+k+'_taf'];got.push(k.toUpperCase()+' TAF');applyTempoExtract(k)}
     });
-    render();save();
-    setWxMsg(got.length?('Downloaded '+got.join(', ')+'. Check the observation time before you brief it — this is live data, not stored for you.'):('No current report for '+icaos.join(', ')+'. Check the ICAO or paste it by hand below.'),!got.length);
+    state.open['dsp.wx']=true;render();save();
+    setWxMsg(got.length?('Downloaded '+got.join(', ')+'. BECMG / TEMPO worked out for each ETD / ETA. Check the observation time before you brief it — this is live data, not stored for you.'):('No current report for '+icaos.join(', ')+'. Check the ICAO or paste it by hand below.'),!got.length);
   }catch(e){
     setWxMsg('Could not reach the weather service. Check your connection and your API key, or paste the METAR / TAF by hand below.',true);
   }
@@ -821,7 +904,8 @@ function dspHTML(){
    <div class="fld"><label for="wxApiKey"><span class="fl">CheckWX API key</span></label><input id="wxApiKey" type="password" autocomplete="off" value="${esc(wxApiKey)}" placeholder="Paste your key"></div></div></details>`;
   const wxTools=`${wxKeyBox}<div class="row"><button type="button" class="btn" data-act="wx-dl" data-wx="all">Download all weather (DEP · ARR · ALT)</button></div><div class="status" id="wxMsg" role="status"></div>`;
   const wxb=wxTools+[['dep','DEP','dep_icao'],['arr','ARR','dest_icao'],['alt','ALT','alt_icao']].map(x=>`<h3 class="blk">${x[1]} <span class="mir" data-mirror="${x[2]}"></span><button type="button" class="chip wxb" data-act="wx-dl" data-wx="${x[0]}">Download</button></h3>
-   <div class="gr c4">${fld('wx_'+x[0]+'_t','Time (day / UTC)',{ph:'dd/hhmm'})}${fld('wx_'+x[0]+'_rwy','RWY')}</div>${fld('wx_'+x[0]+'_metar','METAR',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_taf','TAF',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_tempo','BECMG / TEMPO',{area:1,rows:2,cls:'wide'})}`).join('');
+   <div class="gr c4">${fld('wx_'+x[0]+'_t','Time (day / UTC)',{ph:'dd/hhmm'})}${fld('wx_'+x[0]+'_rwy','RWY')}</div>${fld('wx_'+x[0]+'_metar','METAR',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_taf','TAF',{area:1,rows:2,cls:'wide'})}
+   <div class="fld wide"><label for="v_wx_${x[0]}_tempo"><span class="fl">BECMG / TEMPO relevant to your ${x[0]==='dep'?'ETD':'ETA'}<button type="button" class="chip" data-act="wx-tempo" data-wx="${x[0]}">Work out from TAF</button></span></label><textarea id="v_wx_${x[0]}_tempo" data-v="wx_${x[0]}_tempo" rows="3" placeholder="Filled automatically after a TAF download, or tap “Work out from TAF” after pasting one">${esc(V('wx_'+x[0]+'_tempo'))}</textarea></div>`).join('');
   const clr=`<p class="note">Filled in the aircraft, once the clearance and the ATIS are received.</p>
    <div class="gr c4">${fld('clr_rwy','RWY')}${fld('clr_sid','SID')}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>
    <div class="gr c4">${fld('atis_inf','ATIS info')}${fld('atis_time','Time (UTC)',{ph:'hh:mm'})}${fld('atis_wind','Wind',{ph:'000/10G20'})}${fld('atis_vis','VIS')}${fld('atis_clouds','Clouds')}${fld('atis_temp','Temp / dew point',{ph:'40/12'})}${fld('atis_qnh','QNH')}${fld('atis_transalt','Trans alt')}${fld('atis_rwydep','RWY dep')}${fld('atis_rwyarr','RWY arr')}${fld('atis_other','Other',{cls:'w2'})}</div>`;
@@ -855,7 +939,7 @@ function dspHTML(){
    <div class="chks">${['Tankering economics confirmed with Dispatch and the fuel policy (price difference against burn penalty)','Landing performance at the destination checked for the extra weight: runway condition, brake cooling, go-around climb','Take-off performance rechecked at the higher T/O mass: runway, obstacles, climb gradient','Tanker fuel entered in the fuel order and loadsheet; fuel density confirmed','Return-leg fuel plan and any uplift at the outstation agreed with Dispatch'].map((t,i)=>chk('dsp.tank.'+i,t)).join('')}</div>`;
   const req=`${tgs('Requirements for this flight',[['req.er','Extended range'],['req.rvsm','RVSM'],['req.pbn','PBN'],['req.nr','Narrow RWY'],['req.spa','Simultaneous parallel approach']])}`;
   return `<div class="mhead"><h1>Dispatch Briefing</h1><p class="lead">The sequence of the Dispatch Briefing form: technical condition of the aircraft, route planning, weather, NOTAM, load planning and fuel, company operational requirements, and last the clearance and ATIS, which are only filled in the aircraft. Sector ${state.sec+1} is open; change sector with the chips above.</p></div>`+imp+
-   sec('Flight information / technical condition of the aircraft',info)+sec('Route planning',route)+sec('Weather',wxb)+sec('NOTAM',ntm,'nt')+sec('Load planning & fuel',load)+sec('Company operational requirements',req)+sec('Clearance & ATIS (filled in the aircraft)',clr)+
+   sec('Flight information / technical condition of the aircraft',info,'fields','dsp.info')+sec('Route planning',route,'fields','dsp.route')+sec('Weather',wxb,'fields','dsp.wx')+sec('NOTAM',ntm,'nt','dsp.notam')+sec('Load planning & fuel',load,'fields','dsp.load')+sec('Company operational requirements',req,'checks','dsp.req')+sec('Clearance & ATIS (filled in the aircraft)',clr,'fields','dsp.clr')+
    `<section class="sumbox"><h2>Summary</h2><pre class="sum" data-sum="dsp"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="dsp">Copy summary</button></div></section>`;
 }
 function cabDeriveHTML(){
@@ -874,8 +958,8 @@ function cabHTML(){
   const q=`<div class="chks">${tchk('q',CAB_LBL.q)}</div>`;
   const gf=`<div class="two"><div class="chks">${CAB_LEFT.map((x,i)=>chk('cab.l.'+i,x[0],x[1])).join('')}</div><div class="chks">${CAB_RIGHT.map((x,i)=>chk('cab.r.'+i,x[0],x[1])).join('')}</div></div>`;
   return `<div class="mhead"><h1>Cabin Crew Briefing</h1><p class="lead">One briefing for the whole duty, in the order of the Cabin Crew Briefing list. The data of each sector comes from Dispatch. The cabin-specific fields are filled in here.</p></div>`+ov+
-   sec('Crew',crew,'checks')+sec('Aircraft, position and cabin MELs',ac,'checks')+sec('Sectors, flight times and altitudes',sc,'checks')+sec('Refueling operation',rf,'checks')+sec('Taxi times',tx,'checks')+sec('Expected weather and turbulence',wx,'checks')+sec('Special requirements',sp,'checks')+sec('Questions',q,'checks')+
-   sec('Ground flow before departure · Sector '+(state.sec+1),gf,'checks',false)+
+   sec('Crew',crew,'checks','cab.crew')+sec('Aircraft, position and cabin MELs',ac,'checks','cab.ac')+sec('Sectors, flight times and altitudes',sc,'checks','cab.sc')+sec('Refueling operation',rf,'checks','cab.rf')+sec('Taxi times',tx,'checks','cab.tx')+sec('Expected weather and turbulence',wx,'checks','cab.wx')+sec('Special requirements',sp,'checks','cab.sp')+sec('Questions',q,'checks','cab.q')+
+   sec('Ground flow before departure · Sector '+(state.sec+1),gf,'checks','cab.gf')+
    `<section class="sumbox"><h2>Summary</h2><pre class="sum" data-sum="cab"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="cab">Copy summary</button></div></section>`;
 }
 function temHTML(){
@@ -895,7 +979,7 @@ function modHTML(mod){
     if(s.fields&&s.fields.length)body+=`<div class="gr c4">${s.fields.map(f=>mf(s,f)).join('')}</div>`;
     if(s.checks&&s.checks.length)body+=`<div class="chks">${s.checks.map((t,i)=>chk(mod+'.'+s.id+'.'+i,t)).join('')}</div>`;
     if(s.note)body+=`<p class="note">${esc(s.note)}</p>`;
-    return sec(esc(s.t)+(s.sub?`<span class="sub">${esc(s.sub)}</span>`:''),body,(s.checks&&s.checks.length)?'checks':'fields')}).join('');
+    return sec(esc(s.t)+(s.sub?`<span class="sub">${esc(s.sub)}</span>`:''),body,(s.checks&&s.checks.length)?'checks':'fields',mod+'.'+s.id)}).join('');
   return `<div class="mhead"><h1>${esc(M.title)}</h1><p class="lead">${esc(M.lead)}</p></div>${secs}<section class="sumbox"><h2>Summary</h2><pre class="sum" data-sum="${mod}"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="${mod}">Copy summary</button></div></section>`;
 }
 
@@ -917,7 +1001,16 @@ function sumDsp(i){
   [['ihram','IHRAM ZONE'],['escat','ESCAT'],['tiba','TIBA'],['frs','FRS']].forEach(g=>{const sel=['no','yes','dep','arr','alt'].filter(k=>c[g[0]+'.'+k]);if(sel.length)add('  '+g[1],sel.join(', '))});
   add('  Ihram zone details',v.ihram);add('  ESCAT details',v.escat_txt);
   L.push('');L.push('WEATHER');
-  [['dep','DEP'],['arr','ARR'],['alt','ALT']].forEach(x=>{const t=[v['wx_'+x[0]+'_metar']?'METAR '+v['wx_'+x[0]+'_metar']:'',v['wx_'+x[0]+'_taf']?'TAF '+v['wx_'+x[0]+'_taf']:'',v['wx_'+x[0]+'_tempo']?'BECMG/TEMPO '+v['wx_'+x[0]+'_tempo']:'',v['wx_'+x[0]+'_rwy']?'RWY '+v['wx_'+x[0]+'_rwy']:''].filter(Boolean).join(' | ');if(t)add('  '+x[1],t)});
+  [['dep','DEP'],['arr','ARR'],['alt','ALT']].forEach(x=>{
+    const icao=v[x[0]==='dep'?'dep_icao':x[0]==='arr'?'dest_icao':'alt_icao']||'';
+    const any=v['wx_'+x[0]+'_metar']||v['wx_'+x[0]+'_taf']||v['wx_'+x[0]+'_tempo']||v['wx_'+x[0]+'_rwy']||v['wx_'+x[0]+'_t'];
+    if(!any)return;
+    L.push('  '+x[1]+(icao?' '+icao:'')+(v['wx_'+x[0]+'_t']?' — '+v['wx_'+x[0]+'_t']+'Z':''));
+    if(v['wx_'+x[0]+'_rwy'])L.push('    RWY: '+v['wx_'+x[0]+'_rwy']);
+    if(v['wx_'+x[0]+'_metar'])L.push('    '+v['wx_'+x[0]+'_metar']);
+    if(v['wx_'+x[0]+'_taf'])L.push('    '+v['wx_'+x[0]+'_taf']);
+    if(v['wx_'+x[0]+'_tempo'])L.push('    '+v['wx_'+x[0]+'_tempo'].split('\n').join('\n    '));
+  });
   L.push('');L.push('NOTAM');
   const nt=s.nt;
   if(nt&&nt.secs)nt.secs.forEach((sc,si)=>{const sel=sc.items.filter(it=>ntInc(nt,si,it));if(sel.length){L.push('  '+(NT_ROLE[sc.key]||'Airport')+' '+sc.icao+':');sel.forEach(it=>{const tr=ntTr(it);L.push('   - '+tr.label+': '+tr.text.replace(/\n/g,' ')+' ['+[tr.when,tr.sched,tr.vert].filter(Boolean).join('; ')+'] '+it.id)})}});
@@ -1070,6 +1163,9 @@ function importTexts(items){
     if(!x.p.page3)warn=true});
   msgs.push('<span>Review every value against the source documents before flight.</span>');
   if(nots.length&&!parsed.length)state.sec=nots[0].idx;
+  /* open the sections that were just filled in, so the import can be reviewed without extra clicks */
+  if(parsed.length)['dsp.info','dsp.route','dsp.load'].forEach(k=>state.open[k]=true);
+  if(nots.length)state.open['dsp.notam']=true;
   setMsg(msgs.join(''),warn);render();save();
 }
 function handleFiles(files){
@@ -1089,6 +1185,12 @@ function copyText(txt,btn){
   try{navigator.clipboard.writeText(txt).then(()=>done(true),fb)}catch(e){fb()}
 }
 const main=$('#main');
+/* remember which sections the pilot opened, so a re-render (download, import, …) doesn't close them again */
+main.addEventListener('toggle',e=>{
+  const d=e.target;if(!(d instanceof HTMLDetailsElement))return;
+  const k=d.dataset.seckey;if(!k)return;
+  state.open[k]=d.open;save();
+},true);
 main.addEventListener('input',e=>{
   const t=e.target;let k;const s=S();
   if(t.id==='wxApiKey'){saveWxKey(t.value.trim());return}
@@ -1132,6 +1234,7 @@ document.addEventListener('click',e=>{
   if(a==='rm-tem'){s.tem.splice(+b.dataset.i,1);$('#temWrap').innerHTML=temHTML();refreshLive();save();return}
   if(a==='preset'){const p=TEM_PRESETS[+b.dataset.i];s.tem.push({t:p[0],c:p[1]});$('#temWrap').innerHTML=temHTML();refreshLive();save();return}
   if(a==='wx-dl'){wxDownload(b.dataset.wx);return}
+  if(a==='wx-tempo'){wxExtractTempo(b.dataset.wx);return}
 });
 render();
 })();
