@@ -273,7 +273,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.14.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.14.2.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -546,10 +546,10 @@ const TEM_PRESETS=[
  ['Birds or wildlife at the aerodrome','Read NOTAM and ATIS; lights on; decide before V1']
 ];
 /* Departure / Arrival Briefing content, transcribed from flyadeal's official DEP AND ARR BRIEFINGS form. */
-const DEP_PF=['T.O RWY (intersection, if applicable)','SID designator','First cleared altitude','MSA / MORA for the climb trajectory','Extra fuel and time'];
-const DEP_PM=['Non-standard operation','Special operations','Return / diversion considerations','EOSID','Stop margin for RTO','Hotspots of the planned taxi route'];
-const ARR_PF=['Arrival / transition designator and trajectory','MORA / MOCA / MSA for the planned trajectory','STAR','Go-around trajectory','Approach minimum','Runway and type of approach','Extra fuel and time'];
-const ARR_PM=['Guidance for the approach','Landing flaps setting','Stop margin','Use of reverse thrust','Use of autobrake','Planned runway exit','Hotspots for taxi-in','Special operation','Non-standard operation'];
+const DEP_PF=['Hotspots of the planned taxi route','Stop margin for RTO','EOSID','Return / diversion considerations','Special operations','Non-standard operation'];
+const DEP_PM=['T.O RWY (intersection, if applicable)','SID designator','First cleared altitude','MSA / MORA for the climb trajectory','Extra fuel and time'];
+const ARR_PF=['Guidance for the approach','Landing flaps setting','Stop margin','Use of reverse thrust','Use of autobrake','Planned runway exit','Hotspots for taxi-in','Special operation','Non-standard operation'];
+const ARR_PM=['Arrival / transition designator and trajectory','MORA / MOCA / MSA for the planned trajectory','STAR','Go-around trajectory','Approach minimum','Runway and type of approach','Extra fuel and time'];
 const DEP_EMERG=[
  'For any failure before V1: CAPT will call “STOP” or “GO”.',
  'In case of failure after V1: continue T/O, no actions before 400 ft AGL except gear up.',
