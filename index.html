@@ -275,7 +275,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.14.4.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.15.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -294,6 +294,15 @@ const MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DE
 /*PARSER_START*/
 const pad=n=>('0'+n).slice(-2);
 function toNum(s){s=String(s).trim().replace(/[.,]$/,'');if(/^\d{1,3}([.,]\d{3})+$/.test(s))return parseInt(s.replace(/[.,]/g,''),10);const n=parseFloat(s.replace(',','.'));return isFinite(n)?Math.round(n):null}
+/* CEO vs NEO: the ICAO type designator A19N / A20N / A21N (spoken "Alpha 20 November" etc.) identifies the
+   neo family directly; a dash-suffix ending in N (e.g. A320-251N) is the same signal in the other common
+   format. Absent either, a bare A3xx designator with no N means CEO. */
+function detectCeoNeo(cfp,up){
+  if(/\bA(19|20|21)N\b/.test(cfp)||/\bA(19|20|21)N\b/.test(up))return 'NEO';
+  if(/A3\d{2}-\d{3}N\b/.test(cfp)||/A3\d{2}-\d{3}N\b/.test(up))return 'NEO';
+  if(/\bA3\d{2}\b/.test(cfp)||/\bA3\d{2}\b/.test(up))return 'CEO';
+  return null;
+}
 /* Mission Plus (Flyadeal) OFP. Page 3, the Computer Flight Plan, is the main source; pages 1 and 2 (Dispatch Release) are only a fallback. */
 function parseOFP(text){
   const T=String(text).replace(/ /g,' ').replace(/^=== PAGE \d+ ===$/gm,'');
@@ -312,8 +321,13 @@ function parseOFP(text){
   m=both(/DATE OF FLIGHT:\s*(\d{1,2})\s*(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s*(\d{2,4})/)||both(/\b(\d{1,2})\s?(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s?(\d{2,4})\b/);
   if(m){let y=+m[3];if(y<100)y+=2000;set('date',y+'-'+pad(MON.indexOf(m[2])+1)+'-'+pad(m[1]))}
   m=both(/AIRCRAFT\s*:\s*(HZ-?[A-Z]{3})\s+(A3\d{2})(?:-(\d{3}[A-Z]*))?/);
-  if(m){set('reg',m[1].replace(/^HZ-?/,'HZ-'));set('acft',m[2]+(m[3]?'-'+m[3]:''));if(m[3])set('ceoneo',/N/.test(m[3])?'NEO':'CEO')}
-  else{m=both(/\bHZ-?([A-Z]{3})\b/);if(m)set('reg','HZ-'+m[1])}
+  if(m){set('reg',m[1].replace(/^HZ-?/,'HZ-'));set('acft',m[2]+(m[3]?'-'+m[3]:''))}
+  else{
+    m=both(/\b(HZ-?[A-Z]{3})\s*\/\s*(A3\d{2})\b/);
+    if(m){set('reg',m[1].replace(/^HZ-?/,'HZ-'));set('acft',m[2])}
+    else{m=both(/\bHZ-?([A-Z]{3})\b/);if(m)set('reg','HZ-'+m[1])}
+  }
+  const cn=detectCeoNeo(cfp,up);if(cn)set('ceoneo',cn);
   m=both(/CRZ MODE\s*:\s*CI\s*(\d+)/);if(m)set('ci',m[1]);
   m=both(/PLN FL\s*:\s*(\d{3})/);if(m)set('fl',m[1]);
   const ap=(label,pre)=>{const r=new RegExp('^[ \\t]*'+label+'\\s*:\\s*([A-Z]{4})\\s+([A-Z]{3})\\s+(\\d+)\\s*FT','m');const x=cfp.match(r);if(x){set(pre+'_icao',x[1]);set(pre+'_iata',x[2])}};
@@ -1308,7 +1322,7 @@ function render(){renderNav();$('#main').innerHTML=state.tab==='dsp'?dspHTML():s
 function refreshLive(){
   const s=S(),v=s.v,i=state.sec;
   const L0=loadCalc(s);
-  const cells=[['Sector',(i+1)+' of 4'],['Flight',v.flt],['Aircraft',[v.reg,v.acft||v.ceoneo].filter(Boolean).join(' · ')],['Route',[v.dep_icao,v.dest_icao].filter(Boolean).join(' → ')+(v.alt_icao?'  alt '+v.alt_icao:'')],['ETD · ETA',[v.etd,v.eta].filter(Boolean).join(' · ')],['Date',fmtDate(v.date)],['Time of flight',v.ftime],['Total planned fuel',L0.total!=null?n0(L0.total)+' kg':''],['Underload (planned)',L0.under!=null?n0(L0.under)+' kg'+(L0.by?' · '+L0.by:''):'']];
+  const cells=[['Sector',(i+1)+' of 4'],['Flight',v.flt],['Aircraft',[v.reg,v.acft,v.ceoneo].filter(Boolean).join(' · ')],['Route',[v.dep_icao,v.dest_icao].filter(Boolean).join(' → ')+(v.alt_icao?'  alt '+v.alt_icao:'')],['ETD · ETA',[v.etd,v.eta].filter(Boolean).join(' · ')],['Date',fmtDate(v.date)],['Time of flight',v.ftime],['Total planned / min required fuel',L0.total!=null||num(v.lf_planned)!=null?(L0.total!=null?n0(L0.total):'—')+' / '+(num(v.lf_planned)!=null?n0(num(v.lf_planned)):'—')+' kg':''],['Underload (planned)',L0.under!=null?n0(L0.under)+' kg'+(L0.by?' · '+L0.by:''):''],['MEL / CDL',melText(s)]];
   const st=$('#strip');st.className='strip'+(state.example?' ex':'');
   st.innerHTML=cells.map(c=>`<div class="cell"><span class="lbl">${c[0]}</span><span class="val">${c[1]?esc(String(c[1]).toUpperCase()):'—'}</span></div>`).join('');
   $('#bar').className='bar'+(state.example?'':' real');
