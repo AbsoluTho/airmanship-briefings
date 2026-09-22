@@ -273,7 +273,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded unless you turn on Cloud sync. Version 1.10.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.11.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -616,8 +616,21 @@ let state=load()||fresh(true);
    document keyed by their UID, and a live listener pulls down changes made on other devices.
    Last-write-wins by timestamp, except on the very first sign-in on a device that already has
    real local data different from the cloud copy — there we ask which one to keep. */
+/* Built-in project so every device just signs in — no config paste needed. A Firebase web
+   apiKey is not a secret (it only names the project; Firestore security rules and the
+   authorized-domains list are what actually protect the data), so shipping it in the page
+   is normal and safe. Anyone who forks this app for their own Firebase project can still
+   override it by pasting their own config in the Cloud sync panel. */
+const DEFAULT_CLOUD_CFG={"apiKey":"AIzaSyBB7iB8w7c_MtWgrKopi1y1lZ283noWDug","authDomain":"airmanship-briefings.firebaseapp.com","projectId":"airmanship-briefings","storageBucket":"airmanship-briefings.firebasestorage.app","messagingSenderId":"465277027858","appId":"1:465277027858:web:3d3c7dccc350306fb5bacb"};
 const CLOUDCFG='line-brief.cloudcfg.v1';
-let cloudCfg=null;try{const _r=localStorage.getItem(CLOUDCFG);cloudCfg=_r?JSON.parse(_r):null}catch(e){}
+const CLOUDOFF='line-brief.cloudoff.v1';
+let cloudCfg=null;
+try{
+  if(localStorage.getItem(CLOUDOFF)!=='1'){
+    const _r=localStorage.getItem(CLOUDCFG);
+    cloudCfg=_r?JSON.parse(_r):(typeof DEFAULT_CLOUD_CFG!=='undefined'?DEFAULT_CLOUD_CFG:null);
+  }
+}catch(e){}
 let fbApp=null,fbAuth=null,fbDb=null,fbSdk=null,fbUnsub=null,fbUid=null;
 let cloudUser=null,cloudStatus='off',cloudErr='',cloudSyncedAt=0,cloudFirstSnap=true,applyingRemote=false,lastRemoteAt=0,pendingRemote=null;
 const timeAgo=t=>{const s=Math.max(0,Math.round((Date.now()-t)/1000));if(s<5)return'just now';if(s<60)return s+'s ago';const m=Math.round(s/60);if(m<60)return m+'m ago';return Math.round(m/60)+'h ago'};
@@ -640,7 +653,10 @@ async function cloudInit(cfg){
       renderCloud();
     });
     cloudStatus='ready';cloudErr='';
-  }catch(e){cloudStatus='error';cloudErr=String((e&&e.message)||e)}
+  }catch(e){
+    cloudStatus='error';
+    cloudErr=(typeof navigator!=='undefined'&&navigator.onLine===false)?'Offline — will connect once back online.':'Could not reach cloud sync right now.';
+  }
   renderCloud();
 }
 function cloudWatch(uid){
@@ -690,12 +706,19 @@ function cloudPush(immediate){
 }
 async function cloudSignIn(){if(!fbAuth)return;try{await fbSdk.signInWithPopup(fbAuth,new fbSdk.GoogleAuthProvider())}catch(e){cloudErr=String((e&&e.message)||e);cloudStatus='error';renderCloud()}}
 async function cloudSignOut(){if(fbAuth)try{await fbSdk.signOut(fbAuth)}catch(e){}}
-function cloudForget(){cloudUnwatch();cloudCfg=null;cloudUser=null;cloudStatus='off';cloudErr='';fbApp=fbAuth=fbDb=fbSdk=null;try{localStorage.removeItem(CLOUDCFG)}catch(e){}renderCloud()}
+function cloudForget(){cloudUnwatch();cloudCfg=null;cloudUser=null;cloudStatus='off';cloudErr='';fbApp=fbAuth=fbDb=fbSdk=null;try{localStorage.removeItem(CLOUDCFG);localStorage.setItem(CLOUDOFF,'1')}catch(e){}renderCloud()}
+async function cloudTurnOn(){
+  try{localStorage.removeItem(CLOUDOFF)}catch(e){}
+  const cfg=typeof DEFAULT_CLOUD_CFG!=='undefined'?DEFAULT_CLOUD_CFG:null;
+  if(!cfg){renderCloud();return}
+  cloudCfg=cfg;await cloudInit(cfg);
+  if(fbAuth&&!cloudUser)cloudSignIn();
+}
 function cloudSaveCfgFromBox(){
   const box=$('#cloudCfgBox'),msg=$('#cloudCfgMsg');if(!box)return;
   let cfg;try{cfg=JSON.parse(box.value)}catch(e){if(msg)msg.textContent="That doesn't look like valid JSON — paste the whole firebaseConfig object from the Firebase console.";return}
   if(!cfg||!cfg.apiKey||!cfg.projectId){if(msg)msg.textContent='Missing apiKey or projectId — paste the whole firebaseConfig object.';return}
-  cloudCfg=cfg;try{localStorage.setItem(CLOUDCFG,JSON.stringify(cfg))}catch(e){}
+  cloudCfg=cfg;try{localStorage.setItem(CLOUDCFG,JSON.stringify(cfg));localStorage.removeItem(CLOUDOFF)}catch(e){}
   cloudInit(cfg);
 }
 function cloudResolveConflict(useRemote){
@@ -706,11 +729,19 @@ function cloudResolveConflict(useRemote){
 function renderCloud(){
   const el=$('#cloudBox');if(!el)return;
   if(pendingRemote){el.innerHTML='<div class="cloudrow"><span class="cloudtxt">Cloud data found on your account, different from what\'s on this device.</span><div class="row"><button class="btn sm primary" data-act="cloud-use-remote" type="button">Use cloud data</button><button class="btn sm ghost" data-act="cloud-use-local" type="button">Keep this device\'s data</button></div></div>';return}
-  if(!cloudCfg){el.innerHTML='<details class="cloudset"><summary>Cloud sync (optional) — sign in to use the same data on every device</summary><div class="inner"><p class="note">Paste the Firebase config from your own Firebase project (Project settings → your web app) to turn this on. Your flight data is then private to your Google sign-in, stored in your own Firebase project, and kept in sync automatically whenever a device is online. Leave this alone and nothing changes — the app stays local-only.</p><textarea id="cloudCfgBox" rows="4" placeholder=\'{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}\'></textarea><div class="row"><button class="btn sm" data-act="cloud-save-cfg" type="button">Save and connect</button></div><p class="status" id="cloudCfgMsg"></p></div></details>';return}
+  if(!cloudCfg){
+    let off=false;try{off=localStorage.getItem(CLOUDOFF)==='1'}catch(e){}
+    if(off&&typeof DEFAULT_CLOUD_CFG!=='undefined'&&DEFAULT_CLOUD_CFG){
+      el.innerHTML='<div class="cloudrow"><span class="cloudtxt">Cloud sync is turned off on this device.</span><div class="row"><button class="btn sm primary" data-act="cloud-turn-on" type="button">Turn on cloud sync</button></div></div>';
+      return;
+    }
+    el.innerHTML='<details class="cloudset"><summary>Cloud sync (optional) — sign in to use the same data on every device</summary><div class="inner"><p class="note">Sign in with Google to keep your flight data in sync across every device. Leave this alone and nothing changes — the app stays local-only. (If you run your own copy of this app with your own Firebase project, paste its config below to use that instead.)</p><div class="row"><button class="btn sm primary" data-act="cloud-turn-on" type="button">Sign in with Google</button></div><details><summary>Use a different Firebase project</summary><div class="inner"><textarea id="cloudCfgBox" rows="4" placeholder=\'{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}\'></textarea><div class="row"><button class="btn sm" data-act="cloud-save-cfg" type="button">Save and connect</button></div><p class="status" id="cloudCfgMsg"></p></div></details></div></details>';
+    return;
+  }
   if(cloudStatus==='connecting'){el.innerHTML='<div class="cloudrow"><span class="cloudtxt">Connecting to cloud sync…</span></div>';return}
   if(!cloudUser){
     const errLine=cloudStatus==='error'?' <span class="cloudtxt bad">'+esc(cloudErr)+'</span>':'';
-    el.innerHTML='<div class="cloudrow"><span class="cloudtxt">Cloud sync is set up.'+errLine+'</span><div class="row"><button class="btn sm primary" data-act="cloud-signin" type="button">Sign in with Google</button><button class="btn sm ghost" data-act="cloud-forget" type="button">Remove setup</button></div></div>';
+    el.innerHTML='<div class="cloudrow"><span class="cloudtxt">Cloud sync is ready.'+errLine+'</span><div class="row"><button class="btn sm primary" data-act="cloud-signin" type="button">Sign in with Google</button><button class="btn sm ghost" data-act="cloud-forget" type="button">Turn off</button></div></div>';
     return;
   }
   const statusTxt=cloudStatus==='syncing'?'Syncing…':cloudStatus==='error'?'Sync error: '+esc(cloudErr):cloudSyncedAt?'Synced '+timeAgo(cloudSyncedAt):'Connected';
@@ -1376,6 +1407,7 @@ document.addEventListener('click',e=>{
   if(a==='wx-tempo'){wxExtractTempo(b.dataset.wx);return}
   if(a==='tk-apply'){s.v.tk_on=b.dataset.val;delete s.src.tk_on;syncDom();refreshLive();save();return}
   if(a==='cloud-save-cfg'){cloudSaveCfgFromBox();return}
+  if(a==='cloud-turn-on'){cloudTurnOn();return}
   if(a==='cloud-signin'){cloudSignIn();return}
   if(a==='cloud-signout'){cloudSignOut();return}
   if(a==='cloud-forget'){cloudForget();return}
