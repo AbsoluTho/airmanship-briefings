@@ -121,6 +121,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .blk{font:600 17px/1.2 var(--f-display);letter-spacing:.07em;text-transform:uppercase;color:var(--ink2);padding-top:6px;display:flex;gap:10px;align-items:baseline}
 .blk .mir{font:500 15px var(--f-mono);letter-spacing:0;color:var(--accent)}
 .note{font-size:12px;color:var(--ink3);max-width:80ch}
+.elist{margin:0;padding-left:20px;max-width:80ch;display:flex;flex-direction:column;gap:8px}
+.elist li{font-size:14px;line-height:1.4;color:var(--ink)}
 
 /* grids and fields */
 .gr{display:grid;gap:12px;grid-template-columns:repeat(4,1fr);align-items:end}
@@ -273,7 +275,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.14.2.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.14.4.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1152,7 +1154,7 @@ function depHTML(){
   const plan=`<div class="two"><div class="chks"><p class="note" style="margin-top:0">Pilot Flying</p>${DEP_PF.map((t,i)=>chk('dep.pf.'+i,t)).join('')}</div><div class="chks"><p class="note" style="margin-top:0">Pilot Monitoring</p>${DEP_PM.map((t,i)=>chk('dep.pm.'+i,t)).join('')}</div></div>`;
   const tem=`<div class="chks">${chk('dep.tem.0',TEM_SELFCHECK[0])}${chk('dep.tem.1',TEM_SELFCHECK[1])}</div><div id="temWrap_tem">${temHTML('tem')}</div>`;
   const misc=`<div class="gr c1">${fld('dep_misc','Miscellaneous',{area:1,rows:3,cls:'wide'})}</div>`;
-  const emerg=`<p class="note">${DEP_EMERG.map(esc).join('<br>')}</p><div class="chks">${chk('dep.emerg.0','Emergency briefing reviewed with the other pilot')}</div>`;
+  const emerg=`<ul class="elist">${DEP_EMERG.map(l=>`<li>${esc(l)}</li>`).join('')}</ul><div class="chks">${chk('dep.emerg.0','Emergency briefing reviewed with the other pilot')}</div>`;
   return `<div class="mhead"><h1>Departure Briefing</h1><p class="lead">flyadeal's Departure Briefing form, followed top to bottom. Work through the Plan with the Pilot Flying and Pilot Monitoring items side by side, record each identified threat with a countermeasure, then review the Emergency Briefing script together.</p></div>`+
    sec('Step 1 · Environment',step1,'checks','dep.s1')+
    sec('Step 2 · Plan',plan,'checks','dep.plan')+
@@ -1274,10 +1276,10 @@ function sumBrief(mod,i){
   const s=state.secs[i],v=s.v,c=s.c,L=[];
   L.push(`${(mod==='dep'?'DEPARTURE':'ARRIVAL')+' BRIEFING'} | SECTOR ${i+1} | ${v.flt||'---'} ${(v.dep_icao||'----')}-${(v.dest_icao||'----')} ${fmtDate(v.date)}`.trim());
   const PF=mod==='dep'?DEP_PF:ARR_PF,PM=mod==='dep'?DEP_PM:ARR_PM;
-  L.push('');L.push('PLAN — PILOT FLYING');
-  PF.forEach((t,j)=>L.push('  ['+(c[mod+'.pf.'+j]?'x':' ')+'] '+t));
   L.push('');L.push('PLAN — PILOT MONITORING');
   PM.forEach((t,j)=>L.push('  ['+(c[mod+'.pm.'+j]?'x':' ')+'] '+t));
+  L.push('');L.push('PLAN — PILOT FLYING');
+  PF.forEach((t,j)=>L.push('  ['+(c[mod+'.pf.'+j]?'x':' ')+'] '+t));
   const tk=mod==='dep'?'tem':'tem2',rows=(s[tk]||[]).filter(r=>r.t||r.c);
   L.push('');L.push('IDENTIFIED THREATS & MITIGATIONS');
   if(rows.length)rows.forEach(r=>L.push('  '+(r.t||'—')+' -> '+(r.c||'—')));else L.push('  none recorded');
