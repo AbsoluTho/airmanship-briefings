@@ -273,7 +273,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.11.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.13.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -585,12 +585,12 @@ const MODS={
 const CAB_LEFT=[['Aircraft documents (7)'],['Technical logbook before power up'],['Spare EFB (charged and updated)'],['Refueling with boarding or not'],['“Cabin crew refueling in progress”'],['Preliminary loading (FlySmart)'],['LIR (int. flight crosscheck loadsheet)'],['Preliminary T/O perf (FlySmart)'],['Preliminary cockpit preparation'],['TLB (4 checks) and pink / yellow / white pages'],['Ask to check the box'],['Refueling finished (seat belts on, pumps on)']];
 const CAB_RIGHT=[['“Cabin crew refueling completed”'],['Fill technical logbook'],['Ask for clearance'],['Departure briefing',['dep','Open']],['Emergency briefing (jump seat)',['jmp','Open']],['Cockpit preparation checklist'],['Final loading (FlySmart)'],['Final T/O perf (FlySmart)'],['Send loadsheet'],['Check 4 documents on board'],['Close door and confirm ready to push'],['Before start checklist']];
 const CAB_TRIP=['fit','docs','names','reg','mel','nsec','ftime','fl','refuel','refsec','tank','refpax','taxi','wx','hijack','entry','unruly','emerg','q'];
-const TABS=[['dsp','Dispatch'],['cab','Cabin'],['dep','Departure'],['jmp','Jumpseat']];
-const IDS={dep:[],jmp:[],cab:CAB_TRIP.slice()};
+const TABS=[['dsp','Dispatch'],['cab','Cabin'],['dep','Departure'],['jmp','Jumpseat'],['gf','Ground flow']];
+const IDS={dep:[],jmp:[],cab:CAB_TRIP.slice(),gf:CAB_LEFT.map((_,i)=>'cab.l.'+i).concat(CAB_RIGHT.map((_,i)=>'cab.r.'+i))};
 ['dep','jmp'].forEach(m=>MODS[m].sections.forEach(s=>(s.checks||[]).forEach((_,i)=>IDS[m].push(m+'.'+s.id+'.'+i))));
 
 /* ---------- state ---------- */
-const newSec=()=>({v:{},c:{},src:{},tem:[],nt:null});
+const newSec=()=>({v:{},c:{'req.rvsm':true,'req.pbn':true},src:{},tem:[],nt:null});
 const newTrip=()=>({v:{},c:{}});
 const EX0={flt:'FAD123',dom:'DOM',date:'2026-09-22',reg:'HZ-XXX',ceoneo:'CEO',acft:'A320-214',dep_icao:'OEJN',dep_iata:'JED',dest_icao:'OETB',dest_iata:'TUU',alt_icao:'OEMA',alt_iata:'MED',etd:'07:25',eta:'08:55',ftime:'1:11',pax:'151',
  route:'DCT MIGDA L677 WEJ V54 TBK DCT',altroute:'DCT TBK V54 WEJ M872 BOVET',wind_dir:'TL',wind:'11',isa:'10',grd:'481',air:'469',ci:'20',fl:'340',temp:'-42',toc:'0:27',shear_v:'3',shear_w:'MIGDA',
@@ -601,7 +601,7 @@ const EXC0={cab_mel:'N',cab_refuel:'N',cab_tank:'Y',cab_refpax:'N',cab_taxitime:
 const EXC1={cab_mel:'N',cab_refuel:'Y',cab_refpax:'Y',cab_tank:'N',cab_taxitime:'8 min out, 12 min in'};
 const EX1={flt:'FAD124',dom:'DOM',reg:'HZ-XXX',dep_icao:'OETB',dep_iata:'TUU',dest_icao:'OEJN',dest_iata:'JED',etd:'09:40',eta:'10:55',ftime:'1:15',fl:'360',ofp_ramp:'10600'};
 function fresh(ex){const secs=[newSec(),newSec(),newSec(),newSec()];
-  if(ex){Object.assign(secs[0].v,EX0);secs[0].c={'mel.no':true,'why.tank':true,'efb.flysmart':true,'dsp.tank.0':false};Object.assign(secs[1].v,EX1);Object.assign(secs[0].v,EXC0);Object.assign(secs[1].v,EXC1);secs[0].c['cab.turb.rte']=true;secs[0].nt=parseNotams(EX_NT);secs[0].tem=[{t:TEM_PRESETS[0][0],c:TEM_PRESETS[0][1]},{t:TEM_PRESETS[1][0],c:TEM_PRESETS[1][1]}]}
+  if(ex){Object.assign(secs[0].v,EX0);secs[0].c={'mel.no':true,'why.tank':true,'efb.flysmart':true,'dsp.tank.0':false,'req.rvsm':true,'req.pbn':true};Object.assign(secs[1].v,EX1);Object.assign(secs[0].v,EXC0);Object.assign(secs[1].v,EXC1);secs[0].c['cab.turb.rte']=true;secs[0].nt=parseNotams(EX_NT);secs[0].tem=[{t:TEM_PRESETS[0][0],c:TEM_PRESETS[0][1]},{t:TEM_PRESETS[1][0],c:TEM_PRESETS[1][1]}]}
   const trip=newTrip();if(ex)Object.assign(trip.v,{names:'CM1 Capt. Example, CM2 FO Example. SCCM Example, 4 cabin crew.'});
   return {example:!!ex,sec:0,tab:'dsp',secs,trip,raw:{},impMsg:'',impWarn:false,open:{}}}
 function load(){try{const s=localStorage.getItem(KEY);if(!s)return null;const o=JSON.parse(s);const f=fresh(false);f.example=!!o.example;f.sec=o.sec||0;f.tab=o.tab||'dsp';f.trip=Object.assign(newTrip(),o.trip||{});f.trip.v=f.trip.v||{};f.trip.c=f.trip.c||{};f.open=o.open&&typeof o.open==='object'?o.open:{};(o.secs||[]).slice(0,4).forEach((x,i)=>{f.secs[i]=Object.assign(newSec(),x)});return f}catch(e){return null}}
@@ -788,6 +788,15 @@ const cabList=k=>actSecs().filter(i=>state.secs[i].v[k]==='Y').map(i=>'S'+(i+1))
 const CAB_LBL={fit:'Is everyone fit for duty?',docs:'Documents OK',names:'Names and positions',reg:'A/C registration and position',mel:'Cabin technical status: MELs',nsec:'Number of sectors',ftime:'Flight times',fl:'Flight altitudes',refuel:'Refueling operation',refsec:'Refueling sectors',tank:'Tankering sectors',refpax:'Refueling with PAX',taxi:'Taxi times',wx:'Expected weather and turbulence',hijack:'Hijack code',entry:'Cockpit entry procedure',unruly:'Unruly passenger',emerg:'Emergency procedures',q:'Questions?'};
 const calc=(id,l,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="calc" data-calc="${id}">—</div></div>`;
 const mir=(k,l,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="calc" data-mirror="${k}">—</div></div>`;
+const selFld=(k,l,opts,cls)=>{const id='v_'+k.replace(/\W/g,'_'),cur=V(k);return `<div class="fld ${cls||''}"><label for="${id}"><span class="fl">${l}</span></label><select id="${id}" data-v="${k}">${opts.map(o=>`<option value="${esc(o[0])}"${cur===o[0]?' selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`};
+/* Operations Engineering Bulletins current at the time this app was built. Selecting one fills
+   its color (Red = safety impact, White = operational impact) and whether it has an ECAM entry —
+   the pilot no longer has to know or look those up. */
+const OEBS=[
+ {n:'62',t:'AIR ENG 1(2) BLEED FAULT or AIR ENG 1+2 BLEED FAULT',c:'Red',e:'Yes'},
+ {n:'63',t:'DUAL LOSS OF RMP DATA SYNCHRONIZATION LEADING TO LOSS OF CONTROL OF RADIO COMMUNICATION, TRANSPONDER OR STANDBY NAVIGATION',c:'Red',e:'No'},
+ {n:'64',t:'ENG 1(2) EGT OVER LIMIT',c:'White',e:'Yes'}
+];
 /* sections default closed; a key lets the open/closed state survive re-renders (e.g. after a download or import) */
 const sec=(title,body,mode,key)=>`<details class="sec"${key&&state.open[key]?' open':''} data-count="${mode||'fields'}" data-seckey="${key||''}"><summary><span class="st">${title}</span><span class="scount"></span></summary><div class="sbody">${body}</div></details>`;
 
@@ -1047,19 +1056,18 @@ function dspHTML(){
    <details class="rawbox" id="rawBox"${state.raw[state.sec]?'':' hidden'}><summary>Text read from the PDF (use it to tune the import)</summary><div class="inner"><pre class="sum" id="rawTxt" style="width:100%">${esc((state.raw[state.sec]||'').slice(0,24000))}</pre><button class="btn" type="button" data-act="copyraw">Copy text</button></div></details></section>`;
   const melRows=[1,2,3].map(i=>`<div class="mel-row">${fld('mel'+i+'_ref','ATA ref',{ph:'xx-xx-xx'})}${fld('mel'+i+'_cat','CAT')}${fld('mel'+i+'_title','Title')}${seg('mel'+i+'_o','(O)',[['Y','Y'],['N','N']])}</div>`).join('');
   const info=`<div class="gr c4">${calc('sector','Sector')}${fld('flt','Flight number',{ph:'FAD123'})}${seg('dom','Flight type',[['DOM','DOM'],['INT','INT']])}${fld('date','Date',{type:'date'})}</div>
-   <div class="gr c4">${fld('fpl_c','FPL compt (day / UTC)',{ph:'dd/hhmm'})}${fld('fpl_x','FPL expiry (day / UTC)',{ph:'dd/hhmm'})}${fld('crew','TRI / TRE / FO',{cls:'w2'})}</div>
-   <div class="gr c4">${fld('reg','Aircraft reg',{ph:'HZ-XXX'})}${seg('ceoneo','Aircraft type',[['CEO','CEO'],['NEO','NEO']])}${fld('stand','Stand')}${fld('prn','PRN')}</div>
+   <div class="gr c4">${fld('reg','Aircraft reg',{ph:'HZ-XXX'})}${mir('ceoneo','Aircraft type')}${fld('stand','Parking stand')}</div>
    <div class="gr c6">${fld('dep_icao','From ICAO')}${fld('dep_iata','From IATA')}${fld('dest_icao','To ICAO')}${fld('dest_iata','To IATA')}${fld('alt_icao','Alt ICAO')}${fld('alt_iata','Alt IATA')}</div>
-   <div class="gr c4">${tgs('EFB update',[['efb.fdpro','FD Pro'],['efb.flysmart','FlySmart']])}<div class="fld"><label for="v_acft_eta"><span class="fl">Aircraft ETA (Z)</span></label><input id="v_acft_eta" data-v="acft_eta" value="${esc(V('acft_eta'))}" placeholder="hh:mm" autocomplete="off"><button type="button" class="tg mt" data-tog="landed" aria-pressed="false">Landed</button></div>${fld('etd','ETD (Z)',{ph:'hh:mm'})}${fld('eta','ETA (Z)',{ph:'hh:mm'})}</div>
+   <div class="gr c4">${tgs('EFB update check',[['efb.fdpro','FD Pro'],['efb.flysmart','FlySmart']])}${fld('etd','ETD (Z)',{ph:'hh:mm'})}${fld('eta','ETA (Z)',{ph:'hh:mm'})}</div>
    <div class="gr c4">${fld('ftime','Flight time',{ph:'h:mm'})}${fld('pax','PAX',{num:1})}</div>
    <h3 class="blk">MEL / CDL and OEB</h3>${tgs('MEL / CDL',[['mel.no','No MEL / CDL']])}${melRows}
-   <div class="gr c4">${seg('oeb','OEB',[['No','No'],['White','White'],['Red','Red']],'w2')}${fld('oeb_n','OEB no.')}</div>`;
+   <div class="gr c4">${selFld('oeb_sel','OEB',[['','No OEB']].concat(OEBS.map(o=>[o.n,'OEB '+o.n+' — '+o.t])),'w2')}${mir('oeb','Color')}${mir('oeb_ecam','ECAM entry')}</div>`;
   const route=`${fld('route','Route',{area:1,rows:2,cls:'wide'})}${fld('altroute','Alternate route',{area:1,rows:2,cls:'wide'})}
    <div class="gr c4">${seg('wind_dir','Avg wind',[['HD','HD'],['TL','TL']])}${fld('wind','Avg wind (kt)',{num:1})}${fld('isa','Δ ISA (+/−)',{num:1})}${fld('grd','Grd dist (nm)',{num:1})}</div>
    <div class="gr c4">${fld('air','Air dist (nm)',{num:1})}${fld('ci','CI',{num:1})}${fld('fl','Cruise FL',{ph:'340'})}${fld('temp','Temp at FL (°C)',{num:1})}</div>
-   <div class="gr c4">${fld('toc','Time to TOC (h:mm)',{ph:'0:27'})}${fld('shear_v','Max shear',{num:1})}${fld('shear_w','Shear waypoint')}${fld('tropo','Tropo (FL)')}</div>
-   <div class="gr c4">${tgs('SIGWX',[['sigwx.ice','Ice'],['sigwx.cb','CB'],['sigwx.turb','Mod / sev turb']],'w2')}${fld('sigwx_from','From FL')}${fld('sigwx_to','To FL')}</div>
-   <div class="gr c4">${seg('sigmet','SIGMET',[['NO','No'],['YES','Yes']])}${seg('gps','GPS spoofing & interference',[['NO','No'],['YES','Yes']])}${grp('IHRAM ZONE','ihram',[['no','No'],['yes','Yes']])}${fld('ihram','Ihram zone details')}</div>
+   <div class="gr c4">${fld('toc','Time to TOC (h:mm)',{ph:'0:27'})}${fld('shear_v','Max shear',{num:1})}${fld('shear_w','Shear waypoint')}${fld('tropo','Tropo (FL)',{pilot:1})}</div>
+   <div class="gr c4">${tgs('SIGWX',[['sigwx.ice','Ice'],['sigwx.cb','CB'],['sigwx.turb','Mod / sev turb']],'w2')}${fld('sigwx_from','From FL',{pilot:1})}${fld('sigwx_to','To FL',{pilot:1})}</div>
+   <div class="gr c4">${seg('sigmet','SIGMET',[['NO','No'],['YES','Yes']])}${grp('IHRAM ZONE','ihram',[['no','No'],['yes','Yes']])}${fld('ihram','Ihram zone details')}</div>
    <div class="gr c3">${grp('ESCAT','escat',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}${grp('TIBA (122.8 MHz)','tiba',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}${grp('FRS (133.5 MHz)','frs',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}</div>
    ${fld('escat_txt','ESCAT details')}`;
   const wxKeyBox=`<details class="paste"${wxApiKey?'':' open'}><summary>Weather source: CheckWX API key</summary><div class="inner">
@@ -1120,11 +1128,14 @@ function cabHTML(){
   const wx=`<div class="chks">${tchk('wx',CAB_LBL.wx)}</div>`+xrows((i,s)=>{const c=s.c,v=s.v,sw=['ice','cb','turb'].filter(k=>c['sigwx.'+k]);return `<div class="gr c3">${xfld(i,'cab_wx_dep','Departure',{tog:'cab.turb.dep'})}${xfld(i,'cab_wx_rte','Route',{tog:'cab.turb.rte'})}${xfld(i,'cab_wx_arr','Arrival',{tog:'cab.turb.arr'})}</div>${sw.length?`<p class="xnote">Dispatch SIGWX: ${sw.join(', ').toUpperCase()}${v.sigwx_from?' FL'+esc(v.sigwx_from)+(v.sigwx_to?' to FL'+esc(v.sigwx_to):''):''}.</p>`:''}`});
   const sp=`<div class="chks">${tchk('hijack',CAB_LBL.hijack)}${tchk('entry',CAB_LBL.entry,'Agree how the cabin calls the cockpit and how the door is opened.')}${tchk('unruly',CAB_LBL.unruly,'Report early to the flight deck and follow the company procedure.')}${tchk('emerg',CAB_LBL.emerg,'Signals and commands, and the NITS briefing if an emergency occurs.')}</div><div class="gr c2" style="margin-top:8px">${tfld('hijack','Hijack code')}${tfld('special','Other special requirements',{area:1})}</div><p class="note">The prompts are reminders only. The company OM-A wording applies.</p>`;
   const q=`<div class="chks">${tchk('q',CAB_LBL.q)}</div>`;
-  const gf=`<div class="two"><div class="chks">${CAB_LEFT.map((x,i)=>chk('cab.l.'+i,x[0],x[1])).join('')}</div><div class="chks">${CAB_RIGHT.map((x,i)=>chk('cab.r.'+i,x[0],x[1])).join('')}</div></div>`;
   return `<div class="mhead"><h1>Cabin Crew Briefing</h1><p class="lead">One briefing for the whole duty, in the order of the Cabin Crew Briefing list. The data of each sector comes from Dispatch. The cabin-specific fields are filled in here.</p></div>`+ov+
    sec('Crew',crew,'checks','cab.crew')+sec('Aircraft, position and cabin MELs',ac,'checks','cab.ac')+sec('Sectors, flight times and altitudes',sc,'checks','cab.sc')+sec('Refueling operation',rf,'checks','cab.rf')+sec('Taxi times',tx,'checks','cab.tx')+sec('Expected weather and turbulence',wx,'checks','cab.wx')+sec('Special requirements',sp,'checks','cab.sp')+sec('Questions',q,'checks','cab.q')+
-   sec('Ground flow before departure · Sector '+(state.sec+1),gf,'checks','cab.gf')+
    `<section class="sumbox"><h2>Summary</h2><pre class="sum" data-sum="cab"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="cab">Copy summary</button></div></section>`;
+}
+function gfHTML(){
+  const gf=`<div class="two"><div class="chks">${CAB_LEFT.map((x,i)=>chk('cab.l.'+i,x[0],x[1])).join('')}</div><div class="chks">${CAB_RIGHT.map((x,i)=>chk('cab.r.'+i,x[0],x[1])).join('')}</div></div>`;
+  return `<div class="mhead"><h1>Ground Flow</h1><p class="lead">The ground flow before departure, sector ${state.sec+1}. The left and right columns run in parallel between the flight deck and the cabin. Change sector with the chips above.</p></div>`+
+   sec('Ground flow before departure',gf,'checks','gf.main');
 }
 function temHTML(){
   const rows=S().tem.map((r,i)=>`<div class="tem-row"><div class="fld"><label for="tem_t${i}"><span class="fl">Threat</span></label><input id="tem_t${i}" data-tem="${i}.t" value="${esc(r.t)}"></div><div class="fld"><label for="tem_c${i}"><span class="fl">Countermeasure</span></label><input id="tem_c${i}" data-tem="${i}.c" value="${esc(r.c)}"></div><button class="btn ghost" type="button" data-act="rm-tem" data-i="${i}" aria-label="Remove threat ${i+1}">Remove</button></div>`).join('');
@@ -1154,14 +1165,14 @@ function sumDsp(i){
   add('Aircraft',[v.reg,v.ceoneo,v.acft].filter(Boolean).join(' '));add('ETD / ETA',[v.etd,v.eta].filter(Boolean).join(' / '));add('Flight time',v.ftime);add('PAX',v.pax);
   add('Alternate',[v.alt_icao,v.alt_iata].filter(Boolean).join(' '));
   L.push('MEL / CDL: '+(c['mel.no']?'none':([1,2,3].map(n=>v['mel'+n+'_title']?(v['mel'+n+'_ref']||'')+' CAT '+(v['mel'+n+'_cat']||'?')+' '+v['mel'+n+'_title']+' (O) '+(v['mel'+n+'_o']||'?'):'').filter(Boolean).join('; ')||'not recorded')));
-  add('OEB',[v.oeb,v.oeb_n].filter(Boolean).join(' '));
+  add('OEB',v.oeb_sel?v.oeb_n+' ('+v.oeb+', ECAM entry: '+(v.oeb_ecam||'—')+')':'No OEB');
   L.push('');L.push('ROUTE PLANNING');add('  Route',v.route);add('  Alt route',v.altroute);
   add('  Wind / dISA / CI',[v.wind?(v.wind_dir||'')+' '+v.wind+' kt':'',v.isa?'ISA '+v.isa:'',v.ci?'CI '+v.ci:''].filter(Boolean).join(' | '));
   add('  Distance',[v.grd?'ground '+v.grd+' nm':'',v.air?'air '+v.air+' nm':''].filter(Boolean).join(', '));
   add('  FL / temp / TOC',[v.fl?'FL'+v.fl:'',v.temp?v.temp+' C':'',v.toc?'TOC '+v.toc:''].filter(Boolean).join(' | '));
   add('  Max shear',[v.shear_v,v.shear_w].filter(Boolean).join(' '));
   const sw=['ice','cb','turb'].filter(k=>c['sigwx.'+k]);if(sw.length)add('  SIGWX',sw.join(', ').toUpperCase()+(v.sigwx_from?' FL'+v.sigwx_from+(v.sigwx_to?'-FL'+v.sigwx_to:''):''));
-  add('  SIGMET',v.sigmet);add('  GPS spoofing / interference',v.gps);
+  add('  SIGMET',v.sigmet);
   [['ihram','IHRAM ZONE'],['escat','ESCAT'],['tiba','TIBA'],['frs','FRS']].forEach(g=>{const sel=['no','yes','dep','arr','alt'].filter(k=>c[g[0]+'.'+k]);if(sel.length)add('  '+g[1],sel.join(', '))});
   add('  Ihram zone details',v.ihram);add('  ESCAT details',v.escat_txt);
   L.push('');L.push('WEATHER');
@@ -1243,7 +1254,7 @@ function syncDom(){
   $$('[data-xseg]').forEach(e=>{const p=xs(e.dataset.xseg);e.setAttribute('aria-pressed',state.secs[p[0]].v[p[1]]===e.dataset.val?'true':'false')});
   $$('[data-xtog]').forEach(e=>{const p=xs(e.dataset.xtog);e.setAttribute('aria-pressed',state.secs[p[0]].c[p[1]]?'true':'false')});
 }
-function render(){renderNav();$('#main').innerHTML=state.tab==='dsp'?dspHTML():state.tab==='cab'?cabHTML():modHTML(state.tab);syncDom();renderNt();refreshLive();renderCloud()}
+function render(){renderNav();$('#main').innerHTML=state.tab==='dsp'?dspHTML():state.tab==='cab'?cabHTML():state.tab==='gf'?gfHTML():modHTML(state.tab);syncDom();renderNt();refreshLive();renderCloud()}
 function refreshLive(){
   const s=S(),v=s.v,i=state.sec;
   const cells=[['Sector',(i+1)+' of 4'],['Flight',v.flt],['Aircraft',[v.reg,v.acft||v.ceoneo].filter(Boolean).join(' · ')],['Route',[v.dep_icao,v.dest_icao].filter(Boolean).join(' → ')+(v.alt_icao?'  alt '+v.alt_icao:'')],['ETD · ETA',[v.etd,v.eta].filter(Boolean).join(' · ')],['Date',fmtDate(v.date)]];
@@ -1371,7 +1382,15 @@ main.addEventListener('change',e=>{
   if((k=t.dataset.c)){s.c[k]=t.checked;refreshLive();save()}
   else if((k=t.dataset.tk)){state.trip.c[k]=t.checked;refreshLive();save()}
   else if(t.dataset.imp){handleFiles(t.files);t.value=''}
-  else if((k=t.dataset.v)){s.v[k]=t.value;delete s.src[k];refreshLive();save()}
+  else if((k=t.dataset.v)){
+    s.v[k]=t.value;delete s.src[k];
+    if(k==='oeb_sel'){
+      const o=OEBS.filter(x=>x.n===t.value)[0];
+      if(o){s.v.oeb=o.c;s.v.oeb_n='OEB '+o.n+' — '+o.t;s.v.oeb_ecam=o.e}
+      else{delete s.v.oeb;delete s.v.oeb_n;delete s.v.oeb_ecam}
+    }
+    refreshLive();save();
+  }
 });
 main.addEventListener('dragover',e=>{const d=e.target.closest&&e.target.closest('#drop');if(d){e.preventDefault();d.classList.add('over')}});
 main.addEventListener('dragleave',()=>{const d=$('#drop');if(d)d.classList.remove('over')});
