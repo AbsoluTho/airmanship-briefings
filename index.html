@@ -68,6 +68,15 @@ button,input,select,textarea{font:inherit;color:inherit}
 .bar.real{background:var(--surface);border-color:var(--line);color:var(--ink2)}
 .bar span{flex:1 1 260px;font-size:13px}
 .bar .row{flex:0 0 auto}
+.cloudbox:empty{display:none}
+.cloudbox{margin-bottom:12px}
+.cloudset{border:1px solid var(--line);background:var(--surface)}
+.cloudset summary{cursor:pointer;padding:10px 12px;font:600 12px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.cloudset .inner{display:flex;flex-direction:column;gap:10px;padding:0 12px 14px}
+.cloudset textarea{width:100%;min-height:76px;padding:8px 10px;border:1px solid var(--line);background:var(--sunk);border-radius:3px;font:400 12px/1.4 var(--f-mono);resize:vertical}
+.cloudrow{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:8px 12px;border:1px solid var(--line);background:var(--surface)}
+.cloudtxt{font-size:13px;color:var(--ink2)}
+.cloudtxt.bad{color:var(--bad)}
 
 /* nav: sector chips + tabs */
 .nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin-bottom:16px;padding-bottom:0;border-bottom:1px solid var(--line)}
@@ -261,9 +270,10 @@ button,input,select,textarea{font:inherit;color:inherit}
     <div class="strip" id="strip" aria-live="polite"></div>
   </header>
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
+  <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded. Version 1.9.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded unless you turn on Cloud sync. Version 1.10.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -595,8 +605,118 @@ function fresh(ex){const secs=[newSec(),newSec(),newSec(),newSec()];
   const trip=newTrip();if(ex)Object.assign(trip.v,{names:'CM1 Capt. Example, CM2 FO Example. SCCM Example, 4 cabin crew.'});
   return {example:!!ex,sec:0,tab:'dsp',secs,trip,raw:{},impMsg:'',impWarn:false,open:{}}}
 function load(){try{const s=localStorage.getItem(KEY);if(!s)return null;const o=JSON.parse(s);const f=fresh(false);f.example=!!o.example;f.sec=o.sec||0;f.tab=o.tab||'dsp';f.trip=Object.assign(newTrip(),o.trip||{});f.trip.v=f.trip.v||{};f.trip.c=f.trip.c||{};f.open=o.open&&typeof o.open==='object'?o.open:{};(o.secs||[]).slice(0,4).forEach((x,i)=>{f.secs[i]=Object.assign(newSec(),x)});return f}catch(e){return null}}
-let saveT;const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify({example:state.example,sec:state.sec,tab:state.tab,secs:state.secs,trip:state.trip,open:state.open}))}catch(e){}},250)};
+let saveT;const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify({example:state.example,sec:state.sec,tab:state.tab,secs:state.secs,trip:state.trip,open:state.open}))}catch(e){}
+  if(!applyingRemote)cloudPush();
+},250)};
 let state=load()||fresh(true);
+
+/* ---------- cloud sync (optional: off unless a Firebase project is configured) ----------
+   Off by default: everything stays local exactly as before. Once a pilot pastes their own
+   Firebase config and signs in with Google, the whole state blob is mirrored to a Firestore
+   document keyed by their UID, and a live listener pulls down changes made on other devices.
+   Last-write-wins by timestamp, except on the very first sign-in on a device that already has
+   real local data different from the cloud copy — there we ask which one to keep. */
+const CLOUDCFG='line-brief.cloudcfg.v1';
+let cloudCfg=null;try{const _r=localStorage.getItem(CLOUDCFG);cloudCfg=_r?JSON.parse(_r):null}catch(e){}
+let fbApp=null,fbAuth=null,fbDb=null,fbSdk=null,fbUnsub=null,fbUid=null;
+let cloudUser=null,cloudStatus='off',cloudErr='',cloudSyncedAt=0,cloudFirstSnap=true,applyingRemote=false,lastRemoteAt=0,pendingRemote=null;
+const timeAgo=t=>{const s=Math.max(0,Math.round((Date.now()-t)/1000));if(s<5)return'just now';if(s<60)return s+'s ago';const m=Math.round(s/60);if(m<60)return m+'m ago';return Math.round(m/60)+'h ago'};
+const cloudBlob=()=>({example:state.example,sec:state.sec,tab:state.tab,secs:state.secs,trip:state.trip,open:state.open});
+function hasRealData(st){return !!st&&!st.example&&st.secs.some(s=>Object.keys(s.v||{}).length>0||(s.nt&&s.nt.secs&&s.nt.secs.length))}
+async function cloudInit(cfg){
+  cloudStatus='connecting';renderCloud();
+  try{
+    const[appMod,authMod,fsMod]=await Promise.all([
+      import('https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js')
+    ]);
+    fbSdk=Object.assign({},appMod,authMod,fsMod);
+    fbApp=fbSdk.initializeApp(cfg,'linebrief-'+Date.now());
+    fbAuth=fbSdk.getAuth(fbApp);fbDb=fbSdk.getFirestore(fbApp);
+    fbSdk.onAuthStateChanged(fbAuth,user=>{
+      cloudUser=user?{uid:user.uid,name:user.displayName||user.email||'',email:user.email||''}:null;
+      if(user){cloudFirstSnap=true;cloudWatch(user.uid)}else{cloudUnwatch()}
+      renderCloud();
+    });
+    cloudStatus='ready';cloudErr='';
+  }catch(e){cloudStatus='error';cloudErr=String((e&&e.message)||e)}
+  renderCloud();
+}
+function cloudWatch(uid){
+  if(fbUnsub)fbUnsub();
+  fbUid=uid;
+  fbUnsub=fbSdk.onSnapshot(fbSdk.doc(fbDb,'users',uid),snap=>{
+    if(snap.metadata.hasPendingWrites)return;
+    cloudApplyRemote(snap.data());cloudStatus='synced';cloudSyncedAt=Date.now();renderCloud();
+  },e=>{cloudStatus='error';cloudErr=String((e&&e.message)||e);renderCloud()});
+}
+function cloudUnwatch(){if(fbUnsub)fbUnsub();fbUnsub=null;fbUid=null}
+function cloudApplyRemote(data){
+  if(!data||!data.state)return;
+  const remoteAt=data.savedAt||0;if(remoteAt<=lastRemoteAt)return;
+  if(cloudFirstSnap){
+    cloudFirstSnap=false;
+    if(hasRealData(state)&&hasRealData(data.state)&&JSON.stringify(data.state)!==JSON.stringify(cloudBlob())){pendingRemote={data,at:remoteAt};renderCloud();return}
+  }
+  lastRemoteAt=remoteAt;cloudAdoptRemote(data.state);
+}
+function cloudAdoptRemote(incoming){
+  applyingRemote=true;
+  try{
+    const f=fresh(false);
+    state=Object.assign(f,{example:!!incoming.example,sec:incoming.sec||0,tab:incoming.tab||'dsp'});
+    state.trip=Object.assign(newTrip(),incoming.trip||{});state.trip.v=state.trip.v||{};state.trip.c=state.trip.c||{};
+    state.open=incoming.open&&typeof incoming.open==='object'?incoming.open:{};
+    (incoming.secs||[]).slice(0,4).forEach((x,i)=>{state.secs[i]=Object.assign(newSec(),x)});
+    render();
+    try{localStorage.setItem(KEY,JSON.stringify(cloudBlob()))}catch(e){}
+  }finally{applyingRemote=false}
+}
+let cloudPushT;
+function cloudPush(immediate){
+  if(!fbDb||!fbUid||applyingRemote)return;
+  clearTimeout(cloudPushT);
+  const run=async()=>{
+    try{
+      cloudStatus='syncing';renderCloud();
+      const at=Date.now();lastRemoteAt=at;
+      await fbSdk.setDoc(fbSdk.doc(fbDb,'users',fbUid),{state:cloudBlob(),savedAt:at});
+      cloudStatus='synced';cloudSyncedAt=at;
+    }catch(e){cloudStatus='error';cloudErr=String((e&&e.message)||e)}
+    renderCloud();
+  };
+  if(immediate)run();else cloudPushT=setTimeout(run,1200);
+}
+async function cloudSignIn(){if(!fbAuth)return;try{await fbSdk.signInWithPopup(fbAuth,new fbSdk.GoogleAuthProvider())}catch(e){cloudErr=String((e&&e.message)||e);cloudStatus='error';renderCloud()}}
+async function cloudSignOut(){if(fbAuth)try{await fbSdk.signOut(fbAuth)}catch(e){}}
+function cloudForget(){cloudUnwatch();cloudCfg=null;cloudUser=null;cloudStatus='off';cloudErr='';fbApp=fbAuth=fbDb=fbSdk=null;try{localStorage.removeItem(CLOUDCFG)}catch(e){}renderCloud()}
+function cloudSaveCfgFromBox(){
+  const box=$('#cloudCfgBox'),msg=$('#cloudCfgMsg');if(!box)return;
+  let cfg;try{cfg=JSON.parse(box.value)}catch(e){if(msg)msg.textContent="That doesn't look like valid JSON — paste the whole firebaseConfig object from the Firebase console.";return}
+  if(!cfg||!cfg.apiKey||!cfg.projectId){if(msg)msg.textContent='Missing apiKey or projectId — paste the whole firebaseConfig object.';return}
+  cloudCfg=cfg;try{localStorage.setItem(CLOUDCFG,JSON.stringify(cfg))}catch(e){}
+  cloudInit(cfg);
+}
+function cloudResolveConflict(useRemote){
+  if(!pendingRemote)return;const pr=pendingRemote;pendingRemote=null;lastRemoteAt=pr.at;
+  if(useRemote)cloudAdoptRemote(pr.data.state);else cloudPush(true);
+  renderCloud();
+}
+function renderCloud(){
+  const el=$('#cloudBox');if(!el)return;
+  if(pendingRemote){el.innerHTML='<div class="cloudrow"><span class="cloudtxt">Cloud data found on your account, different from what\'s on this device.</span><div class="row"><button class="btn sm primary" data-act="cloud-use-remote" type="button">Use cloud data</button><button class="btn sm ghost" data-act="cloud-use-local" type="button">Keep this device\'s data</button></div></div>';return}
+  if(!cloudCfg){el.innerHTML='<details class="cloudset"><summary>Cloud sync (optional) — sign in to use the same data on every device</summary><div class="inner"><p class="note">Paste the Firebase config from your own Firebase project (Project settings → your web app) to turn this on. Your flight data is then private to your Google sign-in, stored in your own Firebase project, and kept in sync automatically whenever a device is online. Leave this alone and nothing changes — the app stays local-only.</p><textarea id="cloudCfgBox" rows="4" placeholder=\'{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}\'></textarea><div class="row"><button class="btn sm" data-act="cloud-save-cfg" type="button">Save and connect</button></div><p class="status" id="cloudCfgMsg"></p></div></details>';return}
+  if(cloudStatus==='connecting'){el.innerHTML='<div class="cloudrow"><span class="cloudtxt">Connecting to cloud sync…</span></div>';return}
+  if(!cloudUser){
+    const errLine=cloudStatus==='error'?' <span class="cloudtxt bad">'+esc(cloudErr)+'</span>':'';
+    el.innerHTML='<div class="cloudrow"><span class="cloudtxt">Cloud sync is set up.'+errLine+'</span><div class="row"><button class="btn sm primary" data-act="cloud-signin" type="button">Sign in with Google</button><button class="btn sm ghost" data-act="cloud-forget" type="button">Remove setup</button></div></div>';
+    return;
+  }
+  const statusTxt=cloudStatus==='syncing'?'Syncing…':cloudStatus==='error'?'Sync error: '+esc(cloudErr):cloudSyncedAt?'Synced '+timeAgo(cloudSyncedAt):'Connected';
+  el.innerHTML='<div class="cloudrow"><span class="cloudtxt">Signed in as '+esc(cloudUser.name||cloudUser.email)+' · '+esc(statusTxt)+'</span><div class="row"><button class="btn sm ghost" data-act="cloud-signout" type="button">Sign out</button></div></div>';
+}
+if(cloudCfg)cloudInit(cloudCfg);
 const S=()=>state.secs[state.sec];
 const V=k=>S().v[k]||'';
 
@@ -1092,7 +1212,7 @@ function syncDom(){
   $$('[data-xseg]').forEach(e=>{const p=xs(e.dataset.xseg);e.setAttribute('aria-pressed',state.secs[p[0]].v[p[1]]===e.dataset.val?'true':'false')});
   $$('[data-xtog]').forEach(e=>{const p=xs(e.dataset.xtog);e.setAttribute('aria-pressed',state.secs[p[0]].c[p[1]]?'true':'false')});
 }
-function render(){renderNav();$('#main').innerHTML=state.tab==='dsp'?dspHTML():state.tab==='cab'?cabHTML():modHTML(state.tab);syncDom();renderNt();refreshLive()}
+function render(){renderNav();$('#main').innerHTML=state.tab==='dsp'?dspHTML():state.tab==='cab'?cabHTML():modHTML(state.tab);syncDom();renderNt();refreshLive();renderCloud()}
 function refreshLive(){
   const s=S(),v=s.v,i=state.sec;
   const cells=[['Sector',(i+1)+' of 4'],['Flight',v.flt],['Aircraft',[v.reg,v.acft||v.ceoneo].filter(Boolean).join(' · ')],['Route',[v.dep_icao,v.dest_icao].filter(Boolean).join(' → ')+(v.alt_icao?'  alt '+v.alt_icao:'')],['ETD · ETA',[v.etd,v.eta].filter(Boolean).join(' · ')],['Date',fmtDate(v.date)]];
@@ -1255,6 +1375,12 @@ document.addEventListener('click',e=>{
   if(a==='wx-dl'){wxDownload(b.dataset.wx);return}
   if(a==='wx-tempo'){wxExtractTempo(b.dataset.wx);return}
   if(a==='tk-apply'){s.v.tk_on=b.dataset.val;delete s.src.tk_on;syncDom();refreshLive();save();return}
+  if(a==='cloud-save-cfg'){cloudSaveCfgFromBox();return}
+  if(a==='cloud-signin'){cloudSignIn();return}
+  if(a==='cloud-signout'){cloudSignOut();return}
+  if(a==='cloud-forget'){cloudForget();return}
+  if(a==='cloud-use-remote'){cloudResolveConflict(true);return}
+  if(a==='cloud-use-local'){cloudResolveConflict(false);return}
 });
 render();
 })();

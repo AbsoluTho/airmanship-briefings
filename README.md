@@ -4,7 +4,7 @@ A flight preparation aid built on Airbus FCTM concepts. Import the Mission Plus 
 
 - Works in any modern browser and installs as an app on iPhone, iPad and Android.
 - Works offline after the first visit.
-- Everything you type, and every PDF you import, stays on your device. Nothing is uploaded.
+- Everything you type, and every PDF you import, stays on your device. Nothing is uploaded unless you turn on the optional Cloud sync (sign in with Google) to share your data between your own devices.
 
 ## Install on a phone or tablet
 
@@ -15,4 +15,4 @@ A flight preparation aid built on Airbus FCTM concepts. Import the Mission Plus 
 
 This is an unofficial preparation aid. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources.
 
-Version 1.9.0
+Version 1.10.0
