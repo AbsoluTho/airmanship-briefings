@@ -123,6 +123,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .fld.wide{grid-column:1/-1}
 .fld.w2{grid-column:span 2}
 .fl{font:600 12px/1.2 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fl.pilot{color:var(--accent)}
 .src{font:500 10px var(--f-mono);letter-spacing:.04em;color:var(--accent);border:1px solid var(--accent);border-radius:2px;padding:0 4px;line-height:14px}
 .fld input,.fld select,.fld textarea,.imp textarea{width:100%;min-height:40px;padding:8px 10px;border:1px solid var(--line);background:var(--surface);border-radius:3px;font:500 14px/1.4 var(--f-mono)}
 .fld textarea{font:400 14px/1.5 var(--f-body);resize:vertical}
@@ -262,7 +263,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded. Version 1.7.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded. Version 1.9.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -614,7 +615,7 @@ function fld(k,l,o={}){
   const id='v_'+k.replace(/\W/g,'_'),ph=esc(o.ph||''),val=esc(V(k));
   const ctl=o.area?`<textarea id="${id}" data-v="${k}" rows="${o.rows||2}" placeholder="${ph}">${val}</textarea>`
    :`<input id="${id}" data-v="${k}" type="${o.type||'text'}" class="${UP.has(k)?'up':''}" value="${val}" placeholder="${ph}" autocomplete="off"${o.num?' inputmode="decimal"':''}>`;
-  return `<div class="fld ${o.cls||''}"><label for="${id}"><span class="fl">${l}${srcTag(k)}</span></label>${ctl}</div>`;
+  return `<div class="fld ${o.cls||''}"><label for="${id}"><span class="fl${o.pilot?' pilot':''}">${l}${srcTag(k)}</span></label>${ctl}</div>`;
 }
 const seg=(k,l,opts,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}${srcTag(k)}</span><div class="seg" role="group" aria-label="${esc(l)}">${opts.map(o=>`<button type="button" data-seg="${k}" data-val="${esc(o[0])}" aria-pressed="false">${esc(o[1]||o[0])}</button>`).join('')}</div></div>`;
 const tgs=(l,items,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="tgs">${items.map(i=>`<button type="button" class="tg" data-tog="${i[0]}" data-clr="${(i[2]||[]).join(',')}" aria-pressed="false">${esc(i[1])}</button>`).join('')}</div></div>`;
@@ -663,20 +664,32 @@ function tkNextFuel(i){
   const nx=state.secs[i+1];if(!nx)return null;
   const nr=num(nx.v.ofp_ramp);return nr!=null?nr:loadCalc(nx).total;
 }
-/* ACTUAL TOTAL FUEL DECIDED: the captain types in the total fuel actually decided (after tankering is
-   discussed with Dispatch). If it matches the flight-plan total, nothing changes. If it's different, the
-   new T/O and LDG mass are worked out from it and checked against the max T/O / LDG mass limits. This is
-   a legality check, not a recommendation — the app no longer suggests how much extra fuel to add. */
+/* ACTUAL TOTAL FUEL DECIDED is no longer typed in directly: it's the OFP total fuel plus whatever
+   Crew extra fuel the pilot enters under Load planning & fuel (both pilot-inserted, marked in cyan).
+   If no crew extra fuel is entered yet, it defaults to matching the flight plan. The new T/O and LDG
+   mass are worked out from it (using the actual ZFW from the loadsheet if that's entered too) and
+   checked against the max T/O / LDG mass limits. This is a legality check, not a recommendation. */
 function tkActualCheck(s){
   const n=k=>num(s.v[k]);
-  const actual=n('tk_actual');if(actual==null)return null;
   const lfPlanned=n('lf_planned'),pex=n('lf_pextra')||0,ramp=n('ofp_ramp');
   const planned=lfPlanned!=null?lfPlanned+pex:ramp;
   const zfm=n('actual_zfm')!=null?n('actual_zfm'):n('lf_zfm');
   const taxi=n('lf_taxi'),trip=n('lf_trip'),maxTom=n('lim_tom'),maxLdm=n('lim_ldm');
-  if(planned==null||zfm==null||taxi==null||trip==null||maxTom==null||maxLdm==null)return {ready:false};
+  if(planned==null||zfm==null||taxi==null||trip==null||maxTom==null||maxLdm==null)return null;
+  const actual=planned+(n('lf_crew')||0);
   const tom=zfm+actual-taxi,ldm=tom-trip,mT=maxTom-tom,mL=maxLdm-ldm;
   return {ready:true,actual,planned,diff:actual-planned,tom,ldm,mT,mL};
+}
+/* Reads the actual total fuel decided against the next leg's need and suggests which Round-trip
+   tankering option it amounts to. Informational only — it never changes the selector by itself;
+   the Apply chip in the tankering panel does that on request. */
+function tkSuggestPlan(s,r){
+  const next=num(s.v.tk_next);if(next==null)return null;
+  if(!(r.mT>=0&&r.mL>=0))return {val:'Not possible',label:'Not possible — this total fuel is over the T/O or LDG mass limit'};
+  if(r.diff<=1)return {val:'Not planned',label:'Not planned — no extra fuel decided above the flight plan'};
+  const land=r.actual-(num(s.v.lf_taxi)||0)-(num(s.v.lf_trip)||0);
+  if(land>=next-1)return {val:'Planned: full',label:'Full — this covers the next leg without refueling there'};
+  return {val:'Planned: partial',label:"Partial — this reduces, but doesn't remove, the refuel needed at the outstation"};
 }
 const trow=(lb,vl,cls)=>`<div class="tr${cls?' '+cls:''}"><span class="lb">${lb}</span><span class="vl">${vl}</span></div>`;
 function loadPanelHTML(i){
@@ -692,15 +705,14 @@ function loadPanelHTML(i){
 }
 function tankHTML(i){
   const s=state.secs[i],r=tkActualCheck(s);
-  if(!r)return '<p class="muted">Enter the ACTUAL TOTAL FUEL DECIDED to check it against the T/O and LDG mass limits.</p>';
-  if(!r.ready)return '<p class="muted">Still needed for the check: ZF mass (actual or OFP), taxi fuel, trip fuel, planned/OFP total fuel, and the max T/O and LDG mass.</p>';
+  if(!r)return '<p class="muted">Still needed for the tankering check, all under Load planning &amp; fuel: ZF mass (actual or OFP), taxi fuel, trip fuel, planned/OFP total fuel, and the max T/O and LDG mass.</p>';
   const same=Math.abs(r.diff)<=1,legal=r.mT>=0&&r.mL>=0,kind=same||legal?'ok':'bad';
   const title=same?'Matches the flight plan':(legal?'Legal for take-off and landing':'Over a mass limit');
-  const msg=same?'The actual total fuel decided matches the flight plan. T/O and LDG mass are unchanged.'
+  const msg=same?'No crew extra fuel entered yet, so the actual total fuel decided matches the flight plan. T/O and LDG mass are unchanged.'
    :(legal?'T/O and LDG mass stay within limits with '+n0(r.actual)+' kg total fuel ('+sgn(r.diff)+' kg vs the flight plan).'
    :'Over the '+(r.mT<0&&r.mL<0?'T/O and LDG':(r.mT<0?'T/O':'LDG'))+' mass limit with '+n0(r.actual)+' kg total fuel ('+sgn(r.diff)+' kg vs the flight plan). Check before loading this much.');
   let h=`<div class="verdict ${kind}"><h3>${esc(title)}</h3><p>${esc(msg)}</p></div><div class="tk">`;
-  h+=trow('Actual total fuel decided',n0(r.actual)+' kg'+(same?'':' <span class="pill">'+sgn(r.diff)+' kg vs flight plan</span>'));
+  h+=trow('Actual total fuel decided (flight plan + crew extra fuel)',n0(r.actual)+' kg'+(same?'':' <span class="pill">'+sgn(r.diff)+' kg vs flight plan</span>'));
   h+=trow('T/O mass',n0(r.tom)+' kg <span class="pill '+(r.mT<0?'bad':'ok')+'">margin '+sgn(r.mT)+'</span>');
   h+=trow('LDG mass',n0(r.ldm)+' kg <span class="pill '+(r.mL<0?'bad':'ok')+'">margin '+sgn(r.mL)+'</span>');
   const next=num(s.v.tk_next);
@@ -709,8 +721,13 @@ function tankHTML(i){
     h+='<div class="hd">Next leg (reference only)</div>';
     h+=trow('Total fuel the next leg needs',n0(next)+' kg');
     h+=trow('Landing fuel with this total (total − taxi − trip)',n0(land)+' kg'+(land<next?' <span class="pill warn">short '+n0(next-land)+'</span>':''));
+    const sug=tkSuggestPlan(s,r);
+    if(sug){
+      const on=s.v.tk_on||'';
+      h+=trow('Suggested Round-trip tankering',esc(sug.label)+(on===sug.val?' <span class="pill ok">already set</span>':' <button type="button" class="chip" data-act="tk-apply" data-val="'+esc(sug.val)+'">Set to '+esc(sug.val.replace('Planned: ','').replace(/^\w/,c=>c.toUpperCase()))+'</button>'));
+    }
   }
-  return h+'</div><p class="note">This is a legality check against the mass limits, not a recommendation of how much fuel to load — that call stays with you and Dispatch. Verify against the OFP and the loadsheet.</p>';
+  return h+'</div><p class="note">This is a legality check against the mass limits, not a recommendation of how much fuel to load — that call stays with you and Dispatch. The suggested tankering option above is worked out from these figures too; it only changes the selector if you tap Set. Verify against the OFP and the loadsheet.</p>';
 }
 function deriveHTML(s){
   const g=k=>num(s.v[k]),rows=[];
@@ -914,9 +931,9 @@ function dspHTML(){
    ${tgs('FD Pro',[['ntm.fdpro','Show RWYs / TWYs closed on FD Pro']])}`;
   const load=`<div class="gr c4">${fld('lf_pax','PAX',{num:1})}${fld('lf_payload','Payload (kg)',{num:1})}${fld('lf_zfm','ZF mass (kg)',{num:1})}${fld('lf_tom','T/O mass (kg)',{num:1})}
    ${fld('lf_ldm','LDG mass (kg)',{num:1})}${fld('lf_taxi','Taxi fuel (kg)',{num:1})}${fld('lf_trip','Trip fuel (kg)',{num:1})}${fld('trip_incl','Trip incl. (% high consumption)',{num:1,ph:'3.6'})}
-   ${fld('lf_planned','Planned fuel (kg)',{num:1})}${fld('lf_pextra','Planned extra fuel (kg)',{num:1})}${fld('lf_crew','Crew extra fuel (kg)',{num:1})}${calc('lf_total','Total fuel')}
-   ${calc('lf_under','Underload')}${calc('lf_limit','Limited by')}${fld('actual_zfm','Actual ZFM from loadsheet (kg)',{num:1,cls:'w2'})}</div>
-   <p class="note">Planned fuel is the OFP minimum required fuel including taxi. Total fuel is planned fuel, planned extra and crew extra added together. Enter the actual ZFM once the loadsheet is out: the underload is recalculated with it, because the dispatcher may say to check the ZFW before refueling.</p>
+   ${fld('lf_planned','Planned fuel (kg)',{num:1})}${fld('lf_pextra','Planned extra fuel (kg)',{num:1})}${fld('lf_crew','Crew extra fuel (kg)',{num:1,pilot:1})}${calc('lf_total','Total fuel')}
+   ${calc('lf_under','Underload')}${calc('lf_limit','Limited by')}${fld('actual_zfm','Actual zero fuel weight from loadsheet (kg)',{num:1,cls:'w2',pilot:1})}</div>
+   <p class="note">Planned fuel is the OFP minimum required fuel including taxi. Total fuel is planned fuel, planned extra and crew extra added together. Enter the actual zero fuel weight once the loadsheet is out: the underload is recalculated with it, because the dispatcher may say to check the ZFW before refueling. The two fields in cyan — crew extra fuel and actual ZFW — are the ones you set yourself; everything else here is normally filled from the OFP. Round-trip tankering below picks up both of them automatically.</p>
    ${tgs('Extra fuel due to',[['why.tank','Tankering'],['why.traffic','Traffic'],['why.wx','Weather'],['why.notam','NOTAM'],['why.other','Other']])}${fld('why_other','Other reason')}
    ${tgs('FlySmart',[['flysmart','Show FlySmart T/O, CRZ & LDG dispatch']])}
    <div class="out" id="loadOut"></div>
@@ -928,9 +945,9 @@ function dspHTML(){
     ${fld('dsp_rmk','Dispatcher remarks (OFP)',{area:1,rows:2,cls:'wide'})}
     <div class="derive" id="deriveDsp"></div></details>
    <h3 class="blk">Round-trip tankering</h3>
-   <p class="lead">Records the tankering decision and the next sector's fuel need for reference, then checks the actual total fuel you decide to carry against the T/O and LDG mass limits. The next sector is read from the sector chip that follows this one.</p>
-   <div class="gr c4">${seg('tk_on','Round-trip tankering',[['Not planned','No'],['Planned: full','Full'],['Planned: partial','Partial'],['Not possible','N/A']],'w2')}${fld('tk_next','Next leg total fuel, override (kg)',{num:1,cls:'w2'})}${fld('tk_actual','Actual total fuel decided (kg)',{num:1})}${fld('tk_pen','Burn penalty, optional (% per flight hour) — not used yet',{num:1,cls:'w2',ph:'e.g. 3'})}</div>
-   <p class="note">Selecting Full or Partial fills the next leg total fuel from Sector ${state.sec+2}, if that field is still empty. It is still an override you can edit — for example if the next sector is not filled in yet. Enter the actual total fuel you and Dispatch decided on: if it matches the flight plan, nothing changes; if it's different, the check below recalculates T/O and LDG mass from it and tells you whether you're still within limits. The burn penalty field is kept for a future update and doesn't affect this check yet.</p>
+   <p class="lead">Records the tankering decision and the next sector's fuel need for reference, then checks the actual total fuel you decide to carry — the flight plan total plus Crew extra fuel, entered above under Load planning &amp; fuel — against the T/O and LDG mass limits. The next sector is read from the sector chip that follows this one.</p>
+   <div class="gr c4">${seg('tk_on','Round-trip tankering',[['Not planned','No'],['Planned: full','Full'],['Planned: partial','Partial'],['Not possible','N/A']],'w2')}${fld('tk_next','Next leg total fuel, override (kg)',{num:1,cls:'w2'})}${calc('tk_actual_calc','Actual total fuel decided')}${fld('tk_pen','Burn penalty, optional (% per flight hour) — not used yet',{num:1,cls:'w2',ph:'e.g. 3'})}</div>
+   <p class="note">Selecting Full or Partial fills the next leg total fuel from Sector ${state.sec+2}, if that field is still empty. It is still an override you can edit — for example if the next sector is not filled in yet. Actual total fuel decided is no longer typed here: it follows Crew extra fuel and the actual ZFW automatically, so setting either of those cyan fields above is what drives the check below. The burn penalty field is kept for a future update and doesn't affect this check yet.</p>
    <div class="out" id="tankOut"></div>
    <div class="chks">${['Tankering economics confirmed with Dispatch and the fuel policy (price difference against burn penalty)','Landing performance at the destination checked for the extra weight: runway condition, brake cooling, go-around climb','Take-off performance rechecked at the higher T/O mass: runway, obstacles, climb gradient','Tanker fuel entered in the fuel order and loadsheet; fuel density confirmed','Return-leg fuel plan and any uplift at the outstation agreed with Dispatch'].map((t,i)=>chk('dsp.tank.'+i,t)).join('')}</div>`;
   const req=`${tgs('Requirements for this flight',[['req.er','Extended range'],['req.rvsm','RVSM'],['req.pbn','PBN'],['req.nr','Narrow RWY'],['req.spa','Simultaneous parallel approach']])}`;
@@ -1015,7 +1032,7 @@ function sumDsp(i){
   L.push('');L.push('LOAD PLANNING & FUEL');
   add('  PAX / payload',[v.lf_pax,v.lf_payload?v.lf_payload+' kg':''].filter(Boolean).join(' / '));
   add('  ZF / T/O / LDG mass',[v.lf_zfm,v.lf_tom,v.lf_ldm].filter(Boolean).join(' / ')+(v.lf_zfm||v.lf_tom||v.lf_ldm?' kg':''));
-  add('  Actual ZFM',v.actual_zfm?v.actual_zfm+' kg':'');
+  add('  Actual ZFW',v.actual_zfm?v.actual_zfm+' kg':'');
   add('  Fuel',[v.lf_taxi?'taxi '+v.lf_taxi:'',v.lf_trip?'trip '+v.lf_trip+(v.trip_incl?' (incl. '+(/^-/.test(v.trip_incl)?'':'+')+v.trip_incl+'% high consumption)':''):'',v.lf_planned?'planned '+v.lf_planned:'',v.lf_pextra?'extra '+v.lf_pextra:'',v.lf_crew?'crew extra '+v.lf_crew:''].filter(Boolean).join(', ')+' kg');
   if(lc.total!=null)L.push('  Total fuel: '+n0(lc.total)+' kg');
   if(lc.under!=null)L.push('  Underload: '+n0(lc.under)+' kg, limited by '+lc.by);
@@ -1092,6 +1109,7 @@ function refreshLive(){
     if(k==='lf_total'&&L.total!=null)t=n0(L.total)+' kg';
     if(k==='lf_under'&&L.under!=null){t=n0(L.under)+' kg';bad=L.under<0}
     if(k==='lf_limit'&&L.by)t=L.by;
+    if(k==='tk_actual_calc'){const tk=tkActualCheck(s);if(tk){t=n0(tk.actual)+' kg';bad=!(tk.mT>=0&&tk.mL>=0)}}
     e.textContent=t;e.classList.toggle('bad',bad)});
   const lo=$('#loadOut');if(lo)lo.innerHTML=loadPanelHTML(i);
   const to=$('#tankOut');if(to)to.innerHTML=tankHTML(i);
@@ -1236,6 +1254,7 @@ document.addEventListener('click',e=>{
   if(a==='preset'){const p=TEM_PRESETS[+b.dataset.i];s.tem.push({t:p[0],c:p[1]});$('#temWrap').innerHTML=temHTML();refreshLive();save();return}
   if(a==='wx-dl'){wxDownload(b.dataset.wx);return}
   if(a==='wx-tempo'){wxExtractTempo(b.dataset.wx);return}
+  if(a==='tk-apply'){s.v.tk_on=b.dataset.val;delete s.src.tk_on;syncDom();refreshLive();save();return}
 });
 render();
 })();
