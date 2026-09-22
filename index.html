@@ -275,7 +275,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.15.1.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.16.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -397,7 +397,7 @@ function parseOFP(text){
 /*PARSER_END*/
 
 /*NOTAM_START*/
-/* ---------- NOTAM import: Mission Plus NOTAM briefing. Airport sections only; FIR sections are skipped on purpose. ---------- */
+/* ---------- NOTAM import: Mission Plus NOTAM briefing. Airport sections and FIR sections both parsed. ---------- */
 const NT_W={};
 ('RWY=runway,RWYS=runways,TWY=taxiway,TWYS=taxiways,TXL=taxilane,APN=apron,ACFT=aircraft,AD=aerodrome,ADS=aerodromes,AP=airport,CLSD=closed,AVBL=available,U/S=unserviceable,INOP=inoperative,WIP=work in progress,DRG=during,BTN=between,BLW=below,ABV=above,FM=from,WI=within,FLW=following,COORD=coordinates,CTC=contact,SFC=surface,LTD=limited,CMPL=completed,COMMNCE=commence,TFC=traffic,DEP=departure,DEPS=departures,ARR=arrival,ARRS=arrivals,APCH=approach,PROC=procedure,LDG=landing,TKOF=take-off,TKOFF=take-off,OBST=obstacle,LGT=light,LGTS=lights,LGTD=lighted,FREQ=frequency,MNM=minimum,MAX=maximum,OPS=operations,OPR=operator,WO=without,AUTH=authorized,PPR=prior permission required,CLR=clearance,XNG=crossing,RTE=route,LCA=located,ACT=active,REF=reference,DLA=delay,DIV=diversion,RESTR=restricted,REQ=required,RQRD=required,RMK=remarks,SUBJ=subject to,EXC=except,DLY=daily,WEF=with effect from,TIL=until,UFN=until further notice,HR=hour,HRS=hours,H24=24 hours,PSN=position,TEMPO=temporarily,TEMP=temporary,PERM=permanent,EST=estimated,APRX=approximately,APPROX=approximately,ADJ=adjacent,ELEV=elevation,HGT=height,LVL=level,GP=glide path,LOC=localizer,LLZ=localizer,TWR=tower,GND=ground,DEL=delivery,PAX=passengers,UNL=unlimited,NML=normal,BRG=bearing,RDL=radial,SVC=service,MAINT=maintenance,CONST=construction,CONSTR=construction,INSTL=installation,UNMKD=unmarked,MKD=marked,MKG=marking,DISPL=displaced,THR=threshold,ADZ=advised,CTN=caution,PROHIB=prohibited,UAS=unmanned aircraft system (UAS),UAV=unmanned aerial vehicle (UAV),PJE=parachute jumping exercise (PJE),HLDG=holding,INFO=information,ATTN=attention,PORTION=portion of,PORTIONS=portions of,PLN=plan,DIST=distance,STBY=standby,CHG=change,CNL=cancelled,CNLD=cancelled,RPLC=replace,RPLD=replaced,OPN=open,ARFF=airport rescue and fire fighting (ARFF),TFC=traffic').split(',').forEach(p=>{const i=p.indexOf('=');NT_W[p.slice(0,i)]=p.slice(i+1)});
 const NT_PLAIN=new Set(('AND OR THE OF FOR TO IN ON AT BY WITH VIA IS ARE BE WAS WERE BEEN HAS HAVE HAD CAN COULD SHOULD WOULD MUST MAY WILL SHALL NOT NO ALL ANY ONLY ALSO EACH BOTH SAME OTHER NEXT LAST FIRST SECOND THIRD MORE LESS THAN THEN THIS THAT WHEN WHILE DURING BEFORE AFTER UNTIL FROM BETWEEN BELOW ABOVE WITHIN FOLLOWING DUE ENTRANCE EXIT NORTH SOUTH EAST WEST NORTHERN SOUTHERN EASTERN WESTERN END PHASE DATED PLACE TAKE CIRCLE RADIUS CENTERED CENTRED CLOSED OPEN ACTIVE ACTIVATED SUSPENDED UNSERVICEABLE AVAILABLE UNAVAILABLE SEGMENT AREA AREAS CRANE WORK WORKS MAINTENANCE CONSTRUCTION BIRD BIRDS ACTIVITY ACTIVITIES EXERCISE EXERCISES TEST TESTING OPERATIONS OPERATION PERMITTED PROHIBITED RESTRICTED LIMITED EXPECT EXPECTED POSSIBLE LOCATED LOCATION CONTACT TELEPHONE FREQUENCY INFORMATION INQUIRY CODE LEVEL HEIGHT ELEVATION WIDTH LENGTH DISTANCE DECLARED REDUCED INCREASED CHANGED CHANGE CANCELLED CANCELED REPLACED DELAYED NORMAL TEMPORARY PERMANENT SPECIAL WITHOUT UNMANNED TAKEOFF LANDING APPROACH DEPARTURE ARRIVAL TRAFFIC AIRCRAFT AIRPORT AERODROME RUNWAY TAXIWAY APRON STAND STANDS GATE GATES PARKING TERMINAL LIGHTS LIGHT MARKING MARKINGS SURFACE CONDITION CONDITIONS WET DRY SNOW ICE WATER FOG WIND RAIN DUST SAND VISIBILITY CEILING CLOUD CLOUDS THUNDERSTORM SERVICE SERVICES SYSTEM SYSTEMS EQUIPMENT PROCEDURE PROCEDURES ROUTE ROUTES WAYPOINT POINT POINTS HOLDING MINIMA MINIMUM MAXIMUM SPEED WEIGHT WINGSPAN LIMIT LIMITS DO DOES NEED NEEDED REQUIRED REQUEST REQUESTED PLEASE TOWED ALLOWED START UP DOWN TAXI HOLD WAIT USE USED USING INSTRUCTIONS ADVISE ADVISED DELAY DELAYS ACCEPTED ACCEPT CARRY SUFFICIENT FUEL BEGIN BEGINS ENDS COMPLETED COMPLETE PENDING FURTHER NOTICE UNTIL REMAINS REMAIN AVAILABLE INCLUDING EXCEPT ADJACENT OPPOSITE CENTER CENTRE LEFT RIGHT SIDE PARALLEL CROSSING CROSS ENTER LEAVE AVOID AVOIDED CAUTION ADVISED ACTIVITY TAKING PLACE FLIGHT FLIGHTS PILOT PILOTS CREW PASSENGER PASSENGERS SECURITY CUSTOMS FIRE RESCUE TRAINING TRIAL TRIALS').split(' '));
@@ -405,7 +405,7 @@ const NT_PH=[['WI FLW','within the following'],['VIA FLW','via the following'],[
 const MONC=MON.map(m=>m[0]+m.slice(1).toLowerCase());
 const NT_SUBJ={MA:'Movement area',MB:'Bearing strength',MC:'Clearway',MD:'Declared distances',MG:'Taxiing guidance',MH:'Arresting gear',MK:'Parking area',MN:'Apron',MO:'Stop bars',MP:'Aircraft stands',MR:'Runway',MS:'Stopway',MT:'Threshold',MU:'Turning bay',MW:'Strip / shoulder',MX:'Taxiway',MY:'Rapid exit taxiway',FA:'Aerodrome',FB:'Braking action equipment',FF:'Fire fighting and rescue',FP:'Heliport',FU:'Fuel',FW:'Wind indicator',FZ:'Customs / immigration',LA:'Approach lights',LB:'Aerodrome beacon',LC:'Runway centre line lights',LE:'Runway edge lights',LH:'High intensity runway lights',LL:'Low intensity runway lights',LP:'PAPI',LR:'Runway lighting',LT:'Threshold lights',LV:'VASIS',LX:'Taxiway centre line lights',LY:'Taxiway edge lights',LZ:'Touchdown zone lights',IC:'ILS',ID:'ILS DME',IG:'Glide path',II:'Inner marker',IL:'Localizer',IM:'Middle marker',IO:'Outer marker',IS:'ILS CAT I',IT:'ILS CAT II',IU:'ILS CAT III',IW:'MLS',NA:'Radio navigation',NB:'NDB',ND:'DME',NL:'Locator',NM:'VOR / DME',NN:'TACAN',NT:'VORTAC',NV:'VOR',OA:'AIS',OB:'Obstacle',OE:'Aircraft entry requirements',OL:'Obstacle lights',PA:'STAR',PD:'SID',PF:'Flow control',PH:'Holding procedure',PI:'Instrument approach',PL:'Flight plan processing',PM:'Operating minima',PN:'Noise restrictions',PT:'Transition altitude',PU:'Missed approach',SA:'ATIS',SC:'ACC',SE:'AFIS',SP:'Approach control',ST:'Tower',SV:'VOLMET',CA:'Air / ground facility',CS:'SSR',RD:'Danger area',RM:'Military area',RP:'Prohibited area',RR:'Restricted area',RT:'Temporary restricted area',WA:'Air display',WB:'Aerobatics',WD:'Demolition',WE:'Exercises',WF:'Air refuelling',WG:'Glider flying',WM:'Missile / gun firing',WP:'Parachute jumping',WS:'Burning / blowing gas',WT:'Mass aircraft movement',WU:'Unmanned aircraft',WV:'Formation flight',WZ:'Model flying',AA:'Minimum altitude',AC:'Control zone',AT:'TMA',AR:'ATS route',AP:'Reporting point',AX:'Significant point',AZ:'ATZ'};
 const NT_COND={AS:'Unserviceable',AU:'Not available',AW:'Withdrawn',AO:'Operational',AK:'Resumed normal operation',AL:'Operative with limitations',AM:'Military only',CA:'Activated',CC:'Completed',CD:'Deactivated',CT:'On test, do not use',HW:'Work in progress',HV:'Work completed',HX:'Bird concentration',HR:'Standing water',LC:'Closed',LD:'Unsafe',LI:'Closed to IFR',LN:'Closed to night operations',LP:'Prohibited',LR:'Restricted',LT:'Limited',LW:'Will take place',LX:'Caution advised'};
-const NT_ROLE={dep:'Departure',arr:'Destination',alt:'Alternate',toalt:'Take-off alternate',enr:'En-route alternate'};
+const NT_ROLE={dep:'Departure',arr:'Destination',alt:'Alternate',toalt:'Take-off alternate',enr:'En-route alternate',fir:'FIR'};
 const EX_NT=`NOTAMs for flight FAD123-OEJN-OETB (STD 220725)
 (NOTAM search performed 2026-09-22 04:30:01 UTC.
 (between 2026-09-22 05:25 and 2026-09-22 11:36).
@@ -505,7 +505,8 @@ function ntTr(it){
   return {label,lvl:ntLevel(it,sub,cond),text:ntText(it.e),when:ntWhen(it),sched:ntSched(it.d),vert,isNew:/NEW TODAY/i.test(it.age||'')};
 }
 const ntKey=(si,it)=>si+':'+it.id;
-function ntInc(nt,si,it){const v=nt.inc&&nt.inc[ntKey(si,it)];return v!==undefined?v:ntTr(it).lvl>=2}
+/* Nothing is in the briefing by default any more — the pilot taps "Add to brief" on each item they want. */
+function ntInc(nt,si,it){const v=nt.inc&&nt.inc[ntKey(si,it)];return v!==undefined?v:false}
 const NT_HEAD=/^\s*([A-Z]\d{3,5}\/\d{2})\s+NOTAM([NRC])(?:\s+([A-Z]\d{3,5}\/\d{2}))?\s*(?:\[\s*([^\]]*?)\s*\])?\s*$/;
 function parseNotamBlock(lines){
   const ls=lines.map(l=>l.replace(/\s+$/,'')).filter((l,i,a)=>l.trim()||a.slice(i+1).some(x=>x.trim()));
@@ -533,6 +534,7 @@ function parseNotams(text){
   m=T.match(/between\s+(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\s+and\s+(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/i);
   if(m)out.win=(+m[3])+' '+MONC[+m[2]-1]+' '+m[4]+':'+m[5]+'Z to '+(+m[8])+' '+MONC[+m[7]-1]+' '+m[9]+':'+m[10]+'Z';
   const SEC=/^\s*(Departure|Destination|Alternate|Take-?off alternate|En-?route alternate)\s+airport\s+([A-Z]{4})\s*-\s*([A-Z]{3})\s*-\s*(.+?)(?:\s+RWY\s+((?:\d{2}[LRC]?\s*)+))?\s*$/i;
+  const FIRSEC=/^\s*FIR\s+([A-Z]{4})\s*(?:\[\s*([^\]]*)\s*\])?\s*$/i;
   let cur=null,blk=null,exclOn=false,exclTxt='';
   const flush=()=>{if(blk&&cur){const it=parseNotamBlock(blk);if(it)cur.items.push(it)}blk=null};
   T.split('\n').forEach(raw=>{
@@ -543,7 +545,8 @@ function parseNotams(text){
     const s=L.match(SEC);
     if(s){flush();const w=s[1].toLowerCase();const key=/^dep/.test(w)?'dep':/^dest/.test(w)?'arr':/^take/.test(w)?'toalt':/^en/.test(w)?'enr':'alt';
       cur={key,icao:s[2].toUpperCase(),iata:s[3].toUpperCase(),name:s[4].trim(),rwy:(s[5]||'').trim().replace(/\s+/g,' '),items:[]};out.secs.push(cur);return}
-    if(/^\s*FIR\s+[A-Z]{4}\s*\[/i.test(L)){flush();cur=null;return}
+    const f=L.match(FIRSEC);
+    if(f){flush();cur={key:'fir',icao:f[1].toUpperCase(),iata:'',name:(f[2]||'FIR').trim(),rwy:'',items:[]};out.secs.push(cur);return}
     if(/^\s*\|#\d+\|/.test(L)){flush();if(cur)blk=[];return}
     if(blk)blk.push(L);
   });
@@ -623,8 +626,8 @@ const EX0={flt:'FAD123',dom:'DOM',date:'2026-09-22',reg:'HZ-XXX',ceoneo:'CEO',ac
  lf_pax:'151',lf_payload:'12693',lf_zfm:'55692',lf_tom:'69000',lf_ldm:'65500',lf_taxi:'168',lf_trip:'3500',trip_incl:'3.6',lf_planned:'8129',lf_pextra:'5348',
  ofp_cont:'203',ofp_alt:'3066',ofp_fres:'1192',ofp_add:'0',ofp_hold:'0',ofp_mintof:'7961',ofp_ramp:'13477',ofp_dom:'42999',lim_mzfm:'62500',lim_tom:'69500',lim_ldm:'66000',
  dsp_rmk:'TNKRG FUEL ADVZD IF ACTUAL PAYLOAD PERMITS. CHK ZFW PRIOR TO REFUELING.',tk_on:'Planned: partial'};
-const EXC0={cab_mel:'N',cab_refuel:'N',cab_tank:'Y',cab_refpax:'N',cab_taxitime:'10 min out, 5 min in',cab_taxi:'N',cab_wx_dep:'CAVOK, wind 060/08',cab_wx_rte:'Light turbulence FL300 to FL340',cab_wx_arr:'FEW040, wind 280/10'};
-const EXC1={cab_mel:'N',cab_refuel:'Y',cab_refpax:'Y',cab_tank:'N',cab_taxitime:'8 min out, 12 min in'};
+const EXC0={cab_mel:'N',cab_refuel:'N',cab_tank:'Y',cab_refpax:'N',cab_taxi:'N',cab_wx_dep:'CAVOK, wind 060/08',cab_wx_rte:'Light turbulence FL300 to FL340',cab_wx_arr:'FEW040, wind 280/10'};
+const EXC1={cab_mel:'N',cab_refuel:'Y',cab_refpax:'Y',cab_tank:'N'};
 const EX1={flt:'FAD124',dom:'DOM',reg:'HZ-XXX',dep_icao:'OETB',dep_iata:'TUU',dest_icao:'OEJN',dest_iata:'JED',etd:'09:40',eta:'10:55',ftime:'1:15',fl:'360',ofp_ramp:'10600'};
 function fresh(ex){const secs=[newSec(),newSec(),newSec(),newSec()];
   if(ex){Object.assign(secs[0].v,EX0);secs[0].c={'mel.no':true,'why.tank':true,'efb.flysmart':true,'dsp.tank.0':false,'req.rvsm':true,'req.pbn':true};Object.assign(secs[1].v,EX1);Object.assign(secs[0].v,EXC0);Object.assign(secs[1].v,EXC1);secs[0].c['cab.turb.rte']=true;secs[0].nt=parseNotams(EX_NT);secs[0].tem=[{t:TEM_PRESETS[0][0],c:TEM_PRESETS[0][1]},{t:TEM_PRESETS[1][0],c:TEM_PRESETS[1][1]}];secs[0].tem2=[{t:TEM_PRESETS[2][0],c:TEM_PRESETS[2][1]}]}
@@ -811,7 +814,7 @@ const tfld=(k,l,o={})=>{const id='t_'+k,val=esc(state.trip.v[k]||'');const ctl=o
 const YN=[['Y','Yes'],['N','No']];
 const melText=s=>{const v=s.v;if(s.c['mel.no'])return 'No MEL / CDL';const l=[1,2,3].map(n=>{const ref=v['mel'+n+'_ref'],cat=v['mel'+n+'_cat'],title=v['mel'+n+'_title'];if(!ref&&!cat&&!title)return '';return [ref,cat?'CAT '+cat:'',title].filter(Boolean).join(' ')}).filter(Boolean);return l.length?l.join('; '):'Not recorded in Dispatch'};
 const cabList=k=>actSecs().filter(i=>state.secs[i].v[k]==='Y').map(i=>'S'+(i+1));
-const CAB_LBL={fit:'Is everyone fit for duty?',docs:'Documents OK',names:'Names and positions',reg:'A/C registration and position',mel:'Cabin technical status: MELs',nsec:'Number of sectors',ftime:'Flight times',fl:'Flight altitudes',refuel:'Refueling operation',refsec:'Refueling sectors',tank:'Tankering sectors',refpax:'Refueling with PAX',taxi:'Taxi times',wx:'Expected weather and turbulence',hijack:'Hijack code',entry:'Cockpit entry procedure',unruly:'Unruly passenger',emerg:'Emergency procedures',q:'Questions?'};
+const CAB_LBL={fit:'Is everyone fit for duty?',docs:'Documents OK',names:'Names and positions',reg:'A/C registration and position',mel:'Cabin technical status: MELs',nsec:'Number of sectors',ftime:'Flight times',fl:'Flight altitudes',refuel:'Refueling operation',refsec:'Refueling sectors',tank:'Tankering sectors',refpax:'Refueling with PAX',taxi:'Taxi (short or not)',wx:'Expected weather and turbulence',hijack:'Hijack code',entry:'Cockpit entry procedure',unruly:'Unruly passenger',emerg:'Emergency procedures',q:'Questions?'};
 const calc=(id,l,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="calc" data-calc="${id}">—</div></div>`;
 const mir=(k,l,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="calc" data-mirror="${k}">—</div></div>`;
 const selFld=(k,l,opts,cls)=>{const id='v_'+k.replace(/\W/g,'_'),cur=V(k);return `<div class="fld ${cls||''}"><label for="${id}"><span class="fl">${l}</span></label><select id="${id}" data-v="${k}">${opts.map(o=>`<option value="${esc(o[0])}"${cur===o[0]?' selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`};
@@ -940,7 +943,7 @@ function ntRowHTML(si,it,nt){
 function ntHTML(s){
   const nt=s.nt;
   if(!nt||!nt.secs||!nt.secs.length)return '<p class="muted">No NOTAMs imported for this sector yet. Import the Mission Plus NOTAM PDF, or use the notes fields below.</p>';
-  let h='<p class="note">'+esc([nt.flt?'Flight '+nt.flt:'',nt.srch?'NOTAMs as of '+nt.srch:'',nt.win?'Mission Plus search window '+nt.win:''].filter(Boolean).join(' · '))+'. FIR NOTAMs are not imported.</p>';
+  let h='<p class="note">'+esc([nt.flt?'Flight '+nt.flt:'',nt.srch?'NOTAMs as of '+nt.srch:'',nt.win?'Mission Plus search window '+nt.win:''].filter(Boolean).join(' · '))+'. Nothing is added to the brief automatically — tap “Add to brief” on each item you want.</p>';
   nt.secs.forEach((sc,si)=>{
     const rows=sc.items.map((it,k)=>({it,k,l:ntTr(it).lvl})).sort((a,b)=>b.l-a.l||a.k-b.k);
     const hi=rows.filter(x=>x.l>=2),lo=rows.filter(x=>x.l<2);
@@ -1106,11 +1109,11 @@ function dspHTML(){
   const clr=`<p class="note">Filled in the aircraft, once the clearance and the ATIS are received.</p>
    <div class="gr c4">${fld('clr_rwy','RWY')}${fld('clr_sid','SID')}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>
    <div class="gr c4">${fld('atis_inf','ATIS info')}${fld('atis_time','Time (UTC)',{ph:'hh:mm'})}${fld('atis_wind','Wind',{ph:'000/10G20'})}${fld('atis_vis','VIS')}${fld('atis_clouds','Clouds')}${fld('atis_temp','Temp / dew point',{ph:'40/12'})}${fld('atis_qnh','QNH')}${fld('atis_transalt','Trans alt')}${fld('atis_rwydep','RWY dep')}${fld('atis_rwyarr','RWY arr')}${fld('atis_other','Other',{cls:'w2'})}</div>`;
-  const ntm=`<p class="lead">Airport NOTAMs from the Mission Plus NOTAM PDF, translated into plain English. Mission Plus already limits the search to the flight window, so nothing is filtered by hour here. The ones that matter for operations are marked “In brief” and go into the summary; tap a NOTAM to add or remove it.</p>
+  const ntm=`<p class="lead">Airport and FIR NOTAMs from the Mission Plus NOTAM PDF, translated into plain English. Mission Plus already limits the search to the flight window, so nothing is filtered by hour here. Nothing is added to the brief by default: tap “Add to brief” on each NOTAM you want in the summary.</p>
    <div class="imp-mini"><label class="btn" for="pdfIn2">Import NOTAM PDF</label><input class="sr" type="file" id="pdfIn2" data-imp="1" accept="application/pdf,.pdf" multiple><span class="note">Or paste the NOTAM text in the box at the top of this tab.</span></div>
    <div class="out" id="ntOut"></div>
-   <h3 class="blk">FIR and route NOTAMs</h3>
-   ${fld('ntm_route','FIR / route NOTAMs you judge relevant (type them here)',{area:1,rows:3,cls:'wide'})}
+   <h3 class="blk">Additional route notes</h3>
+   ${fld('ntm_route','Anything else you judge relevant, not captured above',{area:1,rows:3,cls:'wide'})}
    <h3 class="blk">Your notes by airport</h3>
    <div class="gr c3">${fld('ntm_dep','Departure',{area:1,rows:3})}${fld('ntm_arr','Arrival',{area:1,rows:3})}${fld('ntm_alt','Alternate',{area:1,rows:3})}</div>
    ${tgs('FD Pro',[['ntm.fdpro','Show RWYs / TWYs closed on FD Pro']])}`;
@@ -1135,7 +1138,7 @@ function dspHTML(){
    <p class="note">Selecting Full or Partial fills the next leg total fuel from Sector ${state.sec+2}, if that field is still empty. It is still an override you can edit — for example if the next sector is not filled in yet. Actual total fuel decided is no longer typed here: it follows Crew extra fuel and the actual ZFW automatically, so setting either of those cyan fields above is what drives the check below. The burn penalty field is kept for a future update and doesn't affect this check yet.</p>
    <div class="out" id="tankOut"></div>
    <div class="chks">${['Tankering economics confirmed with Dispatch and the fuel policy (price difference against burn penalty)','Landing performance at the destination checked for the extra weight: runway condition, brake cooling, go-around climb','Take-off performance rechecked at the higher T/O mass: runway, obstacles, climb gradient','Tanker fuel entered in the fuel order and loadsheet; fuel density confirmed','Return-leg fuel plan and any uplift at the outstation agreed with Dispatch'].map((t,i)=>chk('dsp.tank.'+i,t)).join('')}</div>`;
-  const req=`${tgs('Requirements for this flight',[['req.er','Extended range'],['req.rvsm','RVSM'],['req.pbn','PBN'],['req.nr','Narrow RWY'],['req.spa','Simultaneous parallel approach']])}`;
+  const req=`${tgs('Requirements for this flight',[['req.er','Extended range'],['req.rvsm','RVSM'],['req.pbn','PBN'],['req.nr','Narrow RWY'],['req.spa','Simultaneous parallel approach'],['req.pic','PIC is pilot flying']])}`;
   return `<div class="mhead"><h1>Dispatch Briefing</h1><p class="lead">The sequence of the Dispatch Briefing form: technical condition of the aircraft, route planning, weather, NOTAM, load planning and fuel, company operational requirements, and last the clearance and ATIS, which are only filled in the aircraft. Sector ${state.sec+1} is open; change sector with the chips above.</p></div>`+imp+
    sec('Flight information / technical condition of the aircraft',info,'fields','dsp.info')+sec('Route planning',route,'fields','dsp.route')+sec('Weather',wxb,'fields','dsp.wx')+sec('NOTAM',ntm,'nt','dsp.notam')+sec('Load planning & fuel',load,'fields','dsp.load')+sec('Company operational requirements',req,'checks','dsp.req')+sec('Clearance & ATIS (filled in the aircraft)',clr,'fields','dsp.clr')+
    `<section class="sumbox"><h2>Summary</h2><pre class="sum" data-sum="dsp"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="dsp">Copy summary</button></div></section>`;
@@ -1150,12 +1153,12 @@ function cabHTML(){
   const ac=`<div class="chks">${tchk('reg',CAB_LBL.reg)}${tchk('mel',CAB_LBL.mel)}</div>`+xrows((i,s)=>{const v=s.v;return `<div class="gr c4">${xcalc('Registration',v.reg)}${xcalc('Type',[v.ceoneo,v.acft].filter(Boolean).join(' '))}${xfld(i,'stand','Stand / position',{cls:'w2'})}</div><div class="gr c4" style="margin-top:10px">${xcalc('MEL / CDL (from Dispatch)',melText(s),'w2')}${xseg(i,'cab_mel','MEL in cabin',YN)}${xfld(i,'cab_melnote','Cabin MEL details')}</div>`});
   const sc=`<div class="chks">${tchk('nsec','Number of sectors: '+n)}${tchk('ftime',CAB_LBL.ftime,'',1)}${tchk('fl',CAB_LBL.fl,'',1)}</div>`+xrows((i,s)=>{const v=s.v;return `<div class="gr c4">${xcalc('ETD',v.etd)}${xcalc('ETA',v.eta)}${xcalc('Flight time',v.ftime)}${xcalc('Cruise level',v.fl?'FL'+v.fl:'')}</div>`});
   const rf=`<div class="chks">${tchk('refuel',CAB_LBL.refuel)}${tchk('refsec',CAB_LBL.refsec,'',1)}${tchk('tank',CAB_LBL.tank,'',1)}${tchk('refpax',CAB_LBL.refpax,'',1)}</div>`+xrows((i,s)=>`<div class="gr c4">${xseg(i,'cab_refuel','Refueling',YN)}${xseg(i,'cab_tank','Tankering',YN)}${xseg(i,'cab_refpax','Refueling with PAX',YN)}</div>${s.c['why.tank']?'<p class="xnote">Dispatch: extra fuel due to tankering.</p>':''}`)+`<div class="cabov" id="cabDerive" style="margin-top:12px">${cabDeriveHTML()}</div>`;
-  const tx=`<div class="chks">${tchk('taxi',CAB_LBL.taxi)}</div>`+xrows((i)=>`<div class="gr c4">${xfld(i,'cab_taxitime','Taxi times',{cls:'w2',ph:'out and in, minutes'})}${xseg(i,'cab_taxi','Short taxi',YN)}</div>`);
+  const tx=`<div class="chks">${tchk('taxi',CAB_LBL.taxi)}</div>`+xrows((i)=>`<div class="gr c4">${xseg(i,'cab_taxi','Short taxi',YN)}</div>`);
   const wx=`<div class="chks">${tchk('wx',CAB_LBL.wx)}</div>`+xrows((i,s)=>{const c=s.c,v=s.v,sw=['ice','cb','turb'].filter(k=>c['sigwx.'+k]);return `<div class="gr c3">${xfld(i,'cab_wx_dep','Departure',{tog:'cab.turb.dep'})}${xfld(i,'cab_wx_rte','Route',{tog:'cab.turb.rte'})}${xfld(i,'cab_wx_arr','Arrival',{tog:'cab.turb.arr'})}</div>${sw.length?`<p class="xnote">Dispatch SIGWX: ${sw.join(', ').toUpperCase()}${v.sigwx_from?' FL'+esc(v.sigwx_from)+(v.sigwx_to?' to FL'+esc(v.sigwx_to):''):''}.</p>`:''}`});
   const sp=`<div class="chks">${tchk('hijack',CAB_LBL.hijack)}${tchk('entry',CAB_LBL.entry,'Agree how the cabin calls the cockpit and how the door is opened.')}${tchk('unruly',CAB_LBL.unruly,'Report early to the flight deck and follow the company procedure.')}${tchk('emerg',CAB_LBL.emerg,'Signals and commands, and the NITS briefing if an emergency occurs.')}</div><div class="gr c2" style="margin-top:8px">${tfld('hijack','Hijack code')}${tfld('special','Other special requirements',{area:1})}</div><p class="note">The prompts are reminders only. The company OM-A wording applies.</p>`;
   const q=`<div class="chks">${tchk('q',CAB_LBL.q)}</div>`;
   return `<div class="mhead"><h1>Cabin Crew Briefing</h1><p class="lead">One briefing for the whole duty, in the order of the Cabin Crew Briefing list. The data of each sector comes from Dispatch. The cabin-specific fields are filled in here.</p></div>`+ov+
-   sec('Crew',crew,'checks','cab.crew')+sec('Aircraft, position and cabin MELs',ac,'checks','cab.ac')+sec('Sectors, flight times and altitudes',sc,'checks','cab.sc')+sec('Refueling operation',rf,'checks','cab.rf')+sec('Taxi times',tx,'checks','cab.tx')+sec('Expected weather and turbulence',wx,'checks','cab.wx')+sec('Special requirements',sp,'checks','cab.sp')+sec('Questions',q,'checks','cab.q')+
+   sec('Crew',crew,'checks','cab.crew')+sec('Aircraft, position and cabin MELs',ac,'checks','cab.ac')+sec('Sectors, flight times and altitudes',sc,'checks','cab.sc')+sec('Refueling operation',rf,'checks','cab.rf')+sec('Taxi',tx,'checks','cab.tx')+sec('Expected weather and turbulence',wx,'checks','cab.wx')+sec('Special requirements',sp,'checks','cab.sp')+sec('Questions',q,'checks','cab.q')+
    `<section class="sumbox"><h2>Summary</h2><pre class="sum" data-sum="cab"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="cab">Copy summary</button></div></section>`;
 }
 function gfHTML(){
@@ -1242,7 +1245,7 @@ function sumDsp(i){
   L.push('');L.push('NOTAM');
   const nt=s.nt;
   if(nt&&nt.secs)nt.secs.forEach((sc,si)=>{const sel=sc.items.filter(it=>ntInc(nt,si,it));if(sel.length){L.push('  '+(NT_ROLE[sc.key]||'Airport')+' '+sc.icao+':');sel.forEach(it=>{const tr=ntTr(it);L.push('   - '+tr.label+': '+tr.text.replace(/\n/g,' ')+' ['+[tr.when,tr.sched,tr.vert].filter(Boolean).join('; ')+'] '+it.id)})}});
-  add('  FIR / route NOTAMs',v.ntm_route);add('  Notes DEP',v.ntm_dep);add('  Notes ARR',v.ntm_arr);add('  Notes ALT',v.ntm_alt);
+  add('  Route notes',v.ntm_route);add('  Notes DEP',v.ntm_dep);add('  Notes ARR',v.ntm_arr);add('  Notes ALT',v.ntm_alt);
   const lc=loadCalc(s);
   L.push('');L.push('LOAD PLANNING & FUEL');
   add('  PAX / payload',[v.lf_pax,v.lf_payload?v.lf_payload+' kg':''].filter(Boolean).join(' / '));
@@ -1254,7 +1257,7 @@ function sumDsp(i){
   const why=['tank','traffic','wx','notam','other'].filter(k=>c['why.'+k]).map(k=>({tank:'tankering',traffic:'traffic',wx:'weather',notam:'NOTAM',other:'other'+(v.why_other?' ('+v.why_other+')':'')}[k]));if(why.length)add('  Extra fuel due to',why.join(', '));
   add('  Dispatcher remarks',v.dsp_rmk);
   const tk=tkActualCheck(s);if(tk&&tk.ready){const same=Math.abs(tk.diff)<=1,legal=tk.mT>=0&&tk.mL>=0;L.push('  Tankering: actual total fuel decided '+n0(tk.actual)+' kg'+(same?' (matches flight plan)':' ('+sgn(tk.diff)+' kg vs flight plan)')+', '+(legal?'within T/O and LDG mass limits':'OVER A MASS LIMIT — check before loading'))}
-  const rq=['er','rvsm','pbn','nr','spa'].filter(k=>c['req.'+k]).map(k=>({er:'Extended range',rvsm:'RVSM',pbn:'PBN',nr:'Narrow RWY',spa:'Simultaneous parallel approach'}[k]));
+  const rq=['er','rvsm','pbn','nr','spa','pic'].filter(k=>c['req.'+k]).map(k=>({er:'Extended range',rvsm:'RVSM',pbn:'PBN',nr:'Narrow RWY',spa:'Simultaneous parallel approach',pic:'PIC is pilot flying'}[k]));
   L.push('');L.push('COMPANY OPERATIONAL REQUIREMENTS: '+(rq.join(', ')||'none ticked'));
   /* clearance and ATIS come last: they are only filled in the aircraft */
   const cl=[v.clr_rwy?'RWY '+v.clr_rwy:'',v.clr_sid?'SID '+v.clr_sid:'',v.clr_firstalt?'first alt '+v.clr_firstalt:'',v.clr_awy?'airway '+v.clr_awy:'',v.clr_sqw?'SQW '+v.clr_sqw:''].filter(Boolean).join(', ');
@@ -1271,7 +1274,7 @@ function sumCab(){
     L.push('  MEL: '+melText(s)+' | cabin MEL '+q('cab_mel')+(v.cab_melnote?' ('+v.cab_melnote+')':''));
     L.push('  Times: '+[v.etd?'ETD '+v.etd:'',v.eta?'ETA '+v.eta:'',v.ftime?'flight time '+v.ftime:'',v.fl?'FL'+v.fl:''].filter(Boolean).join(', '));
     L.push('  Refueling '+q('cab_refuel')+' | tankering '+q('cab_tank')+' | refueling with PAX '+q('cab_refpax'));
-    L.push('  Taxi: '+(v.cab_taxitime||'not set')+(v.cab_taxi==='Y'?' (short taxi)':''));
+    L.push('  Taxi: '+(v.cab_taxi==='Y'?'short':(v.cab_taxi==='N'?'not short':'not set')));
     L.push('  WX: '+['dep','rte','arr'].map(k=>k.toUpperCase()+' '+(c['cab.turb.'+k]?'[turb] ':'')+(v['cab_wx_'+k]||'-')).join(' | '))});
   const lst=k=>{const l=cabList(k);return l.length?l.join(', '):'none'};
   L.push('');L.push('Refueling sectors: '+lst('cab_refuel')+' | Tankering sectors: '+lst('cab_tank')+' | Refueling with PAX: '+lst('cab_refpax'));
@@ -1401,7 +1404,7 @@ function importTexts(items){
     if(!s.v.flt&&x.p.flt)s.v.flt=x.p.flt;if(!s.v.dep_icao&&x.p.dep)s.v.dep_icao=x.p.dep;if(!s.v.dest_icao&&x.p.dest)s.v.dest_icao=x.p.dest;
     s.nt=x.p;x.idx=idx;
     const n=x.p.secs.reduce((a,sc)=>a+sc.items.length,0);
-    msgs.push('<span>NOTAMs, sector '+(idx+1)+': '+esc(x.p.flt||x.name)+' '+esc((x.p.dep||'?')+' → '+(x.p.dest||'?'))+', '+n+' airport NOTAMs read ('+x.p.secs.map(sc=>esc(sc.icao)+' '+sc.items.length).join(', ')+'). FIR NOTAMs were left out.</span>')});
+    msgs.push('<span>NOTAMs, sector '+(idx+1)+': '+esc(x.p.flt||x.name)+' '+esc((x.p.dep||'?')+' → '+(x.p.dest||'?'))+', '+n+' NOTAMs read ('+x.p.secs.map(sc=>esc(sc.icao)+' '+sc.items.length).join(', ')+').</span>')});
   parsed.forEach((x,n)=>{const idx=state.sec+n;if(idx>3){msgs.push('<span>Skipped '+esc(x.name)+': only four sectors are available.</span>');warn=true;return}
     applyParsed(idx,x.p,x.text);
     const miss=EXPECT.filter(e=>!x.p.v[e[0]]);
