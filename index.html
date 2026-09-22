@@ -275,7 +275,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.15.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.15.1.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -387,6 +387,11 @@ function parseOFP(text){
   if(!m)m=up.match(/DISPATCHER REMARKS\s*:\s*([\s\S]*?)\s*I CERTIFY/);
   if(m){const r=m[1].replace(/\s+/g,' ').trim();if(r&&r.length<500){set('dsp_rmk',r);if(/TNKRG|TANKER/.test(r))c['why.tank']=true}}
   if(/\bNO MEL\/CDL\b/.test(up))c['mel.no']=true;
+  /* MEL / CDL items on the Dispatch Release page look like "MEL/CDL Item: 32-09-02B CAT D", one line per
+     item. Only the ATA reference and category are printed there; title and the (O) flag are not on this
+     page, so those stay blank for manual entry against the MEL/CDL book. */
+  const melm=[...up.matchAll(/MEL\/CDL ITEM\s*:\s*([0-9A-Z-]+)\s+CAT\s*([A-D])\b/g)];
+  if(melm.length){c['mel.no']=false;melm.slice(0,3).forEach((mm,idx)=>{set('mel'+(idx+1)+'_ref',mm[1]);set('mel'+(idx+1)+'_cat',mm[2])})}
   return {v,c,page3:ci>=0};
 }
 /*PARSER_END*/
@@ -804,7 +809,7 @@ const xcalc=(l,t,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span>
 const xrows=fn=>actSecs().map(i=>`<div class="xrow"><div class="xh">${secLbl(i)}</div>${fn(i,state.secs[i])}</div>`).join('');
 const tfld=(k,l,o={})=>{const id='t_'+k,val=esc(state.trip.v[k]||'');const ctl=o.area?`<textarea id="${id}" data-tv="${k}" rows="${o.rows||2}" placeholder="${esc(o.ph||'')}">${val}</textarea>`:`<input id="${id}" data-tv="${k}" value="${val}" placeholder="${esc(o.ph||'')}" autocomplete="off">`;return `<div class="fld ${o.cls||''}"><label for="${id}"><span class="fl">${l}</span></label>${ctl}</div>`};
 const YN=[['Y','Yes'],['N','No']];
-const melText=s=>{const v=s.v;if(s.c['mel.no'])return 'No MEL / CDL';const l=[1,2,3].map(n=>v['mel'+n+'_title']?((v['mel'+n+'_ref']||'')+' '+v['mel'+n+'_title']).trim():'').filter(Boolean);return l.length?l.join('; '):'Not recorded in Dispatch'};
+const melText=s=>{const v=s.v;if(s.c['mel.no'])return 'No MEL / CDL';const l=[1,2,3].map(n=>{const ref=v['mel'+n+'_ref'],cat=v['mel'+n+'_cat'],title=v['mel'+n+'_title'];if(!ref&&!cat&&!title)return '';return [ref,cat?'CAT '+cat:'',title].filter(Boolean).join(' ')}).filter(Boolean);return l.length?l.join('; '):'Not recorded in Dispatch'};
 const cabList=k=>actSecs().filter(i=>state.secs[i].v[k]==='Y').map(i=>'S'+(i+1));
 const CAB_LBL={fit:'Is everyone fit for duty?',docs:'Documents OK',names:'Names and positions',reg:'A/C registration and position',mel:'Cabin technical status: MELs',nsec:'Number of sectors',ftime:'Flight times',fl:'Flight altitudes',refuel:'Refueling operation',refsec:'Refueling sectors',tank:'Tankering sectors',refpax:'Refueling with PAX',taxi:'Taxi times',wx:'Expected weather and turbulence',hijack:'Hijack code',entry:'Cockpit entry procedure',unruly:'Unruly passenger',emerg:'Emergency procedures',q:'Questions?'};
 const calc=(id,l,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="calc" data-calc="${id}">—</div></div>`;
@@ -1212,7 +1217,7 @@ function sumDsp(i){
   L.push(`DISPATCH BRIEFING | SECTOR ${i+1} | ${v.flt||'---'} ${(v.dep_icao||'----')}-${(v.dest_icao||'----')} ${fmtDate(v.date)}`.trim());
   add('Aircraft',[v.reg,v.ceoneo,v.acft].filter(Boolean).join(' '));add('ETD / ETA',[v.etd,v.eta].filter(Boolean).join(' / '));add('Flight time',v.ftime);add('PAX',v.pax);
   add('Alternate',[v.alt_icao,v.alt_iata].filter(Boolean).join(' '));
-  L.push('MEL / CDL: '+(c['mel.no']?'none':([1,2,3].map(n=>v['mel'+n+'_title']?(v['mel'+n+'_ref']||'')+' CAT '+(v['mel'+n+'_cat']||'?')+' '+v['mel'+n+'_title']+' (O) '+(v['mel'+n+'_o']||'?'):'').filter(Boolean).join('; ')||'not recorded')));
+  L.push('MEL / CDL: '+(c['mel.no']?'none':([1,2,3].map(n=>{const ref=v['mel'+n+'_ref'],cat=v['mel'+n+'_cat'],title=v['mel'+n+'_title'],o=v['mel'+n+'_o'];if(!ref&&!cat&&!title)return '';return (ref||'')+(cat?' CAT '+cat:'')+(title?' '+title:'')+(o?' (O) '+o:'')}).filter(Boolean).join('; ')||'not recorded')));
   add('OEB',v.oeb_sel?v.oeb_n+' ('+v.oeb+', ECAM entry: '+(v.oeb_ecam||'—')+')':'No OEB');
   L.push('');L.push('ROUTE PLANNING');add('  Route',v.route);add('  Alt route',v.altroute);
   add('  Wind / dISA / CI',[v.wind?(v.wind_dir||'')+' '+v.wind+' kt':'',v.isa?'ISA '+v.isa:'',v.ci?'CI '+v.ci:''].filter(Boolean).join(' | '));
@@ -1372,7 +1377,7 @@ function setMsg(html,warn){state.impMsg=html;state.impWarn=!!warn;const e=$('#im
 function applyParsed(idx,p,text){
   const s=state.secs[idx];
   Object.keys(p.v).forEach(k=>{s.v[k]=p.v[k];s.src[k]='ofp'});
-  Object.keys(p.c).forEach(k=>{s.c[k]=true});
+  Object.keys(p.c).forEach(k=>{s.c[k]=p.c[k]});
   state.raw[idx]=text;
 }
 const isNotam=t=>/NOTAMs for flight/i.test(t)||(/\|#\d+\|/.test(t)&&/\bNOTAM[NRC]\b/.test(t));
