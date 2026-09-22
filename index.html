@@ -262,7 +262,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded. Version 1.6.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays in this browser; nothing is uploaded. Version 1.7.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -663,41 +663,20 @@ function tkNextFuel(i){
   const nx=state.secs[i+1];if(!nx)return null;
   const nr=num(nx.v.ofp_ramp);return nr!=null?nr:loadCalc(nx).total;
 }
-/* ACTUAL UNDERLOAD: once the INIT AZFW from the initial Flight Summary / FS loadsheet is typed in,
-   shift the OFP-planned T/O and LDG mass by the difference to that AZFW and recompute the margin
-   to the max T/O and LDG mass, independently of the (separate) Actual ZFM field under Load planning. */
-function tkAzfw(s){
+/* ACTUAL TOTAL FUEL DECIDED: the captain types in the total fuel actually decided (after tankering is
+   discussed with Dispatch). If it matches the flight-plan total, nothing changes. If it's different, the
+   new T/O and LDG mass are worked out from it and checked against the max T/O / LDG mass limits. This is
+   a legality check, not a recommendation — the app no longer suggests how much extra fuel to add. */
+function tkActualCheck(s){
   const n=k=>num(s.v[k]);
-  const act=n('tk_azfw');if(act==null)return null;
-  const zfmPlan=n('lf_zfm'),tomPlan=n('lf_tom'),ldmPlan=n('lf_ldm'),maxTom=n('lim_tom'),maxLdm=n('lim_ldm');
-  if(zfmPlan==null||tomPlan==null||ldmPlan==null||maxTom==null||maxLdm==null)return null;
-  const dz=act-zfmPlan,tom=tomPlan+dz,ldm=ldmPlan+dz;
-  return {tom,ldm,mT:maxTom-tom,mL:maxLdm-ldm,under:Math.min(maxTom-tom,maxLdm-ldm)};
-}
-function tankCalc(i){
-  const s=state.secs[i],L=loadCalc(s),AZ=tkAzfw(s);
-  const tom=AZ?AZ.tom:L.tom,ldm=AZ?AZ.ldm:L.ldm,mT=AZ?AZ.mT:L.mT,mL=AZ?AZ.mL:L.mL;
-  let next=num(s.v.tk_next),from='typed value';
-  if(next==null){const nf=tkNextFuel(i);if(nf!=null){next=nf;from='sector '+(i+2)}}
-  const miss=[];
-  if(L.total==null)miss.push('planned fuel');if(L.taxi==null)miss.push('taxi fuel');if(L.trip==null)miss.push('trip fuel');
-  if(mT==null||mL==null)miss.push(AZ?'max T/O and LDG mass':'ZF mass, max T/O and LDG mass (or the INIT AZFW from the loadsheet)');
-  if(next==null)miss.push('next leg total fuel (fill the next sector or type it)');
-  if(miss.length)return {ready:false,missing:miss};
-  const pen=(num(s.v.tk_pen)||0)/100,t=hours(s.v.ftime)||0,f=Math.max(.5,1-pen*t);
-  const land=L.total-L.taxi-L.trip,req=next,short=Math.max(0,req-land),aFull=short/f;
-  const lim=[['T/O mass',mT],['LDG mass',mL/f]];
-  const bind=lim.reduce((m,x)=>x[1]<m[1]?x:m);
-  const tie=Math.abs(lim[0][1]-lim[1][1])<=1;
-  const bindName=tie?'T/O + LDG mass':bind[0];
-  const under=Math.max(0,bind[1]),add=Math.min(aFull,under);
-  const landAfter=land+add*f,uplift=Math.max(0,req-landAfter);
-  const r={ready:true,L,AZ,tom,ldm,next,from,land,req,short,aFull,lim,bind,tie,bindName,under,add,uplift,f,pen,t,newTotal:L.total+add,newTom:tom+add,newLdm:ldm+add*f,crewSet:L.crew+add};
-  if(short<=0.5){r.kind='ok';r.title='No further tankering needed';r.msg='Landing fuel ('+n0(land)+' kg) already covers the next leg ('+n0(req)+' kg), with '+n0(land-req)+' kg to spare.'}
-  else if(bind[1]<0){r.kind='bad';r.title='Planned weights exceed a limit';r.msg='You are already over the '+bindName+' limit by '+n0(-bind[1])+' kg. Check the inputs before adding fuel.'}
-  else if(add>=aFull-0.5){r.kind='ok';r.title='Full tankering fits';r.msg='Set crew extra fuel to '+n0(r.crewSet)+' kg (add '+n0(add)+' kg). Underload left after that: '+n0(under-add)+' kg on '+bindName+'.'}
-  else{r.kind='warn';r.title='Partial tankering, limited by '+bindName;r.msg='Set crew extra fuel to '+n0(r.crewSet)+' kg (add '+n0(add)+' kg of the '+n0(aFull)+' kg needed). Plan an uplift of about '+n0(uplift)+' kg at the outstation.'}
-  return r;
+  const actual=n('tk_actual');if(actual==null)return null;
+  const lfPlanned=n('lf_planned'),pex=n('lf_pextra')||0,ramp=n('ofp_ramp');
+  const planned=lfPlanned!=null?lfPlanned+pex:ramp;
+  const zfm=n('actual_zfm')!=null?n('actual_zfm'):n('lf_zfm');
+  const taxi=n('lf_taxi'),trip=n('lf_trip'),maxTom=n('lim_tom'),maxLdm=n('lim_ldm');
+  if(planned==null||zfm==null||taxi==null||trip==null||maxTom==null||maxLdm==null)return {ready:false};
+  const tom=zfm+actual-taxi,ldm=tom-trip,mT=maxTom-tom,mL=maxLdm-ldm;
+  return {ready:true,actual,planned,diff:actual-planned,tom,ldm,mT,mL};
 }
 const trow=(lb,vl,cls)=>`<div class="tr${cls?' '+cls:''}"><span class="lb">${lb}</span><span class="vl">${vl}</span></div>`;
 function loadPanelHTML(i){
@@ -712,25 +691,26 @@ function loadPanelHTML(i){
   return h+'</div>';
 }
 function tankHTML(i){
-  const r=tankCalc(i);
-  if(!r.ready)return `<p class="muted">Still needed for the tankering check: ${esc(r.missing.join(', '))}.</p>`;
-  let h=`<div class="verdict ${r.kind}"><h3>${esc(r.title)}</h3><p>${esc(r.msg)}</p></div><div class="tk">`;
-  h+='<div class="hd">This sector, as planned'+(r.AZ?' (using INIT AZFW)':'')+'</div>';
-  h+=trow('Total fuel / T/O mass / LDG mass',n0(r.L.total)+' / '+n0(r.tom)+' / '+n0(r.ldm)+' kg');
-  h+=trow('Landing fuel (total − taxi − trip)',n0(r.land)+' kg');
-  h+='<div class="hd">Next leg</div>';
-  h+=trow('Total fuel of the next leg (from '+esc(r.from)+')',n0(r.next)+' kg');
-  h+=trow('Required at landing (next leg total fuel)',n0(r.req)+' kg');
-  h+=trow('Shortfall to tanker',n0(r.short)+' kg','key');
-  h+='<div class="hd">Underload (room to add fuel)</div>';
-  r.lim.forEach(x=>{const b=x===r.bind||r.tie;h+=trow(x[0]==='T/O mass'?'Margin to max T/O mass':'Margin to max LDG mass'+(r.pen>0?' (burn adjusted)':''),sgn(x[1])+' kg'+(b?' <span class="pill bind">binding</span>':''),'sub')});
-  h+=trow('Underload (maximum extra fuel)',n0(r.under)+' kg','key');
-  h+='<div class="hd">Result</div>';
-  h+=trow('Extra fuel to add',n0(r.add)+' kg','key');
-  h+=trow('New total fuel / T/O mass',n0(r.newTotal)+' / '+n0(r.newTom)+' kg');
-  h+=trow('New LDG mass (margin to max)',n0(r.newLdm)+' kg ('+sgn(r.L.maxLdm-r.newLdm)+')');
-  h+=trow('Fuel to uplift at the outstation',n0(r.uplift)+' kg');
-  return h+`</div><p class="note">${r.pen>0?'Burn penalty of '+(r.pen*100)+'% per flight hour applied over '+r.t.toFixed(2)+' h.':'Burn penalty not applied, so the landing weight is conservative. Enter a % per hour value to include it.'} Verify against the OFP and the loadsheet.</p>`;
+  const s=state.secs[i],r=tkActualCheck(s);
+  if(!r)return '<p class="muted">Enter the ACTUAL TOTAL FUEL DECIDED to check it against the T/O and LDG mass limits.</p>';
+  if(!r.ready)return '<p class="muted">Still needed for the check: ZF mass (actual or OFP), taxi fuel, trip fuel, planned/OFP total fuel, and the max T/O and LDG mass.</p>';
+  const same=Math.abs(r.diff)<=1,legal=r.mT>=0&&r.mL>=0,kind=same||legal?'ok':'bad';
+  const title=same?'Matches the flight plan':(legal?'Legal for take-off and landing':'Over a mass limit');
+  const msg=same?'The actual total fuel decided matches the flight plan. T/O and LDG mass are unchanged.'
+   :(legal?'T/O and LDG mass stay within limits with '+n0(r.actual)+' kg total fuel ('+sgn(r.diff)+' kg vs the flight plan).'
+   :'Over the '+(r.mT<0&&r.mL<0?'T/O and LDG':(r.mT<0?'T/O':'LDG'))+' mass limit with '+n0(r.actual)+' kg total fuel ('+sgn(r.diff)+' kg vs the flight plan). Check before loading this much.');
+  let h=`<div class="verdict ${kind}"><h3>${esc(title)}</h3><p>${esc(msg)}</p></div><div class="tk">`;
+  h+=trow('Actual total fuel decided',n0(r.actual)+' kg'+(same?'':' <span class="pill">'+sgn(r.diff)+' kg vs flight plan</span>'));
+  h+=trow('T/O mass',n0(r.tom)+' kg <span class="pill '+(r.mT<0?'bad':'ok')+'">margin '+sgn(r.mT)+'</span>');
+  h+=trow('LDG mass',n0(r.ldm)+' kg <span class="pill '+(r.mL<0?'bad':'ok')+'">margin '+sgn(r.mL)+'</span>');
+  const next=num(s.v.tk_next);
+  if(next!=null){
+    const land=r.actual-(num(s.v.lf_taxi)||0)-(num(s.v.lf_trip)||0);
+    h+='<div class="hd">Next leg (reference only)</div>';
+    h+=trow('Total fuel the next leg needs',n0(next)+' kg');
+    h+=trow('Landing fuel with this total (total − taxi − trip)',n0(land)+' kg'+(land<next?' <span class="pill warn">short '+n0(next-land)+'</span>':''));
+  }
+  return h+'</div><p class="note">This is a legality check against the mass limits, not a recommendation of how much fuel to load — that call stays with you and Dispatch. Verify against the OFP and the loadsheet.</p>';
 }
 function deriveHTML(s){
   const g=k=>num(s.v[k]),rows=[];
@@ -948,9 +928,9 @@ function dspHTML(){
     ${fld('dsp_rmk','Dispatcher remarks (OFP)',{area:1,rows:2,cls:'wide'})}
     <div class="derive" id="deriveDsp"></div></details>
    <h3 class="blk">Round-trip tankering</h3>
-   <p class="lead">Compares what this sector lands with against the total fuel the next sector needs, then checks how much more you can load before the T/O or LDG limit stops you. The next sector is read from the sector chip that follows this one.</p>
-   <div class="gr c4">${seg('tk_on','Round-trip tankering',[['Not planned','No'],['Planned: full','Full'],['Planned: partial','Partial'],['Not possible','N/A']],'w2')}${fld('tk_next','Next leg total fuel, override (kg)',{num:1,cls:'w2'})}${fld('tk_azfw','INIT AZFW From FS LOADSHEET (kg)',{num:1})}${calc('tk_under','ACTUAL UNDERLOAD')}${fld('tk_pen','Burn penalty, optional (% per flight hour)',{num:1,cls:'w2',ph:'e.g. 3'})}</div>
-   <p class="note">Selecting Full or Partial fills the next leg total fuel from Sector ${state.sec+2}, if that field is still empty. It is still an override you can edit — for example if the next sector is not filled in yet. Enter the INIT AZFW once you have the Initial Flight Summary Report / FS loadsheet: ACTUAL UNDERLOAD then recalculates automatically from it and drives the tankering check below. Until it's entered, the check falls back to the planned ZF mass and the Actual ZFM entered under Load planning &amp; fuel above.</p>
+   <p class="lead">Records the tankering decision and the next sector's fuel need for reference, then checks the actual total fuel you decide to carry against the T/O and LDG mass limits. The next sector is read from the sector chip that follows this one.</p>
+   <div class="gr c4">${seg('tk_on','Round-trip tankering',[['Not planned','No'],['Planned: full','Full'],['Planned: partial','Partial'],['Not possible','N/A']],'w2')}${fld('tk_next','Next leg total fuel, override (kg)',{num:1,cls:'w2'})}${fld('tk_actual','Actual total fuel decided (kg)',{num:1})}${fld('tk_pen','Burn penalty, optional (% per flight hour) — not used yet',{num:1,cls:'w2',ph:'e.g. 3'})}</div>
+   <p class="note">Selecting Full or Partial fills the next leg total fuel from Sector ${state.sec+2}, if that field is still empty. It is still an override you can edit — for example if the next sector is not filled in yet. Enter the actual total fuel you and Dispatch decided on: if it matches the flight plan, nothing changes; if it's different, the check below recalculates T/O and LDG mass from it and tells you whether you're still within limits. The burn penalty field is kept for a future update and doesn't affect this check yet.</p>
    <div class="out" id="tankOut"></div>
    <div class="chks">${['Tankering economics confirmed with Dispatch and the fuel policy (price difference against burn penalty)','Landing performance at the destination checked for the extra weight: runway condition, brake cooling, go-around climb','Take-off performance rechecked at the higher T/O mass: runway, obstacles, climb gradient','Tanker fuel entered in the fuel order and loadsheet; fuel density confirmed','Return-leg fuel plan and any uplift at the outstation agreed with Dispatch'].map((t,i)=>chk('dsp.tank.'+i,t)).join('')}</div>`;
   const req=`${tgs('Requirements for this flight',[['req.er','Extended range'],['req.rvsm','RVSM'],['req.pbn','PBN'],['req.nr','Narrow RWY'],['req.spa','Simultaneous parallel approach']])}`;
@@ -1041,7 +1021,7 @@ function sumDsp(i){
   if(lc.under!=null)L.push('  Underload: '+n0(lc.under)+' kg, limited by '+lc.by);
   const why=['tank','traffic','wx','notam','other'].filter(k=>c['why.'+k]).map(k=>({tank:'tankering',traffic:'traffic',wx:'weather',notam:'NOTAM',other:'other'+(v.why_other?' ('+v.why_other+')':'')}[k]));if(why.length)add('  Extra fuel due to',why.join(', '));
   add('  Dispatcher remarks',v.dsp_rmk);
-  const tk=tankCalc(i);if(tk.ready){L.push('  Tankering: '+tk.title+'. '+tk.msg)}
+  const tk=tkActualCheck(s);if(tk&&tk.ready){const same=Math.abs(tk.diff)<=1,legal=tk.mT>=0&&tk.mL>=0;L.push('  Tankering: actual total fuel decided '+n0(tk.actual)+' kg'+(same?' (matches flight plan)':' ('+sgn(tk.diff)+' kg vs flight plan)')+', '+(legal?'within T/O and LDG mass limits':'OVER A MASS LIMIT — check before loading'))}
   const rq=['er','rvsm','pbn','nr','spa'].filter(k=>c['req.'+k]).map(k=>({er:'Extended range',rvsm:'RVSM',pbn:'PBN',nr:'Narrow RWY',spa:'Simultaneous parallel approach'}[k]));
   L.push('');L.push('COMPANY OPERATIONAL REQUIREMENTS: '+(rq.join(', ')||'none ticked'));
   /* clearance and ATIS come last: they are only filled in the aircraft */
@@ -1112,7 +1092,6 @@ function refreshLive(){
     if(k==='lf_total'&&L.total!=null)t=n0(L.total)+' kg';
     if(k==='lf_under'&&L.under!=null){t=n0(L.under)+' kg';bad=L.under<0}
     if(k==='lf_limit'&&L.by)t=L.by;
-    if(k==='tk_under'){const AZ=tkAzfw(s);if(AZ){t=n0(AZ.under)+' kg';bad=AZ.under<0}}
     e.textContent=t;e.classList.toggle('bad',bad)});
   const lo=$('#loadOut');if(lo)lo.innerHTML=loadPanelHTML(i);
   const to=$('#tankOut');if(to)to.innerHTML=tankHTML(i);
