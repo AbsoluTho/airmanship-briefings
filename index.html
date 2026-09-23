@@ -275,7 +275,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.16.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.17.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -854,7 +854,7 @@ function tkNextFuel(i){
   const nr=num(nx.v.ofp_ramp);return nr!=null?nr:loadCalc(nx).total;
 }
 /* ACTUAL TOTAL FUEL DECIDED is no longer typed in directly: it's the OFP total fuel plus whatever
-   Crew extra fuel the pilot enters under Load planning & fuel (both pilot-inserted, marked in cyan).
+   Crew extra fuel the pilot enters under Fuel (both pilot-inserted, marked in cyan).
    If no crew extra fuel is entered yet, it defaults to matching the flight plan. The new T/O and LDG
    mass are worked out from it (using the actual ZFW from the loadsheet if that's entered too) and
    checked against the max T/O / LDG mass limits. This is a legality check, not a recommendation. */
@@ -894,7 +894,7 @@ function loadPanelHTML(i){
 }
 function tankHTML(i){
   const s=state.secs[i],r=tkActualCheck(s);
-  if(!r)return '<p class="muted">Still needed for the tankering check, all under Load planning &amp; fuel: ZF mass (actual or OFP), taxi fuel, trip fuel, planned/OFP total fuel, and the max T/O and LDG mass.</p>';
+  if(!r)return '<p class="muted">Still needed for the tankering check, under Load and Fuel: ZF mass (actual or OFP), taxi fuel, trip fuel, planned/OFP total fuel, and the max T/O and LDG mass.</p>';
   const same=Math.abs(r.diff)<=1,legal=r.mT>=0&&r.mL>=0,kind=same||legal?'ok':'bad';
   const title=same?'Matches the flight plan':(legal?'Legal for take-off and landing':'Over a mass limit');
   const msg=same?'No crew extra fuel entered yet, so the actual total fuel decided matches the flight plan. T/O and LDG mass are unchanged.'
@@ -1117,30 +1117,32 @@ function dspHTML(){
    <h3 class="blk">Your notes by airport</h3>
    <div class="gr c3">${fld('ntm_dep','Departure',{area:1,rows:3})}${fld('ntm_arr','Arrival',{area:1,rows:3})}${fld('ntm_alt','Alternate',{area:1,rows:3})}</div>
    ${tgs('FD Pro',[['ntm.fdpro','Show RWYs / TWYs closed on FD Pro']])}`;
-  const load=`<div class="gr c4">${fld('lf_pax','PAX',{num:1})}${fld('lf_payload','Payload (kg)',{num:1})}${fld('lf_zfm','ZF mass (kg)',{num:1})}${fld('lf_tom','T/O mass (kg)',{num:1})}
-   ${fld('lf_ldm','LDG mass (kg)',{num:1})}${fld('lf_taxi','Taxi fuel (kg)',{num:1})}${fld('lf_trip','Trip fuel (kg)',{num:1})}${fld('trip_incl','Trip incl. (% high consumption)',{num:1,ph:'3.6'})}
-   ${fld('lf_planned','Planned fuel (kg)',{num:1})}${fld('lf_pextra','Planned extra fuel (kg)',{num:1})}${fld('lf_crew','Crew extra fuel (kg)',{num:1,pilot:1})}${calc('lf_total','Total fuel')}
-   ${calc('lf_under','Underload')}${calc('lf_limit','Limited by')}${fld('actual_zfm','Actual zero fuel weight from loadsheet (kg)',{num:1,cls:'w2',pilot:1})}</div>
-   <p class="note">Planned fuel is the OFP minimum required fuel including taxi. Total fuel is planned fuel, planned extra and crew extra added together. Enter the actual zero fuel weight once the loadsheet is out: the underload is recalculated with it, because the dispatcher may say to check the ZFW before refueling. The two fields in cyan — crew extra fuel and actual ZFW — are the ones you set yourself; everything else here is normally filled from the OFP. Round-trip tankering below picks up both of them automatically.</p>
-   ${tgs('Extra fuel due to',[['why.tank','Tankering'],['why.traffic','Traffic'],['why.wx','Weather'],['why.notam','NOTAM'],['why.other','Other']])}${fld('why_other','Other reason')}
+  const loadBlk=`<div class="gr c4">${fld('lf_pax','PAX',{num:1})}${fld('lf_payload','Payload (kg)',{num:1})}${fld('lf_zfm','ZF mass (kg)',{num:1})}${fld('lf_tom','T/O mass (kg)',{num:1})}
+   ${fld('lf_ldm','LDG mass (kg)',{num:1})}${calc('lf_under','Underload')}${calc('lf_limit','Limited by')}${fld('actual_zfm','Actual zero fuel weight from loadsheet (kg)',{num:1,cls:'w2',pilot:1})}</div>
+   <p class="note">Enter the actual zero fuel weight once the loadsheet is out: the underload is recalculated with it, because the dispatcher may say to check the ZFW before refueling. The field in cyan — actual ZFW — is the one you set yourself; everything else here is normally filled from the OFP.</p>
    ${tgs('FlySmart',[['flysmart','Show FlySmart T/O, CRZ & LDG dispatch']])}
    <div class="out" id="loadOut"></div>
-   <details class="ofpdet" open><summary>OFP figures, limits and checks</summary>
+   <details class="ofpdet" open><summary>OFP mass limits</summary>
+    <div class="gr c4">${fld('ofp_dom','DOM (kg)',{num:1})}${fld('lim_mzfm','Max ZFM (kg)',{num:1})}${fld('lim_tom','Max T/O mass (kg)',{num:1})}${fld('lim_ldm','Max LDG mass (kg)',{num:1})}</div>
+    <p class="note">The limits are the MAX column of the mass and balance block on page 3 of the OFP: they already include the regulated (runway or performance) limits.</p></details>`;
+  const fuelBlk=`<div class="gr c4">${fld('lf_taxi','Taxi fuel (kg)',{num:1})}${fld('lf_trip','Trip fuel (kg)',{num:1})}${fld('trip_incl','Trip incl. (% high consumption)',{num:1,ph:'3.6'})}${fld('lf_planned','Planned fuel (kg)',{num:1})}
+   ${fld('lf_pextra','Planned extra fuel (kg)',{num:1})}${fld('lf_crew','Crew extra fuel (kg)',{num:1,pilot:1})}${calc('lf_total','Total fuel')}${calc('lf_landing','Landing fuel (planned)')}</div>
+   <p class="note">Planned fuel is the OFP minimum required fuel including taxi. Total fuel is planned fuel, planned extra and crew extra added together. Landing fuel (planned) is total fuel minus taxi and trip fuel — what you'd land with, before any tankering. The field in cyan — crew extra fuel — is the one you set yourself; everything else here is normally filled from the OFP. Round-trip tankering below picks up both crew extra fuel and the actual ZFW (set under Load) automatically.</p>
+   ${tgs('Extra fuel due to',[['why.tank','Tankering'],['why.traffic','Traffic'],['why.wx','Weather'],['why.notam','NOTAM'],['why.other','Other']])}${fld('why_other','Other reason')}
+   <details class="ofpdet" open><summary>OFP fuel figures and checks</summary>
     <div class="gr c4">${fld('ofp_cont','Contingency (kg)',{num:1})}${fld('ofp_alt','Alternate fuel (kg)',{num:1})}${fld('ofp_fres','Final reserve (kg)',{num:1})}${fld('ofp_add','Add fuel (kg)',{num:1})}
-    ${fld('ofp_hold','Hold (kg)',{num:1})}${fld('ofp_mintof','Min T/O fuel (kg)',{num:1})}${fld('ofp_ramp','Total fuel (OFP, kg)',{num:1})}${fld('ofp_dom','DOM (kg)',{num:1})}
-    ${fld('lim_mzfm','Max ZFM (kg)',{num:1})}${fld('lim_tom','Max T/O mass (kg)',{num:1})}${fld('lim_ldm','Max LDG mass (kg)',{num:1})}</div>
-    <p class="note">The limits are the MAX column of the mass and balance block on page 3 of the OFP: they already include the regulated (runway or performance) limits.</p>
+    ${fld('ofp_hold','Hold (kg)',{num:1})}${fld('ofp_mintof','Min T/O fuel (kg)',{num:1})}${fld('ofp_ramp','Total fuel (OFP, kg)',{num:1})}</div>
     ${fld('dsp_rmk','Dispatcher remarks (OFP)',{area:1,rows:2,cls:'wide'})}
     <div class="derive" id="deriveDsp"></div></details>
    <h3 class="blk">Round-trip tankering</h3>
-   <p class="lead">Records the tankering decision and the next sector's fuel need for reference, then checks the actual total fuel you decide to carry — the flight plan total plus Crew extra fuel, entered above under Load planning &amp; fuel — against the T/O and LDG mass limits. The next sector is read from the sector chip that follows this one.</p>
+   <p class="lead">Records the tankering decision and the next sector's fuel need for reference, then checks the actual total fuel you decide to carry — the flight plan total plus Crew extra fuel, entered above under Fuel — against the T/O and LDG mass limits. The next sector is read from the sector chip that follows this one.</p>
    <div class="gr c4">${seg('tk_on','Round-trip tankering',[['Not planned','No'],['Planned: full','Full'],['Planned: partial','Partial'],['Not possible','N/A']],'w2')}${fld('tk_next','Next leg total fuel, override (kg)',{num:1,cls:'w2'})}${calc('tk_actual_calc','Actual total fuel decided')}${fld('tk_pen','Burn penalty, optional (% per flight hour) — not used yet',{num:1,cls:'w2',ph:'e.g. 3'})}</div>
-   <p class="note">Selecting Full or Partial fills the next leg total fuel from Sector ${state.sec+2}, if that field is still empty. It is still an override you can edit — for example if the next sector is not filled in yet. Actual total fuel decided is no longer typed here: it follows Crew extra fuel and the actual ZFW automatically, so setting either of those cyan fields above is what drives the check below. The burn penalty field is kept for a future update and doesn't affect this check yet.</p>
+   <p class="note">Selecting Full or Partial fills the next leg total fuel from Sector ${state.sec+2}, if that field is still empty. It is still an override you can edit — for example if the next sector is not filled in yet. Actual total fuel decided is no longer typed here: it follows Crew extra fuel and the actual ZFW automatically, so setting either of those cyan fields is what drives the check below. The burn penalty field is kept for a future update and doesn't affect this check yet.</p>
    <div class="out" id="tankOut"></div>
    <div class="chks">${['Tankering economics confirmed with Dispatch and the fuel policy (price difference against burn penalty)','Landing performance at the destination checked for the extra weight: runway condition, brake cooling, go-around climb','Take-off performance rechecked at the higher T/O mass: runway, obstacles, climb gradient','Tanker fuel entered in the fuel order and loadsheet; fuel density confirmed','Return-leg fuel plan and any uplift at the outstation agreed with Dispatch'].map((t,i)=>chk('dsp.tank.'+i,t)).join('')}</div>`;
   const req=`${tgs('Requirements for this flight',[['req.er','Extended range'],['req.rvsm','RVSM'],['req.pbn','PBN'],['req.nr','Narrow RWY'],['req.spa','Simultaneous parallel approach'],['req.pic','PIC is pilot flying']])}`;
-  return `<div class="mhead"><h1>Dispatch Briefing</h1><p class="lead">The sequence of the Dispatch Briefing form: technical condition of the aircraft, route planning, weather, NOTAM, load planning and fuel, company operational requirements, and last the clearance and ATIS, which are only filled in the aircraft. Sector ${state.sec+1} is open; change sector with the chips above.</p></div>`+imp+
-   sec('Flight information / technical condition of the aircraft',info,'fields','dsp.info')+sec('Route planning',route,'fields','dsp.route')+sec('Weather',wxb,'fields','dsp.wx')+sec('NOTAM',ntm,'nt','dsp.notam')+sec('Load planning & fuel',load,'fields','dsp.load')+sec('Company operational requirements',req,'checks','dsp.req')+sec('Clearance & ATIS (filled in the aircraft)',clr,'fields','dsp.clr')+
+  return `<div class="mhead"><h1>Dispatch Briefing</h1><p class="lead">The sequence of the Dispatch Briefing form: technical condition of the aircraft, route planning, weather, NOTAM, load, fuel, company operational requirements, and last the clearance and ATIS, which are only filled in the aircraft. Sector ${state.sec+1} is open; change sector with the chips above.</p></div>`+imp+
+   sec('Flight information / technical condition of the aircraft',info,'fields','dsp.info')+sec('Route planning',route,'fields','dsp.route')+sec('Weather',wxb,'fields','dsp.wx')+sec('NOTAM',ntm,'nt','dsp.notam')+sec('Load',loadBlk,'fields','dsp.load')+sec('Fuel',fuelBlk,'fields','dsp.fuel')+sec('Company operational requirements',req,'checks','dsp.req')+sec('Clearance & ATIS (filled in the aircraft)',clr,'fields','dsp.clr')+
    `<section class="sumbox"><h2>Summary</h2><pre class="sum" data-sum="dsp"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="dsp">Copy summary</button></div></section>`;
 }
 function cabDeriveHTML(){
@@ -1247,13 +1249,15 @@ function sumDsp(i){
   if(nt&&nt.secs)nt.secs.forEach((sc,si)=>{const sel=sc.items.filter(it=>ntInc(nt,si,it));if(sel.length){L.push('  '+(NT_ROLE[sc.key]||'Airport')+' '+sc.icao+':');sel.forEach(it=>{const tr=ntTr(it);L.push('   - '+tr.label+': '+tr.text.replace(/\n/g,' ')+' ['+[tr.when,tr.sched,tr.vert].filter(Boolean).join('; ')+'] '+it.id)})}});
   add('  Route notes',v.ntm_route);add('  Notes DEP',v.ntm_dep);add('  Notes ARR',v.ntm_arr);add('  Notes ALT',v.ntm_alt);
   const lc=loadCalc(s);
-  L.push('');L.push('LOAD PLANNING & FUEL');
+  L.push('');L.push('LOAD');
   add('  PAX / payload',[v.lf_pax,v.lf_payload?v.lf_payload+' kg':''].filter(Boolean).join(' / '));
   add('  ZF / T/O / LDG mass',[v.lf_zfm,v.lf_tom,v.lf_ldm].filter(Boolean).join(' / ')+(v.lf_zfm||v.lf_tom||v.lf_ldm?' kg':''));
   add('  Actual ZFW',v.actual_zfm?v.actual_zfm+' kg':'');
+  if(lc.under!=null)L.push('  Underload: '+n0(lc.under)+' kg, limited by '+lc.by);
+  L.push('');L.push('FUEL');
   add('  Fuel',[v.lf_taxi?'taxi '+v.lf_taxi:'',v.lf_trip?'trip '+v.lf_trip+(v.trip_incl?' (incl. '+(/^-/.test(v.trip_incl)?'':'+')+v.trip_incl+'% high consumption)':''):'',v.lf_planned?'planned '+v.lf_planned:'',v.lf_pextra?'extra '+v.lf_pextra:'',v.lf_crew?'crew extra '+v.lf_crew:''].filter(Boolean).join(', ')+' kg');
   if(lc.total!=null)L.push('  Total fuel: '+n0(lc.total)+' kg');
-  if(lc.under!=null)L.push('  Underload: '+n0(lc.under)+' kg, limited by '+lc.by);
+  if(lc.total!=null&&lc.taxi!=null&&lc.trip!=null)L.push('  Landing fuel (planned): '+n0(lc.total-lc.taxi-lc.trip)+' kg');
   const why=['tank','traffic','wx','notam','other'].filter(k=>c['why.'+k]).map(k=>({tank:'tankering',traffic:'traffic',wx:'weather',notam:'NOTAM',other:'other'+(v.why_other?' ('+v.why_other+')':'')}[k]));if(why.length)add('  Extra fuel due to',why.join(', '));
   add('  Dispatcher remarks',v.dsp_rmk);
   const tk=tkActualCheck(s);if(tk&&tk.ready){const same=Math.abs(tk.diff)<=1,legal=tk.mT>=0&&tk.mL>=0;L.push('  Tankering: actual total fuel decided '+n0(tk.actual)+' kg'+(same?' (matches flight plan)':' ('+sgn(tk.diff)+' kg vs flight plan)')+', '+(legal?'within T/O and LDG mass limits':'OVER A MASS LIMIT — check before loading'))}
@@ -1344,6 +1348,7 @@ function refreshLive(){
     if(k==='lf_total'&&L.total!=null)t=n0(L.total)+' kg';
     if(k==='lf_under'&&L.under!=null){t=n0(L.under)+' kg';bad=L.under<0}
     if(k==='lf_limit'&&L.by)t=L.by;
+    if(k==='lf_landing'&&L.total!=null&&L.taxi!=null&&L.trip!=null)t=n0(L.total-L.taxi-L.trip)+' kg';
     if(k==='tk_actual_calc'){const tk=tkActualCheck(s);if(tk){t=n0(tk.actual)+' kg';bad=!(tk.mT>=0&&tk.mL>=0)}}
     e.textContent=t;e.classList.toggle('bad',bad)});
   const lo=$('#loadOut');if(lo)lo.innerHTML=loadPanelHTML(i);
@@ -1413,7 +1418,7 @@ function importTexts(items){
   msgs.push('<span>Review every value against the source documents before flight.</span>');
   if(nots.length&&!parsed.length)state.sec=nots[0].idx;
   /* open the sections that were just filled in, so the import can be reviewed without extra clicks */
-  if(parsed.length)['dsp.info','dsp.route','dsp.load'].forEach(k=>state.open[k]=true);
+  if(parsed.length)['dsp.info','dsp.route','dsp.load','dsp.fuel'].forEach(k=>state.open[k]=true);
   if(nots.length)state.open['dsp.notam']=true;
   setMsg(msgs.join(''),warn);render();save();
 }
