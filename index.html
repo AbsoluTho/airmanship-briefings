@@ -280,7 +280,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.20.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.21.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1155,6 +1155,39 @@ function wxExtractTempo(kind){
   if(r.ok){state.open['dsp.wx']=true;render();save()}
   setWxMsg(r.msg,!r.ok);
 }
+/* Pulls the day/time group off a METAR (e.g. "METAR OEJN 231900Z 33013KT..." -> "23/1900"), so the
+   Time (day / UTC) field can fill itself the moment a METAR is downloaded or pasted, instead of being
+   copied over by hand. */
+function metarDayTime(mt){
+  const m=String(mt||'').toUpperCase().match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+  return m?m[1]+'/'+m[2]+m[3]:null;
+}
+/* Wind direction/speed (and gust, if any) off a METAR's wind group, e.g. "33013KT" or "33013G25KT" or
+   the calm "00000KT" or variable "VRB05KT". */
+function metarWind(mt){
+  const m=String(mt||'').toUpperCase().match(/\b(\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?KT\b/);
+  if(!m)return null;
+  return {vrb:m[1]==='VRB',dir:m[1]==='VRB'?null:parseInt(m[1],10),spd:parseInt(m[2],10),gust:m[3]?parseInt(m[3],10):null};
+}
+/* Headwind/tailwind and crosswind for a runway ident (its heading is the leading digits ×10, e.g.
+   "34L"->340°) against a METAR's wind group. Pure trig: headwind = V·cos(θ), crosswind = V·sin(θ),
+   θ = wind direction − runway heading. Returns a ready-to-show line, or null if either input is
+   missing/unreadable (e.g. RWY not filled in yet, or no wind group found in the METAR text). */
+function wxWindText(rwyVal,metarText){
+  const rm=String(rwyVal||'').trim().match(/^(\d{1,2})/);if(!rm)return null;
+  const rwyHdg=(parseInt(rm[1],10)*10)%360;
+  const w=metarWind(metarText);if(!w)return null;
+  if(w.vrb)return 'Variable wind, '+w.spd+' kt — no fixed headwind/crosswind component';
+  if(w.dir===0&&w.spd===0)return 'Calm';
+  const diff=((w.dir-rwyHdg+540)%360)-180,rad=diff*Math.PI/180;
+  const hw=Math.round(w.spd*Math.cos(rad)),xw=Math.round(Math.abs(w.spd*Math.sin(rad))),side=Math.sin(rad)>=0?'right':'left';
+  let out=(hw>=0?'Headwind ':'Tailwind ')+Math.abs(hw)+' kt'+(xw?' · Crosswind '+xw+' kt from the '+side:' · no crosswind');
+  if(w.gust){
+    const ghw=Math.round(w.gust*Math.cos(rad)),gxw=Math.round(Math.abs(w.gust*Math.sin(rad)));
+    out+=' (gusting: '+(ghw>=0?'headwind ':'tailwind ')+Math.abs(ghw)+' kt, crosswind '+gxw+' kt)';
+  }
+  return out;
+}
 async function wxDownload(kind){
   if(!wxApiKey){setWxMsg('Add your CheckWX API key below first, then download again.',true);return}
   const kinds=kind==='all'?['dep','arr','alt']:[kind];
@@ -1172,7 +1205,8 @@ async function wxDownload(kind){
     const got=[];
     Object.entries(map).forEach(([k,ic])=>{
       const mt=wxPick(mr&&mr.data,ic),tf=wxPick(tr&&tr.data,ic);
-      if(mt){s.v['wx_'+k+'_metar']=mt;delete s.src['wx_'+k+'_metar'];got.push(k.toUpperCase()+' METAR')}
+      if(mt){s.v['wx_'+k+'_metar']=mt;delete s.src['wx_'+k+'_metar'];got.push(k.toUpperCase()+' METAR');
+        const dt=metarDayTime(mt);if(dt){s.v['wx_'+k+'_t']=dt;delete s.src['wx_'+k+'_t']}}
       if(tf){s.v['wx_'+k+'_taf']=tf;delete s.src['wx_'+k+'_taf'];got.push(k.toUpperCase()+' TAF');applyTempoExtract(k)}
     });
     state.open['dsp.wx']=true;render();save();
@@ -1211,7 +1245,7 @@ function dspHTML(){
    <div class="fld"><label for="wxApiKey"><span class="fl">CheckWX API key</span></label><input id="wxApiKey" type="password" autocomplete="off" value="${esc(wxApiKey)}" placeholder="Paste your key"></div></div></details>`;
   const wxTools=`${wxKeyBox}<div class="row"><button type="button" class="btn" data-act="wx-dl" data-wx="all">Download all weather (DEP · ARR · ALT)</button></div><div class="status" id="wxMsg" role="status"></div>`;
   const wxb=wxTools+[['dep','DEP','dep_icao'],['arr','ARR','dest_icao'],['alt','ALT','alt_icao']].map(x=>`<h3 class="blk">${x[1]} <span class="mir" data-mirror="${x[2]}"></span><button type="button" class="chip wxb" data-act="wx-dl" data-wx="${x[0]}">Download</button></h3>
-   <div class="gr c4">${fld('wx_'+x[0]+'_t','Time (day / UTC)',{ph:'dd/hhmm'})}${fld('wx_'+x[0]+'_rwy','RWY',{rwy:x[2]})}</div>${fld('wx_'+x[0]+'_metar','METAR',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_taf','TAF',{area:1,rows:2,cls:'wide'})}
+   <div class="gr c4">${fld('wx_'+x[0]+'_t','Time (day / UTC)',{ph:'dd/hhmm'})}${fld('wx_'+x[0]+'_rwy','RWY',{rwy:x[2]})}${calc('wxwind_'+x[0],'Wind component','wide')}</div>${fld('wx_'+x[0]+'_metar','METAR',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_taf','TAF',{area:1,rows:2,cls:'wide'})}
    <div class="fld wide"><label for="v_wx_${x[0]}_tempo"><span class="fl">BECMG / TEMPO relevant to your ${x[0]==='dep'?'ETD':'ETA'}<button type="button" class="chip" data-act="wx-tempo" data-wx="${x[0]}">Work out from TAF</button></span></label><textarea id="v_wx_${x[0]}_tempo" data-v="wx_${x[0]}_tempo" rows="3" placeholder="Filled automatically after a TAF download, or tap “Work out from TAF” after pasting one">${esc(V('wx_'+x[0]+'_tempo'))}</textarea></div>`).join('');
   const clr=`<p class="note">Filled in the aircraft, once the clearance and the ATIS are received.</p>
    <div class="gr c4">${fld('clr_rwy','RWY',{rwy:'dep_icao'})}${fld('clr_sid','SID')}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>
@@ -1457,6 +1491,7 @@ function refreshLive(){
     if(k==='lf_limit'&&L.by)t=L.by;
     if(k==='lf_landing'&&L.total!=null&&L.taxi!=null&&L.trip!=null)t=n0(L.total-L.taxi-L.trip)+' kg';
     if(k==='tk_actual_calc'){const tk=tkActualCheck(s);if(tk){t=n0(tk.actual)+' kg';bad=!(tk.mT>=0&&tk.mL>=0)}}
+    if(k.indexOf('wxwind_')===0){const seg=k.slice(7);t=wxWindText(v['wx_'+seg+'_rwy'],v['wx_'+seg+'_metar'])||'—';bad=/^Tailwind/.test(t)}
     e.textContent=t;e.classList.toggle('bad',bad)});
   const lo=$('#loadOut');if(lo)lo.innerHTML=loadPanelHTML(i);
   const to=$('#tankOut');if(to)to.innerHTML=tankHTML(i);
@@ -1559,7 +1594,14 @@ main.addEventListener('toggle',e=>{
 main.addEventListener('input',e=>{
   const t=e.target;let k;const s=S();
   if(t.id==='wxApiKey'){saveWxKey(t.value.trim());return}
-  if((k=t.dataset.v)){s.v[k]=UP.has(k)?t.value.toUpperCase():t.value;delete s.src[k]}
+  if((k=t.dataset.v)){
+    s.v[k]=UP.has(k)?t.value.toUpperCase():t.value;delete s.src[k];
+    const wm=k.match(/^wx_(dep|arr|alt)_metar$/);
+    if(wm){
+      const dt=metarDayTime(t.value);
+      if(dt){const tk='wx_'+wm[1]+'_t';s.v[tk]=dt;delete s.src[tk];const tEl=document.getElementById('v_'+tk);if(tEl)tEl.value=dt}
+    }
+  }
   else if((k=t.dataset.tem)){const p=k.split('.');s[p[0]][+p[1]][p[2]]=t.value}
   else if((k=t.dataset.tv)){state.trip.v[k]=t.value}
   else if((k=t.dataset.xv)){const p=xs(k);state.secs[p[0]].v[p[1]]=t.value;delete state.secs[p[0]].src[p[1]]}
