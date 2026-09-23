@@ -280,7 +280,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.21.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.22.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1247,9 +1247,8 @@ function dspHTML(){
   const wxb=wxTools+[['dep','DEP','dep_icao'],['arr','ARR','dest_icao'],['alt','ALT','alt_icao']].map(x=>`<h3 class="blk">${x[1]} <span class="mir" data-mirror="${x[2]}"></span><button type="button" class="chip wxb" data-act="wx-dl" data-wx="${x[0]}">Download</button></h3>
    <div class="gr c4">${fld('wx_'+x[0]+'_t','Time (day / UTC)',{ph:'dd/hhmm'})}${fld('wx_'+x[0]+'_rwy','RWY',{rwy:x[2]})}${calc('wxwind_'+x[0],'Wind component','wide')}</div>${fld('wx_'+x[0]+'_metar','METAR',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_taf','TAF',{area:1,rows:2,cls:'wide'})}
    <div class="fld wide"><label for="v_wx_${x[0]}_tempo"><span class="fl">BECMG / TEMPO relevant to your ${x[0]==='dep'?'ETD':'ETA'}<button type="button" class="chip" data-act="wx-tempo" data-wx="${x[0]}">Work out from TAF</button></span></label><textarea id="v_wx_${x[0]}_tempo" data-v="wx_${x[0]}_tempo" rows="3" placeholder="Filled automatically after a TAF download, or tap “Work out from TAF” after pasting one">${esc(V('wx_'+x[0]+'_tempo'))}</textarea></div>`).join('');
-  const clr=`<p class="note">Filled in the aircraft, once the clearance and the ATIS are received.</p>
-   <div class="gr c4">${fld('clr_rwy','RWY',{rwy:'dep_icao'})}${fld('clr_sid','SID')}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>
-   <div class="gr c4">${fld('atis_inf','ATIS info')}${fld('atis_time','Time (UTC)',{ph:'hh:mm'})}${fld('atis_wind','Wind',{ph:'000/10G20'})}${fld('atis_vis','VIS')}${fld('atis_clouds','Clouds')}${fld('atis_temp','Temp / dew point',{ph:'40/12'})}${fld('atis_qnh','QNH')}${fld('atis_transalt','Trans alt')}${fld('atis_rwydep','RWY dep',{rwy:'dep_icao'})}${fld('atis_rwyarr','RWY arr',{rwy:'dest_icao'})}${fld('atis_other','Other',{cls:'w2'})}</div>`;
+  const clr=`<p class="note">Your suggested clearance, not the real one — a working guess to brief yourself with before you copy the actual clearance from ATC. SID and Airway are worked out from the route above (its first fix, and whatever airway follows it) the moment a route is filled in, but only while they're still empty — type over either one any time, and it stays as you left it. RWY offers your saved runways for this airport, same as elsewhere. First alt and SQW are always typed by hand. ATIS isn't tracked here — that one's still quicker on paper.</p>
+   <div class="gr c4">${fld('clr_rwy','RWY',{rwy:'dep_icao'})}${fld('clr_sid','SID',{ph:'if any — some airports have none'})}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>`;
   const ntm=`<p class="lead">Airport and FIR NOTAMs from the Mission Plus NOTAM PDF, translated into plain English. Mission Plus already limits the search to the flight window, so nothing is filtered by hour here. Nothing is added to the brief by default: tap “Add to brief” on each NOTAM you want in the summary.</p>
    <div class="imp-mini"><label class="btn" for="pdfIn2">Import NOTAM PDF</label><input class="sr" type="file" id="pdfIn2" data-imp="1" accept="application/pdf,.pdf" multiple><span class="note">Or paste the NOTAM text in the box at the top of this tab.</span></div>
    <div class="out" id="ntOut"></div>
@@ -1282,8 +1281,8 @@ function dspHTML(){
    <div class="out" id="tankOut"></div>
    <div class="chks">${['Tankering economics confirmed with Dispatch and the fuel policy (price difference against burn penalty)','Landing performance at the destination checked for the extra weight: runway condition, brake cooling, go-around climb','Take-off performance rechecked at the higher T/O mass: runway, obstacles, climb gradient','Tanker fuel entered in the fuel order and loadsheet; fuel density confirmed','Return-leg fuel plan and any uplift at the outstation agreed with Dispatch'].map((t,i)=>chk('dsp.tank.'+i,t)).join('')}</div>`;
   const req=`${tgs('Requirements for this flight',[['req.er','Extended range'],['req.rvsm','RVSM'],['req.pbn','PBN'],['req.nr','Narrow RWY'],['req.spa','Simultaneous parallel approach'],['req.pic','PIC is pilot flying']])}`;
-  return `<div class="mhead"><h1>Dispatch Briefing</h1><p class="lead">The sequence of the Dispatch Briefing form: technical condition of the aircraft, route planning, weather, NOTAM, load, fuel, company operational requirements, and last the clearance and ATIS, which are only filled in the aircraft. Sector ${state.sec+1} is open; change sector with the chips above.</p></div>`+imp+
-   sec('Flight information / technical condition of the aircraft',info,'fields','dsp.info')+sec('Route planning',route,'fields','dsp.route')+sec('Weather',wxb,'fields','dsp.wx')+sec('NOTAM',ntm,'nt','dsp.notam')+sec('Load',loadBlk,'fields','dsp.load')+sec('Fuel',fuelBlk,'fields','dsp.fuel')+sec('Company operational requirements',req,'checks','dsp.req')+sec('Clearance & ATIS (filled in the aircraft)',clr,'fields','dsp.clr')+
+  return `<div class="mhead"><h1>Dispatch Briefing</h1><p class="lead">The sequence of the Dispatch Briefing form: technical condition of the aircraft, route planning, weather, NOTAM, load, fuel, company operational requirements, and last your suggested clearance. Sector ${state.sec+1} is open; change sector with the chips above.</p></div>`+imp+
+   sec('Flight information / technical condition of the aircraft',info,'fields','dsp.info')+sec('Route planning',route,'fields','dsp.route')+sec('Weather',wxb,'fields','dsp.wx')+sec('NOTAM',ntm,'nt','dsp.notam')+sec('Load',loadBlk,'fields','dsp.load')+sec('Fuel',fuelBlk,'fields','dsp.fuel')+sec('Company operational requirements',req,'checks','dsp.req')+sec('Suggested clearance',clr,'fields','dsp.clr')+
    `<section class="sumbox"><h2>Summary</h2><pre class="sum" data-sum="dsp"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="dsp">Copy summary</button></div></section>`;
 }
 function cabDeriveHTML(){
@@ -1404,10 +1403,9 @@ function sumDsp(i){
   const tk=tkActualCheck(s);if(tk&&tk.ready){const same=Math.abs(tk.diff)<=1,legal=tk.mT>=0&&tk.mL>=0;L.push('  Tankering: actual total fuel decided '+n0(tk.actual)+' kg'+(same?' (matches flight plan)':' ('+sgn(tk.diff)+' kg vs flight plan)')+', '+(legal?'within T/O and LDG mass limits':'OVER A MASS LIMIT — check before loading'))}
   const rq=['er','rvsm','pbn','nr','spa','pic'].filter(k=>c['req.'+k]).map(k=>({er:'Extended range',rvsm:'RVSM',pbn:'PBN',nr:'Narrow RWY',spa:'Simultaneous parallel approach',pic:'PIC is pilot flying'}[k]));
   L.push('');L.push('COMPANY OPERATIONAL REQUIREMENTS: '+(rq.join(', ')||'none ticked'));
-  /* clearance and ATIS come last: they are only filled in the aircraft */
+  /* suggested clearance comes last: it's only a working guess until the real one is copied in the aircraft */
   const cl=[v.clr_rwy?'RWY '+v.clr_rwy:'',v.clr_sid?'SID '+v.clr_sid:'',v.clr_firstalt?'first alt '+v.clr_firstalt:'',v.clr_awy?'airway '+v.clr_awy:'',v.clr_sqw?'SQW '+v.clr_sqw:''].filter(Boolean).join(', ');
-  const at=[v.atis_inf?'info '+v.atis_inf:'',v.atis_time?'time '+v.atis_time+'Z':'',v.atis_wind?'wind '+v.atis_wind:'',v.atis_vis?'vis '+v.atis_vis:'',v.atis_clouds?'clouds '+v.atis_clouds:'',v.atis_temp?'temp '+v.atis_temp:'',v.atis_qnh?'QNH '+v.atis_qnh:'',v.atis_transalt?'trans alt '+v.atis_transalt:'',v.atis_rwydep?'RWY dep '+v.atis_rwydep:'',v.atis_rwyarr?'RWY arr '+v.atis_rwyarr:'',v.atis_other||''].filter(Boolean).join(', ');
-  if(cl||at){L.push('');L.push('CLEARANCE & ATIS');add('  Clearance',cl);add('  ATIS',at)}
+  if(cl){L.push('');L.push('SUGGESTED CLEARANCE');add('  Clearance',cl)}
   return L.join('\n');
 }
 function sumCab(){
@@ -1524,11 +1522,37 @@ function readPdf(file){
 }
 const EXPECT=[['flt','Flight'],['date','Date'],['reg','Registration'],['dep_icao','From'],['dest_icao','To'],['alt_icao','Alternate'],['etd','ETD'],['eta','ETA'],['route','Route'],['lf_zfm','ZF mass'],['lf_tom','T/O mass'],['lf_ldm','LDG mass'],['lf_taxi','Taxi'],['lf_trip','Trip'],['lf_planned','Planned fuel'],['lf_pextra','Extra'],['lim_tom','Max T/O'],['lim_ldm','Max LDG']];
 function setMsg(html,warn){state.impMsg=html;state.impWarn=!!warn;const e=$('#impStatus');if(e){e.innerHTML=html;e.className='status'+(warn?' warn':'')}}
+/* Reads the suggested SID and first airway off the route string, e.g. "DCT MIGDA L677 WEJ V54 TBK DCT":
+   the first fix after any leading DCT ("direct") is MIGDA — a 5-letter RNAV significant point is the
+   kind of fix a SID normally ends on, so it's offered as the SID; a 3-letter fix is a VOR ident, which
+   means a direct-to-VOR departure with no SID to suggest. Whatever immediately follows that fix and
+   reads as an airway (one or two letters then digits, e.g. L677, UL607, A1) is offered as the airway.
+   Neither guess is definitive — some airports have no SID at all, and this is only ever a starting
+   point the pilot can overwrite once the real clearance is received. */
+function firstFixAirway(route){
+  const toks=String(route||'').trim().toUpperCase().split(/\s+/).filter(Boolean);
+  let i=0;while(i<toks.length&&toks[i]==='DCT')i++;
+  const fix=toks[i];if(!fix)return {sid:null,awy:null};
+  const sid=/^[A-Z]{5}$/.test(fix)?fix:null;
+  const nxt=toks[i+1];
+  const awy=(nxt&&/^[A-Z]{1,2}\d{1,4}$/.test(nxt))?nxt:null;
+  return {sid,awy};
+}
+/* Fills the Suggested clearance's SID and Airway fields from the route, but only while they're still
+   empty — once the pilot has typed (or the real clearance has overwritten) a value, it's never
+   clobbered by a fresh guess. */
+function applyClrSuggest(s){
+  if(s.v.clr_sid&&s.v.clr_awy)return;
+  const r=firstFixAirway(s.v.route);
+  if(!s.v.clr_sid&&r.sid)s.v.clr_sid=r.sid;
+  if(!s.v.clr_awy&&r.awy)s.v.clr_awy=r.awy;
+}
 function applyParsed(idx,p,text){
   const s=state.secs[idx];
   Object.keys(p.v).forEach(k=>{s.v[k]=p.v[k];s.src[k]='ofp'});
   Object.keys(p.c).forEach(k=>{s.c[k]=p.c[k]});
   state.raw[idx]=text;
+  applyClrSuggest(s);
 }
 const isNotam=t=>/NOTAMs for flight/i.test(t)||(/\|#\d+\|/.test(t)&&/\bNOTAM[NRC]\b/.test(t));
 function ntSector(p){
@@ -1622,6 +1646,12 @@ main.addEventListener('change',e=>{
     }
     if(t.dataset.rwy)rwyAutoSave(t,k,s);
     syncRwyPickers(k); // no-op unless k is an ICAO field (dep_icao/dest_icao/alt_icao) some RWY field reads from
+    if(k==='route'){
+      const bs=s.v.clr_sid,ba=s.v.clr_awy;
+      applyClrSuggest(s);
+      if(s.v.clr_sid!==bs){const e2=document.getElementById('v_clr_sid');if(e2)e2.value=s.v.clr_sid||''}
+      if(s.v.clr_awy!==ba){const e2=document.getElementById('v_clr_awy');if(e2)e2.value=s.v.clr_awy||''}
+    }
     refreshLive();save();
   }
   else if((k=t.dataset.rwypick)){
