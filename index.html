@@ -198,6 +198,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .status .miss em{font:500 11px var(--f-mono);font-style:normal;padding:2px 7px;border:1px solid var(--line);border-radius:2px;color:var(--ink2)}
 .ofpdet{border:1px solid var(--line);padding:6px 12px 12px;background:var(--surface)}
 .ofpdet[open]{display:flex;flex-direction:column;gap:14px}
+.rwypick{margin-top:2px;min-height:34px;padding:5px 8px;font:500 12px var(--f-mono);border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink2);border-radius:3px}
 .rwyrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px dashed var(--line)}
 .rwyrow:last-child{border-bottom:0}
 .rwyrow b{min-width:44px;font:600 13px var(--f-mono);color:var(--accent)}
@@ -279,7 +280,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.19.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.20.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -310,6 +311,15 @@ function rwyRecip(hdg){
 /* Splits a "16C 16L 16R 34C 34L 34R" style runway list (as printed on the NOTAM briefing's airport
    header) into individual idents. */
 function rwyParseList(s){return String(s||'').trim().split(/\s+/).filter(Boolean)}
+/* Normalizes a manually-typed runway field to a clean ident (e.g. "6l"->"06L", "34"->"34"), or returns
+   null if it doesn't look like a single runway ident (so free text like an intersection name is never
+   mistaken for one and saved to the database). Used to auto-save what a pilot types into a RWY field. */
+function rwyNorm(s){
+  const m=String(s||'').trim().toUpperCase().match(/^(\d{1,2})([LCR])?$/);
+  if(!m)return null;
+  const n=parseInt(m[1],10);if(n<1||n>36)return null;
+  return String(n).padStart(2,'0')+(m[2]||'');
+}
 /* Adds runway idents to an airport's saved list. Purely additive: existing idents are kept, duplicates
    are dropped, nothing is ever removed here. */
 function rwyDbAdd(icao,idents){
@@ -319,6 +329,41 @@ function rwyDbAdd(icao,idents){
   let changed=false;
   idents.forEach(x=>{x=String(x||'').toUpperCase().trim();if(x&&!set.has(x)){set.add(x);changed=true}});
   if(changed){rwyDb[icao]=[...set].sort();saveRwyDb()}
+}
+/* Rebuilds/creates/removes the picker <select> for every currently-rendered RWY field that reads its
+   airport from icaoKey (e.g. 'dep_icao' — that can be several fields at once: Weather, Clearance and
+   ATIS all key off the same departure airport). Called whenever that ICAO field changes, or whenever a
+   pilot's manual entry adds a new ident, so every picker sharing that airport updates together and
+   immediately — no waiting for the next full render. */
+function syncRwyPickers(icaoKey){
+  const icao=(S().v[icaoKey]||'').toUpperCase(),list=rwyDb[icao];
+  document.querySelectorAll('input[data-rwy="'+icaoKey+'"]').forEach(inp=>{
+    const k=inp.dataset.v,fldDiv=inp.closest('.fld');if(!fldDiv)return;
+    let sel=fldDiv.querySelector('select[data-rwypick="'+k+'"]');
+    if(list&&list.length){
+      const opts='<option value="">Saved at '+esc(icao)+' ▾</option>'+list.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
+      if(sel)sel.innerHTML=opts;
+      else{
+        sel=document.createElement('select');
+        sel.className='rwypick';
+        sel.setAttribute('data-rwypick',k);
+        sel.setAttribute('aria-label','Saved runways at '+icao);
+        sel.innerHTML=opts;
+        fldDiv.appendChild(sel);
+      }
+    }else if(sel)sel.remove();
+  });
+}
+/* Called when a pilot finishes typing into a RWY field by hand (data-rwy points at that sector's ICAO
+   field key). If it reads as a clean runway ident, it's saved to that airport's list right away — no
+   separate "Saved runways" step needed — and every picker for that airport is refreshed in place. */
+function rwyAutoSave(inputEl,k,s){
+  const icaoKey=inputEl.dataset.rwy,icao=(s.v[icaoKey]||'').toUpperCase();
+  if(!/^[A-Z]{4}$/.test(icao))return;
+  const norm=rwyNorm(inputEl.value);if(!norm)return;
+  const before=(rwyDb[icao]||[]).length;
+  rwyDbAdd(icao,[norm]);
+  if((rwyDb[icao]||[]).length!==before)syncRwyPickers(icaoKey);
 }
 
 /*PARSER_START*/
@@ -824,16 +869,20 @@ const srcTag=k=>`<span class="src" data-srctag="${k}" hidden>OFP</span>`;
 function fld(k,l,o={}){
   const id='v_'+k.replace(/\W/g,'_'),ph=esc(o.ph||''),val=esc(V(k));
   /* o.rwy: the key of this sector's ICAO field (e.g. 'dep_icao') whose saved runways should be
-     offered as suggestions. A datalist keeps the field free-text (intersection departures, etc.)
-     while still letting a saved runway be picked instead of retyped. */
-  let dl='';
+     offered as suggestions. The field itself stays free-text (an intersection departure or anything
+     unlisted can always be typed), but when that airport already has runways saved a real <select>
+     "picker" is shown alongside it — a native picker reliably reopens every time it's tapped, unlike
+     a <datalist> suggestion box. Picking an option fills the text field. Whatever the pilot types by
+     hand into the field is auto-saved to the database on its own (see the main 'change' handler), so
+     the picker fills in for that airport next time without any separate step. */
+  let pick='';
   if(o.rwy){
     const icao=(V(o.rwy)||'').toUpperCase(),list=rwyDb[icao];
-    if(list&&list.length)dl=`<datalist id="${id}_dl">${list.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`;
+    if(list&&list.length)pick=`<select class="rwypick" data-rwypick="${k}" aria-label="Saved runways at ${esc(icao)}"><option value="">Saved at ${esc(icao)} ▾</option>${list.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}</select>`;
   }
   const ctl=o.area?`<textarea id="${id}" data-v="${k}" rows="${o.rows||2}" placeholder="${ph}">${val}</textarea>`
-   :`<input id="${id}" data-v="${k}" type="${o.type||'text'}" class="${UP.has(k)?'up':''}" value="${val}" placeholder="${ph}" autocomplete="off"${o.num?' inputmode="decimal"':''}${dl?` list="${id}_dl"`:''}>`;
-  return `<div class="fld ${o.cls||''}"><label for="${id}"><span class="fl${o.pilot?' pilot':''}">${l}${srcTag(k)}</span></label>${ctl}${dl}</div>`;
+   :`<input id="${id}" data-v="${k}" type="${o.type||'text'}" class="${UP.has(k)?'up':''}" value="${val}" placeholder="${ph}" autocomplete="off"${o.num?' inputmode="decimal"':''}${o.rwy?` data-rwy="${o.rwy}"`:''}>`;
+  return `<div class="fld ${o.cls||''}"><label for="${id}"><span class="fl${o.pilot?' pilot':''}">${l}${srcTag(k)}</span></label>${ctl}${pick}</div>`;
 }
 const seg=(k,l,opts,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}${srcTag(k)}</span><div class="seg" role="group" aria-label="${esc(l)}">${opts.map(o=>`<button type="button" data-seg="${k}" data-val="${esc(o[0])}" aria-pressed="false">${esc(o[1]||o[0])}</button>`).join('')}</div></div>`;
 const tgs=(l,items,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="tgs">${items.map(i=>`<button type="button" class="tg" data-tog="${i[0]}" data-clr="${(i[2]||[]).join(',')}" aria-pressed="false">${esc(i[1])}</button>`).join('')}</div></div>`;
@@ -1529,7 +1578,17 @@ main.addEventListener('change',e=>{
       if(o){s.v.oeb=o.c;s.v.oeb_n='OEB '+o.n+' — '+o.t;s.v.oeb_ecam=o.e}
       else{delete s.v.oeb;delete s.v.oeb_n;delete s.v.oeb_ecam}
     }
+    if(t.dataset.rwy)rwyAutoSave(t,k,s);
+    syncRwyPickers(k); // no-op unless k is an ICAO field (dep_icao/dest_icao/alt_icao) some RWY field reads from
     refreshLive();save();
+  }
+  else if((k=t.dataset.rwypick)){
+    if(t.value){
+      s.v[k]=t.value;delete s.src[k];
+      const inp=document.getElementById('v_'+k.replace(/\W/g,'_'));if(inp)inp.value=t.value;
+      t.value='';
+      refreshLive();save();
+    }
   }
 });
 main.addEventListener('dragover',e=>{const d=e.target.closest&&e.target.closest('#drop');if(d){e.preventDefault();d.classList.add('over')}});
