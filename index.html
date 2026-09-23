@@ -198,6 +198,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .status .miss em{font:500 11px var(--f-mono);font-style:normal;padding:2px 7px;border:1px solid var(--line);border-radius:2px;color:var(--ink2)}
 .ofpdet{border:1px solid var(--line);padding:6px 12px 12px;background:var(--surface)}
 .ofpdet[open]{display:flex;flex-direction:column;gap:14px}
+.rwyrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px dashed var(--line)}
+.rwyrow:last-child{border-bottom:0}
+.rwyrow b{min-width:44px;font:600 13px var(--f-mono);color:var(--accent)}
+.rwyrow .row{flex:1;gap:6px}
 
 /* derived + tankering */
 .derive{display:flex;flex-direction:column;border:1px solid var(--line);background:var(--surface)}
@@ -275,7 +279,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.18.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.19.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -290,6 +294,32 @@ const WXKEY='line-brief.wxkey.v1';
 let wxApiKey='';try{wxApiKey=localStorage.getItem(WXKEY)||''}catch(e){}
 function saveWxKey(k){wxApiKey=k;try{localStorage.setItem(WXKEY,k)}catch(e){}}
 const MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+/* ---------- saved runways: a small personal per-airport reference, independent of the sector data.
+   Kept in its own localStorage key (like the weather API key) so "Clear sector" / "Clear all" never
+   touch it and it survives across every flight. Not part of Cloud sync (device-local only). ---------- */
+const RWYKEY='line-brief.rwydb.v1';
+let rwyDb={};try{const r=JSON.parse(localStorage.getItem(RWYKEY)||'{}');if(r&&typeof r==='object')rwyDb=r}catch(e){}
+function saveRwyDb(){try{localStorage.setItem(RWYKEY,JSON.stringify(rwyDb))}catch(e){}}
+/* Reciprocal of a runway heading: runway numbers are magnetic heading/10 rounded to the nearest whole
+   number, 01-36; the opposite threshold is 180° around, i.e. ±18. 34↔16, 01↔19, 36↔18. */
+function rwyRecip(hdg){
+  const n=parseInt(hdg,10);if(!n||n<1||n>36)return null;
+  return String(((n+17)%36)+1).padStart(2,'0');
+}
+/* Splits a "16C 16L 16R 34C 34L 34R" style runway list (as printed on the NOTAM briefing's airport
+   header) into individual idents. */
+function rwyParseList(s){return String(s||'').trim().split(/\s+/).filter(Boolean)}
+/* Adds runway idents to an airport's saved list. Purely additive: existing idents are kept, duplicates
+   are dropped, nothing is ever removed here. */
+function rwyDbAdd(icao,idents){
+  if(!icao||!idents||!idents.length)return;
+  icao=String(icao).toUpperCase().trim();if(!/^[A-Z]{4}$/.test(icao))return;
+  const set=new Set(rwyDb[icao]||[]);
+  let changed=false;
+  idents.forEach(x=>{x=String(x||'').toUpperCase().trim();if(x&&!set.has(x)){set.add(x);changed=true}});
+  if(changed){rwyDb[icao]=[...set].sort();saveRwyDb()}
+}
 
 /*PARSER_START*/
 const pad=n=>('0'+n).slice(-2);
@@ -793,9 +823,17 @@ const UP=new Set(['flt','reg','dep_icao','dep_iata','dest_icao','dest_iata','alt
 const srcTag=k=>`<span class="src" data-srctag="${k}" hidden>OFP</span>`;
 function fld(k,l,o={}){
   const id='v_'+k.replace(/\W/g,'_'),ph=esc(o.ph||''),val=esc(V(k));
+  /* o.rwy: the key of this sector's ICAO field (e.g. 'dep_icao') whose saved runways should be
+     offered as suggestions. A datalist keeps the field free-text (intersection departures, etc.)
+     while still letting a saved runway be picked instead of retyped. */
+  let dl='';
+  if(o.rwy){
+    const icao=(V(o.rwy)||'').toUpperCase(),list=rwyDb[icao];
+    if(list&&list.length)dl=`<datalist id="${id}_dl">${list.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`;
+  }
   const ctl=o.area?`<textarea id="${id}" data-v="${k}" rows="${o.rows||2}" placeholder="${ph}">${val}</textarea>`
-   :`<input id="${id}" data-v="${k}" type="${o.type||'text'}" class="${UP.has(k)?'up':''}" value="${val}" placeholder="${ph}" autocomplete="off"${o.num?' inputmode="decimal"':''}>`;
-  return `<div class="fld ${o.cls||''}"><label for="${id}"><span class="fl${o.pilot?' pilot':''}">${l}${srcTag(k)}</span></label>${ctl}</div>`;
+   :`<input id="${id}" data-v="${k}" type="${o.type||'text'}" class="${UP.has(k)?'up':''}" value="${val}" placeholder="${ph}" autocomplete="off"${o.num?' inputmode="decimal"':''}${dl?` list="${id}_dl"`:''}>`;
+  return `<div class="fld ${o.cls||''}"><label for="${id}"><span class="fl${o.pilot?' pilot':''}">${l}${srcTag(k)}</span></label>${ctl}${dl}</div>`;
 }
 const seg=(k,l,opts,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}${srcTag(k)}</span><div class="seg" role="group" aria-label="${esc(l)}">${opts.map(o=>`<button type="button" data-seg="${k}" data-val="${esc(o[0])}" aria-pressed="false">${esc(o[1]||o[0])}</button>`).join('')}</div></div>`;
 const tgs=(l,items,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="tgs">${items.map(i=>`<button type="button" class="tg" data-tog="${i[0]}" data-clr="${(i[2]||[]).join(',')}" aria-pressed="false">${esc(i[1])}</button>`).join('')}</div></div>`;
@@ -813,6 +851,24 @@ const xrows=fn=>actSecs().map(i=>`<div class="xrow"><div class="xh">${secLbl(i)}
 const tfld=(k,l,o={})=>{const id='t_'+k,val=esc(state.trip.v[k]||'');const ctl=o.area?`<textarea id="${id}" data-tv="${k}" rows="${o.rows||2}" placeholder="${esc(o.ph||'')}">${val}</textarea>`:`<input id="${id}" data-tv="${k}" value="${val}" placeholder="${esc(o.ph||'')}" autocomplete="off">`;return `<div class="fld ${o.cls||''}"><label for="${id}"><span class="fl">${l}</span></label>${ctl}</div>`};
 const YN=[['Y','Yes'],['N','No']];
 const melText=s=>{const v=s.v;if(s.c['mel.no'])return 'No MEL / CDL';const l=[1,2,3].map(n=>{const ref=v['mel'+n+'_ref'],cat=v['mel'+n+'_cat'],title=v['mel'+n+'_title'];if(!ref&&!cat&&!title)return '';return [ref,cat?'CAT '+cat:'',title].filter(Boolean).join(' ')}).filter(Boolean);return l.length?l.join('; '):'Not recorded in Dispatch'};
+/* Saved runways: a small personal per-airport reference (see rwyDb near the top of the file). NOTAM
+   imports add to it automatically; this lets a runway heading be added by hand too — enter one end
+   (e.g. 34), tick which parallel runways exist there (L/C/R, or none for a single runway), and Save
+   adds that heading and its reciprocal (e.g. 34 and 16) together, since both ends of a runway share
+   the same parallel layout. Runway fields elsewhere then offer these as suggestions while staying
+   free-text, so an intersection departure or anything unlisted can still be typed. */
+function rwydbBlockHTML(){
+  const keys=Object.keys(rwyDb).sort();
+  const list=keys.length?keys.map(ic=>`<div class="rwyrow"><b>${esc(ic)}</b><div class="row">${(rwyDb[ic]||[]).map(x=>`<button type="button" class="chip" data-act="rwydb-rm" data-icao="${esc(ic)}" data-id="${esc(x)}" title="Remove ${esc(x)}">${esc(x)} ×</button>`).join('')}</div></div>`).join('')
+   :'<p class="muted">No runways saved yet. NOTAM imports add them automatically, or add one by hand below.</p>';
+  return `<details class="ofpdet" data-seckey="dsp.rwydb"${state.open['dsp.rwydb']?' open':''}><summary>Saved runways — ${keys.length} airport${keys.length===1?'':'s'} saved</summary>
+   <div class="gr c4"><div class="fld"><label for="rwydb_icao"><span class="fl">ICAO</span></label><input id="rwydb_icao" class="up" placeholder="e.g. OEJN" autocomplete="off" maxlength="4"></div>
+   <div class="fld"><label for="rwydb_hdg"><span class="fl">Runway heading</span></label><input id="rwydb_hdg" placeholder="e.g. 34" inputmode="numeric" autocomplete="off" maxlength="2"></div>
+   <div class="fld"><span class="fl">Parallel runways</span><div class="tgs"><button type="button" class="tg" data-rwyside="L" aria-pressed="false">L</button><button type="button" class="tg" data-rwyside="C" aria-pressed="false">C</button><button type="button" class="tg" data-rwyside="R" aria-pressed="false">R</button></div></div>
+   <div class="fld"><span class="fl">&nbsp;</span><button type="button" class="btn" data-act="rwydb-save">Save runway + reciprocal</button></div></div>
+   <p class="note">Saves both ends at once — e.g. entering 34 with L/C/R ticked saves 34L, 34C, 34R, 16L, 16C, 16R for that airport. Leave the parallel runways unticked for a single runway (e.g. 06 saves 06 and 24). This list is kept on this device only, separate from the sector data — “Clear sector” and “Clear all” do not touch it.</p>
+   <div id="rwydbList">${list}</div></details>`;
+}
 const cabList=k=>actSecs().filter(i=>state.secs[i].v[k]==='Y').map(i=>'S'+(i+1));
 const CAB_LBL={fit:'Is everyone fit for duty?',docs:'Documents OK',names:'Names and positions',reg:'A/C registration and position',mel:'Cabin technical status: MELs',nsec:'Number of sectors',ftime:'Flight times',fl:'Flight altitudes',refuel:'Refueling operation',refsec:'Refueling sectors',tank:'Tankering sectors',refpax:'Refueling with PAX',taxi:'Taxi (short or not)',wx:'Expected weather and turbulence',hijack:'Hijack code',entry:'Cockpit entry procedure',unruly:'Unruly passenger',emerg:'Emergency procedures',q:'Questions?'};
 const calc=(id,l,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="calc" data-calc="${id}">—</div></div>`;
@@ -1088,6 +1144,7 @@ function dspHTML(){
   const info=`<div class="gr c4">${calc('sector','Sector')}${fld('flt','Flight number',{ph:'FAD123'})}${seg('dom','Flight type',[['DOM','DOM'],['INT','INT']])}${fld('date','Date',{type:'date'})}</div>
    <div class="gr c4">${fld('reg','Aircraft reg',{ph:'HZ-XXX'})}${mir('ceoneo','Aircraft type')}${fld('stand','Parking stand')}</div>
    <div class="gr c6">${fld('dep_icao','From ICAO')}${fld('dep_iata','From IATA')}${fld('dest_icao','To ICAO')}${fld('dest_iata','To IATA')}${fld('alt_icao','Alt ICAO')}${fld('alt_iata','Alt IATA')}</div>
+   ${rwydbBlockHTML()}
    <div class="gr c4">${tgs('EFB update check',[['efb.fdpro','FD Pro'],['efb.flysmart','FlySmart']])}${fld('etd','ETD (Z)',{ph:'hh:mm'})}${fld('eta','ETA (Z)',{ph:'hh:mm'})}</div>
    <div class="gr c4">${fld('ftime','Flight time',{ph:'h:mm'})}${fld('pax','PAX',{num:1})}</div>
    <h3 class="blk">MEL / CDL and OEB</h3>${tgs('MEL / CDL',[['mel.no','No MEL / CDL']])}${melRows}
@@ -1105,11 +1162,11 @@ function dspHTML(){
    <div class="fld"><label for="wxApiKey"><span class="fl">CheckWX API key</span></label><input id="wxApiKey" type="password" autocomplete="off" value="${esc(wxApiKey)}" placeholder="Paste your key"></div></div></details>`;
   const wxTools=`${wxKeyBox}<div class="row"><button type="button" class="btn" data-act="wx-dl" data-wx="all">Download all weather (DEP · ARR · ALT)</button></div><div class="status" id="wxMsg" role="status"></div>`;
   const wxb=wxTools+[['dep','DEP','dep_icao'],['arr','ARR','dest_icao'],['alt','ALT','alt_icao']].map(x=>`<h3 class="blk">${x[1]} <span class="mir" data-mirror="${x[2]}"></span><button type="button" class="chip wxb" data-act="wx-dl" data-wx="${x[0]}">Download</button></h3>
-   <div class="gr c4">${fld('wx_'+x[0]+'_t','Time (day / UTC)',{ph:'dd/hhmm'})}${fld('wx_'+x[0]+'_rwy','RWY')}</div>${fld('wx_'+x[0]+'_metar','METAR',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_taf','TAF',{area:1,rows:2,cls:'wide'})}
+   <div class="gr c4">${fld('wx_'+x[0]+'_t','Time (day / UTC)',{ph:'dd/hhmm'})}${fld('wx_'+x[0]+'_rwy','RWY',{rwy:x[2]})}</div>${fld('wx_'+x[0]+'_metar','METAR',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_taf','TAF',{area:1,rows:2,cls:'wide'})}
    <div class="fld wide"><label for="v_wx_${x[0]}_tempo"><span class="fl">BECMG / TEMPO relevant to your ${x[0]==='dep'?'ETD':'ETA'}<button type="button" class="chip" data-act="wx-tempo" data-wx="${x[0]}">Work out from TAF</button></span></label><textarea id="v_wx_${x[0]}_tempo" data-v="wx_${x[0]}_tempo" rows="3" placeholder="Filled automatically after a TAF download, or tap “Work out from TAF” after pasting one">${esc(V('wx_'+x[0]+'_tempo'))}</textarea></div>`).join('');
   const clr=`<p class="note">Filled in the aircraft, once the clearance and the ATIS are received.</p>
-   <div class="gr c4">${fld('clr_rwy','RWY')}${fld('clr_sid','SID')}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>
-   <div class="gr c4">${fld('atis_inf','ATIS info')}${fld('atis_time','Time (UTC)',{ph:'hh:mm'})}${fld('atis_wind','Wind',{ph:'000/10G20'})}${fld('atis_vis','VIS')}${fld('atis_clouds','Clouds')}${fld('atis_temp','Temp / dew point',{ph:'40/12'})}${fld('atis_qnh','QNH')}${fld('atis_transalt','Trans alt')}${fld('atis_rwydep','RWY dep')}${fld('atis_rwyarr','RWY arr')}${fld('atis_other','Other',{cls:'w2'})}</div>`;
+   <div class="gr c4">${fld('clr_rwy','RWY',{rwy:'dep_icao'})}${fld('clr_sid','SID')}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>
+   <div class="gr c4">${fld('atis_inf','ATIS info')}${fld('atis_time','Time (UTC)',{ph:'hh:mm'})}${fld('atis_wind','Wind',{ph:'000/10G20'})}${fld('atis_vis','VIS')}${fld('atis_clouds','Clouds')}${fld('atis_temp','Temp / dew point',{ph:'40/12'})}${fld('atis_qnh','QNH')}${fld('atis_transalt','Trans alt')}${fld('atis_rwydep','RWY dep',{rwy:'dep_icao'})}${fld('atis_rwyarr','RWY arr',{rwy:'dest_icao'})}${fld('atis_other','Other',{cls:'w2'})}</div>`;
   const ntm=`<p class="lead">Airport and FIR NOTAMs from the Mission Plus NOTAM PDF, translated into plain English. Mission Plus already limits the search to the flight window, so nothing is filtered by hour here. Nothing is added to the brief by default: tap “Add to brief” on each NOTAM you want in the summary.</p>
    <div class="imp-mini"><label class="btn" for="pdfIn2">Import NOTAM PDF</label><input class="sr" type="file" id="pdfIn2" data-imp="1" accept="application/pdf,.pdf" multiple><span class="note">Or paste the NOTAM text in the box at the top of this tab.</span></div>
    <div class="out" id="ntOut"></div>
@@ -1409,6 +1466,10 @@ function importTexts(items){
     x.p.inc=(s.nt&&s.nt.flt===x.p.flt&&s.nt.inc)||{};
     if(!s.v.flt&&x.p.flt)s.v.flt=x.p.flt;if(!s.v.dep_icao&&x.p.dep)s.v.dep_icao=x.p.dep;if(!s.v.dest_icao&&x.p.dest)s.v.dest_icao=x.p.dest;
     s.nt=x.p;x.idx=idx;
+    /* the NOTAM briefing's airport header already lists that airport's active runways (e.g. "RWY 16C
+       16L 16R 34C 34L 34R") — feed them straight into the saved-runways reference, additively, so it
+       builds up on its own from every NOTAM import without the pilot having to type anything. */
+    x.p.secs.forEach(sc=>{if(sc.key!=='fir'&&sc.rwy)rwyDbAdd(sc.icao,rwyParseList(sc.rwy))});
     const n=x.p.secs.reduce((a,sc)=>a+sc.items.length,0);
     msgs.push('<span>NOTAMs, sector '+(idx+1)+': '+esc(x.p.flt||x.name)+' '+esc((x.p.dep||'?')+' → '+(x.p.dest||'?'))+', '+n+' NOTAMs read ('+x.p.secs.map(sc=>esc(sc.icao)+' '+sc.items.length).join(', ')+').</span>')});
   parsed.forEach((x,n)=>{const idx=state.sec+n;if(idx>3){msgs.push('<span>Skipped '+esc(x.name)+': only four sectors are available.</span>');warn=true;return}
@@ -1477,7 +1538,7 @@ main.addEventListener('drop',e=>{const d=e.target.closest&&e.target.closest('#dr
 const armed={};
 function arm(btn,label,fn){if(btn.dataset.arm){clearTimeout(armed[btn.id]);btn.textContent=label;delete btn.dataset.arm;fn();return}btn.dataset.arm='1';btn.textContent='Tap again to confirm';armed[btn.id]=setTimeout(()=>{btn.textContent=label;delete btn.dataset.arm},4000)}
 document.addEventListener('click',e=>{
-  const b=e.target.closest('[data-act],[data-tab],[data-sec],[data-seg],[data-tog],[data-xseg],[data-xtog],[data-go],[data-nt]');if(!b)return;
+  const b=e.target.closest('[data-act],[data-tab],[data-sec],[data-seg],[data-tog],[data-xseg],[data-xtog],[data-go],[data-nt],[data-rwyside]');if(!b)return;
   const s=S();
   if(b.dataset.nt){const nt=s.nt;if(nt){const key=b.dataset.nt,p=key.indexOf(':'),si=+key.slice(0,p),id=key.slice(p+1);const it=nt.secs[si]&&nt.secs[si].items.filter(x=>x.id===id)[0];if(it){nt.inc=nt.inc||{};nt.inc[key]=!ntInc(nt,si,it);renderNt();refreshLive();save()}}return}
   if(b.dataset.tab){state.tab=b.dataset.tab;render();save();try{window.scrollTo({top:0})}catch(_){}return}
@@ -1491,6 +1552,7 @@ document.addEventListener('click',e=>{
     syncDom();refreshLive();save();return}
   if(b.dataset.xseg){const p=xs(b.dataset.xseg),v=state.secs[p[0]].v;if(v[p[1]]===b.dataset.val)delete v[p[1]];else v[p[1]]=b.dataset.val;syncDom();refreshLive();save();return}
   if(b.dataset.xtog){const p=xs(b.dataset.xtog),c=state.secs[p[0]].c;c[p[1]]=!c[p[1]];syncDom();refreshLive();save();return}
+  if(b.dataset.rwyside){b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')==='true'?'false':'true');return}
   if(b.dataset.tog){const k=b.dataset.tog;s.c[k]=!s.c[k];if(s.c[k]&&b.dataset.clr)b.dataset.clr.split(',').filter(Boolean).forEach(x=>{s.c[x]=false});syncDom();refreshLive();save();return}
   const a=b.dataset.act;
   if(a==='clear-sec'){arm(b,'Clear sector',()=>{state.example=false;state.secs[state.sec]=newSec();delete state.raw[state.sec];render();save()});return}
@@ -1504,6 +1566,25 @@ document.addEventListener('click',e=>{
   if(a==='wx-dl'){wxDownload(b.dataset.wx);return}
   if(a==='wx-tempo'){wxExtractTempo(b.dataset.wx);return}
   if(a==='tk-apply'){s.v.tk_on=b.dataset.val;delete s.src.tk_on;syncDom();refreshLive();save();return}
+  if(a==='rwydb-save'){
+    const icao=($('#rwydb_icao').value||'').trim().toUpperCase();
+    const hdg=($('#rwydb_hdg').value||'').replace(/\D/g,'').padStart(2,'0').slice(-2);
+    const n=parseInt(hdg,10);
+    if(!/^[A-Z]{4}$/.test(icao)){alert('Enter a valid 4-letter ICAO code.');return}
+    if(!n||n<1||n>36){alert('Enter a runway heading from 01 to 36.');return}
+    const recip=rwyRecip(hdg);
+    const sides=$$('[data-rwyside][aria-pressed="true"]').map(x=>x.dataset.rwyside);
+    const idents=sides.length?sides.flatMap(x=>[hdg+x,recip+x]):[hdg,recip];
+    rwyDbAdd(icao,idents);
+    render();
+    return;
+  }
+  if(a==='rwydb-rm'){
+    const icao=b.dataset.icao,id=b.dataset.id;
+    if(rwyDb[icao]){rwyDb[icao]=rwyDb[icao].filter(x=>x!==id);if(!rwyDb[icao].length)delete rwyDb[icao];saveRwyDb()}
+    render();
+    return;
+  }
   if(a==='cloud-save-cfg'){cloudSaveCfgFromBox();return}
   if(a==='cloud-turn-on'){cloudTurnOn();return}
   if(a==='cloud-signin'){cloudSignIn();return}
