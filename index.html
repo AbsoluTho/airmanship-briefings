@@ -204,6 +204,15 @@ button,input,select,textarea{font:inherit;color:inherit}
 .rwyrow b{min-width:44px;font:600 13px var(--f-mono);color:var(--accent)}
 .rwyrow .row{flex:1;gap:6px}
 
+.fltbl-h{font:600 11px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:14px 0 6px}
+.fltbl-wrap{overflow-x:auto}
+table.fltbl{border-collapse:collapse;width:100%;font:500 13px var(--f-mono)}
+table.fltbl th,table.fltbl td{padding:6px 10px;text-align:right;border-bottom:1px dashed var(--line);white-space:nowrap}
+table.fltbl th:first-child,table.fltbl td:first-child{text-align:left}
+table.fltbl thead th{font:600 11px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);border-bottom:1px solid var(--line)}
+table.fltbl tr:last-child td{border-bottom:0}
+table.fltbl tr.best td{color:var(--ok);font-weight:600}
+
 /* derived + tankering */
 .derive{display:flex;flex-direction:column;border:1px solid var(--line);background:var(--surface)}
 .dr{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 12px;border-bottom:1px dashed var(--line);flex-wrap:wrap}
@@ -280,7 +289,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.27.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.28.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -426,6 +435,27 @@ function parseOFP(text){
     const col=fls.indexOf(v.fl);
     if(col>=0){for(let j=hIdx+1;j<Math.min(cfpLines.length,hIdx+6);j++){const tr=[],re=/(\d{3}\/\d{3})\s+(-?\d+)(?:\s+(\d{1,2})(?![\d\/]))?/g;let mm;while((mm=re.exec(cfpLines[j])))tr.push(mm[2]);if(tr.length>col){set('temp',tr[col]);break}}}
   }
+  /* most-efficient flight level, from the OFP's own "CORRECTION TABLE" / "SPEED CORRECTION TABLE"
+     (page 4 of most Mission Plus OFPs). ADD.COST is the OFP's own fuel penalty, in kg, of flying that
+     level instead of its computed optimum (a 0 kg row IS that optimum): the lowest ADD.COST across the
+     listed levels is what "most efficient" means here, since it already accounts for both the trip fuel
+     and the time difference. The trailing four columns (CI/CRZ, TRIP, TIME, FL) are a second, unrelated
+     table — a speed comparison at the flight's own planned cruise level — and are only present on some
+     rows (commonly just the top two). +1TON is sometimes printed as "N/A" instead of a number. */
+  let fltbl=null;
+  {
+    const ctIdx=cfpLines.findIndex(l=>/CORRECTION TABLE/i.test(l));
+    if(ctIdx>=0){
+      const rowRe=/^(\d{2,3})\s+(\d{1,4}\.\d)\s+(\d{3,6})\s+(-?\d{1,3})\s+(N\/A|-?\d{1,3})\s+(-?\d{1,4})(?:\s+(CI\d+|LRC)\s+(\d{3,6})\s+(\d{1,4}\.\d)\s+(\d{2,3}))?\s*$/i;
+      const rows=[];
+      for(let j=ctIdx+1;j<cfpLines.length;j++){
+        const mm=cfpLines[j].trim().match(rowRe);
+        if(mm){rows.push({fl:mm[1],time:mm[2],trip:+mm[3],wc:mm[4],addton:mm[5].toUpperCase(),addcost:+mm[6],spdci:mm[7]?mm[7].toUpperCase():'',spdtrip:mm[8]?+mm[8]:null,spdtime:mm[9]||'',spdfl:mm[10]||''});continue}
+        if(rows.length)break;
+      }
+      if(rows.length){let bi=0;for(let j=1;j<rows.length;j++)if(rows[j].addcost<rows[bi].addcost)bi=j;fltbl={rows,best:bi}}
+    }
+  }
   /* fuel table */
   const fl=label=>{const x=cfp.match(new RegExp('^[ \\t]*'+label+'[^:\\n]*:\\s*(\\d+)\\s*:\\s*(\\d{2})\\s+(\\d+)','m'));return x?{t:(+x[1])+':'+x[2],kg:x[3]}:null};
   const one=label=>{const x=cfp.match(new RegExp('^[ \\t]*'+label+'\\s*:\\s*(\\d+)','m'));return x?x[1]:''};
@@ -467,7 +497,7 @@ function parseOFP(text){
      page, so those stay blank for manual entry against the MEL/CDL book. */
   const melm=[...up.matchAll(/MEL\/CDL ITEM\s*:\s*([0-9A-Z-]+)\s+CAT\s*([A-D])\b/g)];
   if(melm.length){c['mel.no']=false;melm.slice(0,3).forEach((mm,idx)=>{set('mel'+(idx+1)+'_ref',mm[1]);set('mel'+(idx+1)+'_cat',mm[2])})}
-  return {v,c,page3:ci>=0};
+  return {v,c,page3:ci>=0,fltbl};
 }
 /*PARSER_END*/
 
@@ -694,7 +724,7 @@ const IDS={
 ['jmp'].forEach(m=>MODS[m].sections.forEach(s=>(s.checks||[]).forEach((_,i)=>IDS[m].push(m+'.'+s.id+'.'+i))));
 
 /* ---------- state ---------- */
-const newSec=()=>({v:{},c:{'req.rvsm':true,'req.pbn':true},src:{},tem:[],tem2:[],nt:null});
+const newSec=()=>({v:{},c:{'req.rvsm':true,'req.pbn':true},src:{},tem:[],tem2:[],nt:null,fltbl:null});
 const newTrip=()=>({v:{},c:{}});
 const EX0={flt:'FAD123',dom:'DOM',date:'2026-09-22',reg:'HZ-XXX',ceoneo:'CEO',acft:'A320-214',dep_icao:'OEJN',dep_iata:'JED',dest_icao:'OETB',dest_iata:'TUU',alt_icao:'OEMA',alt_iata:'MED',etd:'07:25',eta:'08:55',ftime:'1:11',pax:'151',
  route:'DCT MIGDA L677 WEJ V54 TBK DCT',altroute:'DCT TBK V54 WEJ M872 BOVET',wind_dir:'TL',wind:'11',isa:'10',grd:'481',air:'469',ci:'20',fl:'340',temp:'-42',toc:'0:27',shear_v:'3',shear_w:'MIGDA',
@@ -1032,6 +1062,20 @@ function tankHTML(i){
   }
   return h+'</div><p class="note">This is a legality check against the mass limits, not a recommendation of how much fuel to load — that call stays with you and Dispatch. The suggested tankering option above is worked out from these figures too; it only changes the selector if you tap Set. Verify against the OFP and the loadsheet.</p>';
 }
+/* Flight-level correction table (and the speed-correction table alongside it), read from the OFP.
+   The row with the lowest ADD.COST is highlighted — it's the OFP's own answer to "most efficient",
+   since it already accounts for both the trip fuel and the time. */
+function fltblHTML(s){
+  const t=s.fltbl;
+  if(!t||!t.rows||!t.rows.length)return '';
+  const rows=t.rows.map((r,i)=>`<tr${i===t.best?' class="best"':''}><td>FL${esc(r.fl)}</td><td>${esc(r.time)}</td><td>${n0(r.trip)} kg</td><td>${esc(r.wc)}</td><td>${r.addton==='N/A'?'N/A':esc(r.addton)}</td><td>${r.addcost<=0?'optimum':'+'+n0(r.addcost)+' kg'}</td></tr>`).join('');
+  let h=`<div class="fltbl-wrap"><table class="fltbl"><thead><tr><th>FL</th><th>Time</th><th>Trip</th><th>WC</th><th>+1 ton</th><th>Add cost</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const spd=t.rows.filter(r=>r.spdci);
+  if(spd.length){
+    h+=`<div class="fltbl-h">Speed correction at FL${esc(spd[0].spdfl)}</div><div class="fltbl-wrap"><table class="fltbl"><thead><tr><th>CI / CRZ</th><th>Trip</th><th>Time</th></tr></thead><tbody>${spd.map(r=>`<tr><td>${esc(r.spdci)}</td><td>${n0(r.spdtrip)} kg</td><td>${esc(r.spdtime)}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  return h;
+}
 function deriveHTML(s){
   const g=k=>num(s.v[k]),rows=[];
   const trip=g('lf_trip'),cont=g('ofp_cont'),alt=g('ofp_alt'),fres=g('ofp_fres'),add=g('ofp_add')||0,hold=g('ofp_hold')||0,mintof=g('ofp_mintof'),taxi=g('lf_taxi'),minreq=g('lf_planned'),ex=g('lf_pextra'),ramp=g('ofp_ramp'),zfm=g('lf_zfm'),tom=g('lf_tom'),ldm=g('lf_ldm');
@@ -1275,14 +1319,17 @@ function dspHTML(){
     <div class="gr c4">${fld('ofp_dom','DOM (kg)',{num:1})}${fld('lim_mzfm','Max ZFM (kg)',{num:1})}${fld('lim_tom','Max T/O mass (kg)',{num:1})}${fld('lim_ldm','Max LDG mass (kg)',{num:1})}</div>
     <p class="note">The limits are the MAX column of the mass and balance block on page 3 of the OFP: they already include the regulated (runway or performance) limits.</p></details>`;
   const fuelBlk=`<div class="gr c4">${fld('lf_taxi','Taxi fuel (kg)',{num:1})}${fld('lf_trip','Trip fuel (kg)',{num:1})}${fld('trip_incl','Fuel factor %',{num:1,ph:'3.6'})}${fld('lf_planned','Planned fuel (kg)',{num:1})}
-   ${fld('lf_pextra','Planned extra fuel (kg)',{num:1})}${fld('lf_crew_total','Crew total fuel decided (kg)',{num:1,pilot:1})}${calc('crew_extra','Crew extra fuel')}${calc('lf_total','Total fuel')}${calc('lf_landing','Landing fuel (planned)')}</div>
-   <p class="note">Planned fuel is the OFP minimum required fuel including taxi. Total fuel is normally planned fuel plus planned extra — until the crew decides on a total fuel figure, entered below as Crew total fuel decided; from then on, that figure is the total, and Crew extra fuel is worked out backwards from it automatically (crew total fuel minus the flight plan's own total). Landing fuel (planned) is total fuel minus taxi and trip fuel — what you'd land with, before any tankering. The field in cyan — crew total fuel decided — is the one you set yourself; everything else here is normally filled from the OFP. Round-trip tankering below picks up crew total fuel and the actual ZFW (set under Load) automatically.</p>
+   ${fld('lf_pextra','Planned extra fuel (kg)',{num:1})}${fld('lf_crew_total','Crew total fuel decided (kg)',{num:1,pilot:1})}${calc('crew_extra','Crew extra fuel')}${calc('lf_total','Total fuel')}${calc('lf_landing','Landing fuel (planned)')}${calc('fl_best','Most efficient FL')}</div>
+   <p class="note">Planned fuel is the OFP minimum required fuel including taxi. Total fuel is normally planned fuel plus planned extra — until the crew decides on a total fuel figure, entered below as Crew total fuel decided; from then on, that figure is the total, and Crew extra fuel is worked out backwards from it automatically (crew total fuel minus the flight plan's own total). Landing fuel (planned) is total fuel minus taxi and trip fuel — what you'd land with, before any tankering. Most efficient FL is the OFP's own flight-level correction table (see below) read for its lowest ADD.COST — the level that already balances trip fuel against time. The field in cyan — crew total fuel decided — is the one you set yourself; everything else here is normally filled from the OFP. Round-trip tankering below picks up crew total fuel and the actual ZFW (set under Load) automatically.</p>
    ${tgs('Extra fuel due to',[['why.tank','Tankering'],['why.traffic','Traffic'],['why.wx','Weather'],['why.notam','NOTAM'],['why.other','Other']])}${fld('why_other','Other reason')}
    <details class="ofpdet" open><summary>OFP fuel figures and checks</summary>
     <div class="gr c4">${fld('ofp_cont','Contingency (kg)',{num:1})}${fld('ofp_alt','Alternate fuel (kg)',{num:1})}${fld('ofp_fres','Final reserve (kg)',{num:1})}${fld('ofp_add','Add fuel (kg)',{num:1})}
     ${fld('ofp_hold','Hold (kg)',{num:1})}${fld('ofp_mintof','Min T/O fuel (kg)',{num:1})}${fld('ofp_ramp','Total fuel (OFP, kg)',{num:1})}</div>
     ${fld('dsp_rmk','Dispatcher remarks (OFP)',{area:1,rows:2,cls:'wide'})}
     <div class="derive" id="deriveDsp"></div></details>
+   <details class="ofpdet"${S().fltbl?'':' hidden'} id="fltblBox"><summary>Flight level correction table</summary>
+    <p class="note" style="margin-top:0">From page 4 of the OFP: trip fuel and time at nearby flight levels, and how much extra fuel each one costs (ADD.COST) against the level the flight-planning system computed as optimum. The highlighted row is the lowest ADD.COST — this is what "Most efficient FL" above is read from.</p>
+    <div class="out" id="fltblOut"></div></details>
    <h3 class="blk">Round-trip tankering</h3>
    <p class="lead">Records the tankering decision and the next sector's fuel need for reference, then checks the actual total fuel you decide to carry — Crew total fuel decided, entered above under Fuel, or the flight plan total if that hasn't been set yet — against the T/O and LDG mass limits. The next sector is read from the sector chip that follows this one.</p>
    <div class="gr c4">${seg('tk_on','Round-trip tankering',[['Not planned','No'],['Planned: full','Full'],['Planned: partial','Partial']],'w2')}${fld('tk_next','Next leg total fuel, override (kg)',{num:1,cls:'w2'})}${calc('tk_actual_calc','Actual total fuel decided')}${fld('tk_pen','Burn penalty, optional (% per flight hour) — not used yet',{num:1,cls:'w2',ph:'e.g. 3'})}</div>
@@ -1500,9 +1547,11 @@ function refreshLive(){
     if(k==='crew_extra'&&L.crew!=null)t=sgn(L.crew)+' kg';
     if(k==='tk_actual_calc'){const tk=tkActualCheck(s);if(tk){t=n0(tk.actual)+' kg';bad=!(tk.mT>=0&&tk.mL>=0)}}
     if(k.indexOf('wxwind_')===0){const seg=k.slice(7);t=wxWindText(v['wx_'+seg+'_rwy'],v['wx_'+seg+'_metar'])||'—';bad=/^Tailwind/.test(t)}
+    if(k==='fl_best'){const ft=s.fltbl,fr=ft&&ft.rows[ft.best];if(fr)t='FL'+fr.fl+(fr.addcost>0?' (+'+n0(fr.addcost)+' kg vs optimum)':' (optimum)')}
     e.textContent=t;e.classList.toggle('bad',bad)});
   const lo=$('#loadOut');if(lo)lo.innerHTML=loadPanelHTML(i);
   const to=$('#tankOut');if(to)to.innerHTML=tankHTML(i);
+  const fo=$('#fltblOut');if(fo)fo.innerHTML=fltblHTML(s);
   const dd=$('#deriveDsp');if(dd)dd.innerHTML=deriveHTML(s);
   $$('[data-derive]').forEach(e=>{e.innerHTML=deriveHTML(s)});
   $$('.sec').forEach(el=>{const b=el.querySelector('.scount'),mode=el.dataset.count;let d=0,n=0;
@@ -1561,6 +1610,7 @@ function applyParsed(idx,p,text){
   const s=state.secs[idx];
   Object.keys(p.v).forEach(k=>{s.v[k]=p.v[k];s.src[k]='ofp'});
   Object.keys(p.c).forEach(k=>{s.c[k]=p.c[k]});
+  if(p.fltbl)s.fltbl=p.fltbl;
   state.raw[idx]=text;
   applyClrSuggest(s);
 }
