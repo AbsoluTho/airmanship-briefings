@@ -290,7 +290,7 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.29.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.30.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -501,8 +501,13 @@ function parseOFP(text){
   if(/\bNO MEL\/CDL\b/.test(up))c['mel.no']=true;
   /* MEL / CDL items on the Dispatch Release page look like "MEL/CDL Item: 32-09-02B CAT D", one line per
      item. Only the ATA reference and category are printed there; title and the (O) flag are not on this
-     page, so those stay blank for manual entry against the MEL/CDL book. */
-  const melm=[...up.matchAll(/MEL\/CDL ITEM\s*:\s*([0-9A-Z-]+)\s+CAT\s*([A-D])\b/g)];
+     page, so those stay blank for manual entry against the MEL/CDL book. Some Mission Plus OFPs print
+     the Dispatch Release twice (e.g. a duplicate signature copy), so the same MEL/CDL item line can
+     appear more than once in the raw text — dedupe by (ref, cat) before assigning, or the same item
+     ends up in both mel1 and mel2 and shows twice everywhere it's read from. */
+  const melmAll=[...up.matchAll(/MEL\/CDL ITEM\s*:\s*([0-9A-Z-]+)\s+CAT\s*([A-D])\b/g)];
+  const melSeen=new Set();
+  const melm=melmAll.filter(mm=>{const k=mm[1]+'|'+mm[2];if(melSeen.has(k))return false;melSeen.add(k);return true});
   if(melm.length){c['mel.no']=false;melm.slice(0,3).forEach((mm,idx)=>{set('mel'+(idx+1)+'_ref',mm[1]);set('mel'+(idx+1)+'_cat',mm[2])})}
   return {v,c,page3:ci>=0,fltbl};
 }
@@ -1451,7 +1456,18 @@ function sumDsp(i){
   });
   L.push('');L.push('NOTAM');
   const nt=s.nt;
-  if(nt&&nt.secs)nt.secs.forEach((sc,si)=>{const sel=sc.items.filter(it=>ntInc(nt,si,it));if(sel.length){L.push('  '+(NT_ROLE[sc.key]||'Airport')+' '+sc.icao+':');sel.forEach(it=>{const tr=ntTr(it);L.push('   - '+tr.label+': '+tr.text.replace(/\n/g,' ')+' ['+[tr.when,tr.sched,tr.vert].filter(Boolean).join('; ')+'] '+it.id)})}});
+  if(nt&&nt.secs){
+    let ntFirst=true;
+    nt.secs.forEach((sc,si)=>{
+      const sel=sc.items.filter(it=>ntInc(nt,si,it));
+      if(sel.length){
+        if(!ntFirst)L.push('');
+        ntFirst=false;
+        L.push('  '+(NT_ROLE[sc.key]||'Airport')+' '+sc.icao+':');
+        sel.forEach(it=>{const tr=ntTr(it);L.push('   - '+tr.label+': '+tr.text.replace(/\n/g,' ')+' ['+[tr.when,tr.sched,tr.vert].filter(Boolean).join('; ')+'] '+it.id)});
+      }
+    });
+  }
   add('  Route notes',v.ntm_route);add('  Notes DEP',v.ntm_dep);add('  Notes ARR',v.ntm_arr);add('  Notes ALT',v.ntm_alt);
   const lc=loadCalc(s);
   L.push('');L.push('LOAD');
