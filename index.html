@@ -169,6 +169,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 .chk .hint{display:block;margin-top:2px;color:var(--ink3);font-size:12px;line-height:1.4}
 .chk.sub{padding-left:30px;min-height:38px}
 .chk b{font-weight:600}
+.flowi{border-bottom:1px dashed var(--line);padding-bottom:4px}
+.flowi:last-child{border-bottom:0}
+.flowi .chk{border-bottom:0;padding-bottom:2px}
+.flowlive{display:flex;gap:8px 12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:2px 2px 6px 34px;font:500 12px var(--f-mono);color:var(--ink2)}
+.flowd{padding:0 2px 8px 34px}
+.flowd summary{cursor:pointer;color:var(--accent);font-size:12px;list-style:none}
+.flowd summary::-webkit-details-marker{display:none}
+.flowd .inner{padding-top:6px}
 .st .sub{font:400 13px var(--f-body);letter-spacing:0;text-transform:none;color:var(--ink3);margin-left:8px}
 .xrow{padding:12px 0;border-top:1px dashed var(--line)}
 .xrow:first-child{border-top:0;padding-top:4px}
@@ -290,7 +298,7 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.31.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.33.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -723,15 +731,54 @@ const MODS={
   ]}
  ]}
 };
-/* cabin crew briefing, in the order of the paper Dispatch Briefing form */
-const CAB_LEFT=[['Aircraft documents (7)'],['Technical logbook before power up'],['Spare EFB (charged and updated)'],['Refueling with boarding or not'],['“Cabin crew refueling in progress”'],['Preliminary loading (FlySmart)'],['LIR (int. flight crosscheck loadsheet)'],['Preliminary T/O perf (FlySmart)'],['Preliminary cockpit preparation'],['TLB (4 checks) and pink / yellow / white pages'],['Ask to check the box'],['Refueling finished (seat belts on, pumps on)']];
-const CAB_RIGHT=[['“Cabin crew refueling completed”'],['Fill technical logbook'],['Ask for clearance'],['Departure briefing',['dep','Open']],['Emergency briefing (jump seat)',['jmp','Open']],['Cockpit preparation checklist'],['Final loading (FlySmart)'],['Final T/O perf (FlySmart)'],['Send loadsheet'],['Check 4 documents on board'],['Close door and confirm ready to push'],['Before start checklist']];
 const CAB_TRIP=['fit','docs','names','reg','mel','nsec','ftime','fl','refuel','refsec','tank','refpax','taxi','wx','hijack','entry','unruly','emerg','q'];
+/* Ground Flow: the full ground-to-ground sequence, in three phases, as a task checklist. Each entry
+   is [task label, note-or-'' (the exception/detail, tucked behind a "Note" expand — never shown by
+   default), liveKey-or-undefined (a short code telling gfLive() which figure the app already tracks
+   elsewhere to show live next to this task, e.g. 'mel' -> the MEL/CDL entered under Dispatch), so
+   nothing here is ever typed a second time]. Radio-call phraseology is deliberately left out — this
+   tracks the operational task, not the wording. */
+const GF_P1=[
+ ['Safety exterior inspection (chocks, gear doors, APU area, aircraft registration)','If the aircraft registration is wrong, call IOCC (FDO) immediately.'],
+ ['Request GPU, air conditioning, and start the APU if available','Ask the TRC or the engineer for external power and air conditioning on arrival. Before power-up, check the Technical Logbook pink pages to confirm APU availability, and write down the initial fuel for the ATL entry later.'],
+ ['Check documents on board','6 aircraft documents in a folder, plus the Cabin Defect Report (CDR).'],
+ ['Power up — preliminary cockpit preparation (CM2 flow)','ENG master levers, ENG mode sel, WX/PWS off, L/G lever, wipers, BATT check, request external power and air conditioning, EXT PWR ON, RMP 1 & 2, ACP, APU fire test, all IR mode sel NAV. If no GPU, start the APU (bleed on).'],
+ ['Refueling','Fuel pumps off, seat belts off, PA "Cabin crew, refueling in progress" regardless of boarding. Always confirm the fuel cap is closed — refueling by unauthorized ground personnel can be charged to the pilot.','fuel'],
+ ['Preliminary cockpit preparation (eQRH SOP)','Follow the eQRH SOP Preliminary Cockpit Preparation.'],
+ ['EFB / ACARS / AOC init','Check EFB version and database (FS Manager and FD Pro); on the first flight of the day, check the spare EFB is charged and updated. Initialize ACARS/AOC and the FMGS pre-init (engine and aircraft type, database valid, flight number, from/to).'],
+ ['Aircraft acceptance — ATL checks','Pink MEL & CDL, yellow NEF, white pages, dents/scratches; weekly (8th day), 48-hour and preflight/transit (8-hour) checks — contact MCC if any has expired. Confirm the inbound ATL is filled and signed by the previous crew, check/insert the initial fuel, and review the eQRH config summary and any OEB.','mel'],
+ ['ATIS / METAR','Copy the ATIS, print the METAR.','metar'],
+ ['Preliminary loading (FlySmart) and LIR','PAX distribution per the Initial Flight Summary Report; test which loading compartment gets THR closest to zero. Fill the LIR and deliver it to the TRC.'],
+ ['Preliminary T/O performance (FlySmart)','Add any MEL/CDL items and cross-check the FlySmart outputs.','mel'],
+ ['Walkaround and refueling receipt','PM does the walkaround, signs and retrieves the refueling receipt with the fuel density; PF works the overhead/front panel/pedestal and FMS insert. Once refueling finishes (this can happen at any point, out of order): "Cabin crew, refueling completed", refueling panel OVHD off, seat belts on, fuel pumps confirmed on.'],
+ ['Fuel receipt and FMS review','PM back from the walkaround — fuel receipt in the cockpit, review the FMS. FCU/LAT — oxygen check, inform ground, PFD/ND/pressurization/STS/FOB check. Fill the outbound ATL with the fuel calculation and receipt number.'],
+ ['Request clearance',"The sector's PM requests the clearance and reads it back.",'clr'],
+ ['Departure, emergency and jumpseat briefings','','brief'],
+ ['Cockpit preparation checklist','GPU disconnect (ground from cockpit, remove power and air conditioning), APU bleed on, confirm fuel pumps on.'],
+ ['Security checks with SCCM',"SCCM brings 2 copies — sign both, front and back. Check the header's 4 cabin-crew signatures and the walkaround items on both forms."]
+];
+const GF_P2=[
+ ['Final loadsheet and LTS — send loadsheet','Final Flight Summary Report and Load & Trim Sheet (LIR/PAX); export from FlySmart and send to fsloadsheet@flyadeal.com and loadsheet@flyadeal.com.'],
+ ['Final T/O performance (FlySmart)','Insert the PERF page.'],
+ ['Four documents and the ATL on board','Signed LIR, security form, fuel receipt, final loading manifest; signed ATL (outbound and walkaround).'],
+ ['Close doors, arm slides',''],
+ ['Ground communication and pushback clearance','Confirm ready for pushback with ground, and release the parking brake once cleared.'],
+ ['Request pushback and engine start',''],
+ ['Before Start checklist','Confirm heading and parking brake released with ground, get engine-start clearance, start engine one; once pushback is complete, set the parking brakes; once engine start is complete, ground disconnects and gives the hand signal.']
+];
+const GF_P3=[
+ ['Parking checklist','Run this once ground personnel indicates chocks are in place and parking brake is off.'],
+ ['Close the ATL and generate the general flight report','Generate the PDF.'],
+ ['Post-flight: close the Journey Log',''],
+ ['Update Mission+ / Jeppesen','Import the flight and accept the dispatch release for the next sector.'],
+ ['Set the refueling panel and continue the turnaround sequence','']
+];
 const TABS=[['dsp','Dispatch'],['cab','Cabin'],['jmp','Jumpseat'],['gf','Ground flow'],['dep','Departure Briefing'],['arr','Arrival Briefing']];
 const IDS={
  dep:['dep.s1.0'].concat(DEP_PF.map((_,i)=>'dep.pf.'+i)).concat(DEP_PM.map((_,i)=>'dep.pm.'+i)).concat(['dep.tem.0','dep.tem.1','dep.emerg.0']),
  arr:['arr.s1.0'].concat(ARR_PF.map((_,i)=>'arr.pf.'+i)).concat(ARR_PM.map((_,i)=>'arr.pm.'+i)).concat(['arr.tem.0','arr.tem.1']),
- jmp:[],cab:CAB_TRIP.slice(),gf:CAB_LEFT.map((_,i)=>'cab.l.'+i).concat(CAB_RIGHT.map((_,i)=>'cab.r.'+i))
+ jmp:[],cab:CAB_TRIP.slice(),
+ gf:GF_P1.map((_,i)=>'gf.p1.'+i).concat(GF_P2.map((_,i)=>'gf.p2.'+i)).concat(GF_P3.map((_,i)=>'gf.p3.'+i))
 };
 ['jmp'].forEach(m=>MODS[m].sections.forEach(s=>(s.checks||[]).forEach((_,i)=>IDS[m].push(m+'.'+s.id+'.'+i))));
 
@@ -930,6 +977,27 @@ const seg=(k,l,opts,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}${sr
 const tgs=(l,items,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="tgs">${items.map(i=>`<button type="button" class="tg" data-tog="${i[0]}" data-clr="${(i[2]||[]).join(',')}" aria-pressed="false">${esc(i[1])}</button>`).join('')}</div></div>`;
 const grp=(l,pre,opts,cls)=>{const keys=opts.map(o=>pre+'.'+o[0]);return tgs(l,opts.map(o=>{const k=pre+'.'+o[0];return [k,o[1],o[0]==='no'?keys.filter(x=>x!==k):[pre+'.no']]}),cls)};
 const chk=(k,text,go)=>{const t=Array.isArray(text)?`<b>${esc(text[0])}</b><span class="say">${esc(text[1])}</span>`:esc(text);return `<label class="chk"><input type="checkbox" data-c="${k}"><span class="box" aria-hidden="true"></span><span class="txt">${t}</span>${go?`<button type="button" class="chip" data-go="${go[0]}">${esc(go[1])}</button>`:''}</label>`};
+/* Ground Flow's live read-outs: given a task's liveKey, returns [{label,val,go}] pulled from wherever
+   that fact is actually entered in the app, so it's never typed a second time here. val is '' when
+   nothing's entered yet (rendered as "not entered yet" with a link to go fill it in). */
+function gfLive(key,s){
+  if(key==='fuel'){const t=loadCalc(s).total;return [{label:'Total fuel',val:t!=null?n0(t)+' kg':'',go:'dsp'}]}
+  if(key==='mel')return [{label:'MEL / CDL',val:melText(s),go:'dsp'}];
+  if(key==='metar'){const m=s.v.wx_dep_metar||'';const val=m?(m.length>28?m.slice(0,28)+'…':m):'';return [{label:'Departure METAR',val,go:'dsp'}]}
+  if(key==='clr')return [{label:'Suggested clearance',val:clrText(s.v),go:'dsp'}];
+  if(key==='brief'){const d=tabProgress('dep',s),j=tabProgress('jmp',s);return [{label:'Departure briefing',val:d[1]?d[0]+'/'+d[1]+' complete':'',go:'dep'},{label:'Jumpseat / emergency briefing',val:j[1]?j[0]+'/'+j[1]+' complete':'',go:'jmp'}]}
+  return [];
+}
+/* A Ground Flow task row: same simple checkbox as chk() by default; a live read-out (if any) sits
+   right underneath, always visible since it's a single short line; the note (the exception/detail
+   text) is tucked behind its own "Note" expand so a task with a long note still reads as one line
+   until tapped open. */
+function flowChk(key,label,note,live){
+  let extra='';
+  (live||[]).forEach(l=>{extra+=`<div class="flowlive"><span>${esc(l.label)}${l.val?': '+esc(l.val):' — not entered yet'}</span>${l.go?`<button type="button" class="chip" data-go="${esc(l.go)}">Open</button>`:''}</div>`});
+  if(note)extra+=`<details class="flowd"><summary>Note</summary><div class="inner"><p class="note">${esc(note)}</p></div></details>`;
+  return `<div class="flowi">${chk(key,label)}${extra}</div>`;
+}
 /* cabin tab: trip-wide checks (data-tk) and per-sector inputs addressed as "sectorIndex:key" */
 const tchk=(k,text,hint,sub)=>`<label class="chk${sub?' sub':''}"><input type="checkbox" data-tk="${k}"><span class="box" aria-hidden="true"></span><span class="txt">${esc(text)}${hint?`<small class="hint">${esc(hint)}</small>`:''}</span></label>`;
 const xs=k=>{const j=k.indexOf(':');return [+k.slice(0,j),k.slice(j+1)]};
@@ -942,6 +1010,12 @@ const xrows=fn=>actSecs().map(i=>`<div class="xrow"><div class="xh">${secLbl(i)}
 const tfld=(k,l,o={})=>{const id='t_'+k,val=esc(state.trip.v[k]||'');const ctl=o.area?`<textarea id="${id}" data-tv="${k}" rows="${o.rows||2}" placeholder="${esc(o.ph||'')}">${val}</textarea>`:`<input id="${id}" data-tv="${k}" value="${val}" placeholder="${esc(o.ph||'')}" autocomplete="off">`;return `<div class="fld ${o.cls||''}"><label for="${id}"><span class="fl">${l}</span></label>${ctl}</div>`};
 const YN=[['Y','Yes'],['N','No']];
 const melText=s=>{const v=s.v;if(s.c['mel.no'])return 'No MEL / CDL';const l=[1,2,3].map(n=>{const ref=v['mel'+n+'_ref'],cat=v['mel'+n+'_cat'],title=v['mel'+n+'_title'];if(!ref&&!cat&&!title)return '';return [ref,cat?'CAT '+cat:'',title].filter(Boolean).join(' ')}).filter(Boolean);return l.length?l.join('; '):'Not recorded in Dispatch'};
+/* suggested clearance, as a short one-line summary — shared by the Company summary text and the
+   Ground Flow live read-out, so the two can never say something different */
+const clrText=v=>[v.clr_rwy?'RWY '+v.clr_rwy:'',v.clr_sid?'SID '+v.clr_sid:'',v.clr_firstalt?'first alt '+v.clr_firstalt:'',v.clr_awy?'airway '+v.clr_awy:'',v.clr_sqw?'SQW '+v.clr_sqw:''].filter(Boolean).join(', ');
+/* how many of a tab's own checklist items are ticked for this sector — used by Ground Flow to show
+   "12/19 complete" next to the Departure Briefing / Jumpseat links, without re-counting by hand */
+const tabProgress=(tk,s)=>{const ids=IDS[tk]||[];return [ids.filter(x=>s.c[x]).length,ids.length]};
 /* Saved runways: a small personal per-airport reference (see rwyDb near the top of the file). NOTAM
    imports add to it automatically; this lets a runway heading be added by hand too — enter one end
    (e.g. 34), tick which parallel runways exist there (L/C/R, or none for a single runway), and Save
@@ -1374,9 +1448,15 @@ function cabHTML(){
    `<section class="sumbox"><h2>Summary</h2><pre class="sum" data-sum="cab"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="cab">Copy summary</button></div></section>`;
 }
 function gfHTML(){
-  const gf=`<div class="two"><div class="chks">${CAB_LEFT.map((x,i)=>chk('cab.l.'+i,x[0],x[1])).join('')}</div><div class="chks">${CAB_RIGHT.map((x,i)=>chk('cab.r.'+i,x[0],x[1])).join('')}</div></div>`;
-  return `<div class="mhead"><h1>Ground Flow</h1><p class="lead">The ground flow before departure, sector ${state.sec+1}. The left and right columns run in parallel between the flight deck and the cabin. Change sector with the chips above.</p></div>`+
-   sec('Ground flow before departure',gf,'checks','gf.main');
+  const s=S();
+  const phase=(title,key,items)=>{
+    const body=`<div class="chks">${items.map((it,i)=>flowChk('gf.'+key+'.'+i,it[0],it[1],it[2]?gfLive(it[2],s):null)).join('')}</div>`;
+    return sec(title,body,'checks','gf.'+key);
+  };
+  return `<div class="mhead"><h1>Ground Flow</h1><p class="lead">The full ground-to-ground flow, sector ${state.sec+1}: pre-flight ground preparation, before pushback and start, and after landing / post-flight. Tap a task's "Note" to see the exception or detail behind it; a few tasks show a live figure from elsewhere in the app so nothing is entered twice. Change sector with the chips above.</p></div>`+
+   phase('1. Pre-flight / ground preparation','p1',GF_P1)+
+   phase('2. Before pushback and start clearance','p2',GF_P2)+
+   phase('3. After landing and post-flight','p3',GF_P3);
 }
 function temHTML(key){
   key=key||'tem';
@@ -1485,7 +1565,7 @@ function sumDsp(i){
   const rq=['er','rvsm','pbn','nr','spa','pic'].filter(k=>c['req.'+k]).map(k=>({er:'Extended range',rvsm:'RVSM',pbn:'PBN',nr:'Narrow RWY',spa:'Simultaneous parallel approach',pic:'PIC is pilot flying'}[k]));
   L.push('');L.push('COMPANY OPERATIONAL REQUIREMENTS: '+(rq.join(', ')||'none ticked'));
   /* suggested clearance comes last: it's only a working guess until the real one is copied in the aircraft */
-  const cl=[v.clr_rwy?'RWY '+v.clr_rwy:'',v.clr_sid?'SID '+v.clr_sid:'',v.clr_firstalt?'first alt '+v.clr_firstalt:'',v.clr_awy?'airway '+v.clr_awy:'',v.clr_sqw?'SQW '+v.clr_sqw:''].filter(Boolean).join(', ');
+  const cl=clrText(v);
   if(cl){L.push('');L.push('SUGGESTED CLEARANCE');add('  Clearance',cl)}
   return L.join('\n');
 }
