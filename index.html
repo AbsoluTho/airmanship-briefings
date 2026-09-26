@@ -290,7 +290,7 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.30.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.31.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1636,6 +1636,15 @@ function applyParsed(idx,p,text){
   const s=state.secs[idx];
   Object.keys(p.v).forEach(k=>{s.v[k]=p.v[k];s.src[k]='ofp'});
   Object.keys(p.c).forEach(k=>{s.c[k]=p.c[k]});
+  /* MEL/CDL is a short LIST read straight from the OFP, not a field built up bit by bit like most
+     imported data — so a fresh import must fully replace it, not just add to it. Re-importing the
+     same or a corrected OFP into a sector that was already filled (a re-drop, or a re-import after
+     an app update changed how MEL is read) otherwise leaves a stale MEL slot behind forever: this
+     merge only ever sets keys present in the new parse, so an old mel2 that's no longer part of the
+     current OFP-derived list never gets cleared, and shows up as a duplicate alongside the current
+     mel1. Clear any mel-slot that was itself auto-filled from an OFP (src 'ofp') and isn't in this
+     import's own list; a pilot's own manually-typed entry (no 'ofp' src tag) is left alone. */
+  [1,2,3].forEach(n=>{['ref','cat'].forEach(f=>{const k='mel'+n+'_'+f;if(!(k in p.v)&&s.src[k]==='ofp'){delete s.v[k];delete s.src[k]}})});
   if(p.fltbl)s.fltbl=p.fltbl;
   state.raw[idx]=text;
   applyClrSuggest(s);
