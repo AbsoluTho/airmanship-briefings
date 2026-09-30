@@ -276,8 +276,6 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
 .ntf details{flex:1 1 240px;min-width:0}
 .ntf summary{cursor:pointer;color:var(--accent);font-size:12px;padding:8px 0}
 .ntf pre{margin:0 0 4px;font:400 11px/1.5 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink2);background:var(--sunk);padding:8px}
-.ntlow{border-top:1px solid var(--line)}
-.ntlow>summary{cursor:pointer;color:var(--accent);font-size:13px;padding:10px 14px}
 .pill.info{background:var(--sunk);color:var(--ink2)}
 .imp-mini{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 /* summary */
@@ -298,7 +296,7 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.33.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.34.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1191,12 +1189,14 @@ function ntHTML(s){
   if(!nt||!nt.secs||!nt.secs.length)return '<p class="muted">No NOTAMs imported for this sector yet. Import the Mission Plus NOTAM PDF, or use the notes fields below.</p>';
   let h='<p class="note">'+esc([nt.flt?'Flight '+nt.flt:'',nt.srch?'NOTAMs as of '+nt.srch:'',nt.win?'Mission Plus search window '+nt.win:''].filter(Boolean).join(' · '))+'. Nothing is added to the brief automatically — tap “Add to brief” on each item you want.</p>';
   nt.secs.forEach((sc,si)=>{
+    /* Every NOTAM for this airport, flat — no "low impact" grouping and nothing pre-collapsed. The
+       pilot decides item by item with Add to brief; sorted by level only so the ones worth checking
+       first surface at the top, never hidden behind an expand. */
     const rows=sc.items.map((it,k)=>({it,k,l:ntTr(it).lvl})).sort((a,b)=>b.l-a.l||a.k-b.k);
-    const hi=rows.filter(x=>x.l>=2),lo=rows.filter(x=>x.l<2);
     const sel=rows.filter(x=>ntInc(nt,si,x.it)).length;
     h+=`<div class="ntap"><h3>${esc(NT_ROLE[sc.key]||'Airport')} · ${esc(sc.icao)}<small>${esc(sc.iata)} ${esc(sc.name)}</small></h3><span class="m">${rows.length} NOTAM${rows.length===1?'':'s'} · ${sel} in brief${sc.rwy?' · RWY '+esc(sc.rwy):''}</span></div>`;
     if(!rows.length){h+='<div class="ntbox"><div class="ntr"><p class="muted">No NOTAMs listed by Mission Plus for this airport.</p></div></div>';return}
-    h+='<div class="ntbox">'+hi.map(x=>ntRowHTML(si,x.it,nt)).join('')+(lo.length?`<details class="ntlow"><summary>Low impact (${lo.length}): stands, apron, heliport, AIP supplements</summary>${lo.map(x=>ntRowHTML(si,x.it,nt)).join('')}</details>`:'')+'</div>';
+    h+='<div class="ntbox">'+rows.map(x=>ntRowHTML(si,x.it,nt)).join('')+'</div>';
   });
   if(nt.excl&&nt.excl.length)h+='<p class="note">Excluded by the company Q-code rules and not listed by Mission Plus: '+esc(nt.excl.join('; '))+'.</p>';
   return h;
@@ -1357,6 +1357,9 @@ async function wxDownload(kind){
 }
 
 /* ---------- views ---------- */
+/* a "Minimize" button at the end of every Dispatch section — same action as the section's own chevron,
+   just easier to reach after reading through a long section without scrolling back up */
+const minBtn='<div class="row"><button class="btn ghost" type="button" data-act="collapse-sec">Minimize ▲</button></div>';
 function dspHTML(){
   const imp=`<section class="imp"><h2>Import OFP</h2><p class="lead">Drop the Mission Plus OFP PDF. The Computer Flight Plan page (page 3) is read first and fills this sector. Drop several PDFs to fill consecutive sectors, oldest departure first. The NOTAM PDF goes in the same box: it is matched to the sector with the same route. Files stay in your browser.</p>
    <label class="drop" id="drop" for="pdfIn"><strong>Choose OFP or NOTAM PDFs (up to 4)</strong><span>or drop the files here</span></label><input class="sr" type="file" id="pdfIn" data-imp="1" accept="application/pdf,.pdf" multiple>
@@ -1371,7 +1374,7 @@ function dspHTML(){
    <div class="gr c4">${tgs('EFB update check',[['efb.fdpro','FD Pro'],['efb.flysmart','FlySmart']])}${fld('etd','ETD (Z)',{ph:'hh:mm'})}${fld('eta','ETA (Z)',{ph:'hh:mm'})}</div>
    <div class="gr c4">${fld('ftime','Flight time',{ph:'h:mm'})}${fld('pax','PAX',{num:1})}</div>
    <h3 class="blk">MEL / CDL and OEB</h3>${tgs('MEL / CDL',[['mel.no','No MEL / CDL']])}${melRows}
-   <div class="gr c4">${selFld('oeb_sel','OEB',[['','No OEB']].concat(OEBS.map(o=>[o.n,'OEB '+o.n+' — '+o.t])),'w2')}${mir('oeb','Color')}${mir('oeb_ecam','ECAM entry')}</div>`;
+   <div class="gr c4">${selFld('oeb_sel','OEB',[['','No OEB']].concat(OEBS.map(o=>[o.n,'OEB '+o.n+' — '+o.t])),'w2')}${mir('oeb','Color')}${mir('oeb_ecam','ECAM entry')}</div>`+minBtn;
   const route=`${fld('route','Route',{area:1,rows:2,cls:'wide'})}${fld('altroute','Alternate route',{area:1,rows:2,cls:'wide'})}
    <div class="gr c4">${seg('wind_dir','Avg wind',[['HD','HD'],['TL','TL']])}${fld('wind','Avg wind (kt)',{num:1})}${fld('isa','Δ ISA (+/−)',{num:1})}${fld('grd','Grd dist (nm)',{num:1})}</div>
    <div class="gr c4">${fld('air','Air dist (nm)',{num:1})}${fld('ci','CI',{num:1})}${fld('fl','Cruise FL',{ph:'340'})}${fld('temp','Temp at FL (°C)',{num:1})}</div>
@@ -1379,25 +1382,24 @@ function dspHTML(){
    <div class="gr c4">${tgs('SIGWX',[['sigwx.ice','Ice'],['sigwx.cb','CB'],['sigwx.turb','Mod / sev turb']],'w2')}${fld('sigwx_from','From FL',{pilot:1})}${fld('sigwx_to','To FL',{pilot:1})}</div>
    <div class="gr c4">${seg('sigmet','SIGMET',[['NO','No'],['YES','Yes']])}${grp('IHRAM ZONE','ihram',[['no','No'],['yes','Yes']])}${fld('ihram','Ihram zone details')}</div>
    <div class="gr c3">${grp('ESCAT','escat',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}${grp('TIBA (122.8 MHz)','tiba',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}${grp('FRS (133.5 MHz)','frs',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}</div>
-   ${fld('escat_txt','ESCAT details')}`;
+   ${fld('escat_txt','ESCAT details')}`+minBtn;
   const wxKeyBox=`<details class="paste"${wxApiKey?'':' open'}><summary>Weather source: CheckWX API key</summary><div class="inner">
    <p class="note">Downloads the latest METAR and TAF straight from CheckWX for the ICAOs above. Get a free key (no card, 200 lookups a day) at <a href="https://www.checkwxapi.com/signup" target="_blank" rel="noopener">checkwxapi.com/signup</a>, then paste it here once. It is saved only in this browser, never in the app’s files.</p>
    <div class="fld"><label for="wxApiKey"><span class="fl">CheckWX API key</span></label><input id="wxApiKey" type="password" autocomplete="off" value="${esc(wxApiKey)}" placeholder="Paste your key"></div></div></details>`;
   const wxTools=`${wxKeyBox}<div class="row"><button type="button" class="btn" data-act="wx-dl" data-wx="all">Download all weather (DEP · ARR · ALT)</button></div><div class="status" id="wxMsg" role="status"></div>`;
   const wxb=wxTools+[['dep','DEP','dep_icao'],['arr','ARR','dest_icao'],['alt','ALT','alt_icao']].map(x=>`<h3 class="blk">${x[1]} <span class="mir" data-mirror="${x[2]}"></span><button type="button" class="chip wxb" data-act="wx-dl" data-wx="${x[0]}">Download</button></h3>
    <div class="gr c4">${fld('wx_'+x[0]+'_t','Time (day / UTC)',{ph:'dd/hhmm'})}${fld('wx_'+x[0]+'_rwy','RWY',{rwy:x[2]})}${calc('wxwind_'+x[0],'Wind component','wide')}</div>${fld('wx_'+x[0]+'_metar','METAR',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_taf','TAF',{area:1,rows:2,cls:'wide'})}
-   <div class="fld wide"><label for="v_wx_${x[0]}_tempo"><span class="fl">BECMG / TEMPO relevant to your ${x[0]==='dep'?'ETD':'ETA'}<button type="button" class="chip" data-act="wx-tempo" data-wx="${x[0]}">Work out from TAF</button></span></label><textarea id="v_wx_${x[0]}_tempo" data-v="wx_${x[0]}_tempo" rows="3" placeholder="Filled automatically after a TAF download, or tap “Work out from TAF” after pasting one">${esc(V('wx_'+x[0]+'_tempo'))}</textarea></div>`).join('');
+   <div class="fld wide"><label for="v_wx_${x[0]}_tempo"><span class="fl">BECMG / TEMPO relevant to your ${x[0]==='dep'?'ETD':'ETA'}<button type="button" class="chip" data-act="wx-tempo" data-wx="${x[0]}">Work out from TAF</button></span></label><textarea id="v_wx_${x[0]}_tempo" data-v="wx_${x[0]}_tempo" rows="3" placeholder="Filled automatically after a TAF download, or tap “Work out from TAF” after pasting one">${esc(V('wx_'+x[0]+'_tempo'))}</textarea></div>`).join('')+minBtn;
   const clr=`<p class="note">Your suggested clearance, not the real one — a working guess to brief yourself with before you copy the actual clearance from ATC. SID and Airway are worked out from the route above (its first fix, and whatever airway follows it) the moment a route is filled in, but only while they're still empty — type over either one any time, and it stays as you left it. RWY offers your saved runways for this airport, same as elsewhere. First alt and SQW are always typed by hand. ATIS isn't tracked here — that one's still quicker on paper.</p>
-   <div class="gr c4">${fld('clr_rwy','RWY',{rwy:'dep_icao'})}${fld('clr_sid','SID',{ph:'if any — some airports have none'})}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>`;
+   <div class="gr c4">${fld('clr_rwy','RWY',{rwy:'dep_icao'})}${fld('clr_sid','SID',{ph:'if any — some airports have none'})}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>`+minBtn;
   const ntm=`<p class="lead">Airport and FIR NOTAMs from the Mission Plus NOTAM PDF, translated into plain English. Mission Plus already limits the search to the flight window, so nothing is filtered by hour here. Nothing is added to the brief by default: tap “Add to brief” on each NOTAM you want in the summary.</p>
    <div class="imp-mini"><label class="btn" for="pdfIn2">Import NOTAM PDF</label><input class="sr" type="file" id="pdfIn2" data-imp="1" accept="application/pdf,.pdf" multiple><span class="note">Or paste the NOTAM text in the box at the top of this tab.</span></div>
    <div class="out" id="ntOut"></div>
-   <div class="row"><button class="btn ghost" type="button" data-act="collapse-sec">Collapse NOTAM ▲</button></div>
    <h3 class="blk">Additional route notes</h3>
    ${fld('ntm_route','Anything else you judge relevant, not captured above',{area:1,rows:3,cls:'wide'})}
    <h3 class="blk">Your notes by airport</h3>
    <div class="gr c3">${fld('ntm_dep','Departure',{area:1,rows:3})}${fld('ntm_arr','Arrival',{area:1,rows:3})}${fld('ntm_alt','Alternate',{area:1,rows:3})}</div>
-   ${tgs('FD Pro',[['ntm.fdpro','Show RWYs / TWYs closed on FD Pro']])}`;
+   ${tgs('FD Pro',[['ntm.fdpro','Show RWYs / TWYs closed on FD Pro']])}`+minBtn;
   const loadBlk=`<div class="gr c4">${fld('lf_pax','PAX',{num:1})}${fld('lf_payload','Payload (kg)',{num:1})}${fld('lf_zfm','ZF mass (kg)',{num:1})}${fld('lf_tom','T/O mass (kg)',{num:1})}
    ${fld('lf_ldm','LDG mass (kg)',{num:1})}${calc('lf_under','Underload')}${calc('lf_limit','Limited by')}${fld('actual_zfm','Actual zero fuel weight from loadsheet (kg)',{num:1,cls:'w2',pilot:1})}</div>
    <p class="note">Enter the actual zero fuel weight once the loadsheet is out: the underload is recalculated with it, because the dispatcher may say to check the ZFW before refueling. The field in cyan — actual ZFW — is the one you set yourself; everything else here is normally filled from the OFP.</p>
@@ -1405,7 +1407,7 @@ function dspHTML(){
    <div class="out" id="loadOut"></div>
    <details class="ofpdet" open><summary>OFP mass limits</summary>
     <div class="gr c4">${fld('ofp_dom','DOM (kg)',{num:1})}${fld('lim_mzfm','Max ZFM (kg)',{num:1})}${fld('lim_tom','Max T/O mass (kg)',{num:1})}${fld('lim_ldm','Max LDG mass (kg)',{num:1})}</div>
-    <p class="note">The limits are the MAX column of the mass and balance block on page 3 of the OFP: they already include the regulated (runway or performance) limits.</p></details>`;
+    <p class="note">The limits are the MAX column of the mass and balance block on page 3 of the OFP: they already include the regulated (runway or performance) limits.</p></details>`+minBtn;
   const fuelBlk=`<div class="gr c4">${fld('lf_taxi','Taxi fuel (kg)',{num:1})}${fld('lf_trip','Trip fuel (kg)',{num:1})}${fld('trip_incl','Fuel factor %',{num:1,ph:'3.6'})}${fld('lf_planned','Planned fuel (kg)',{num:1})}
    ${fld('lf_pextra','Planned extra fuel (kg)',{num:1})}${fld('lf_crew_total','Crew total fuel decided (kg)',{num:1,pilot:1})}${calc('crew_extra','Crew extra fuel')}${calc('lf_total','Total fuel')}${calc('lf_landing','Landing fuel (planned)')}${calc('fl_best','Most fuel efficient FL')}${calc('fl_fastest','Lowest time FL')}</div>
    <p class="note">Planned fuel is the OFP minimum required fuel including taxi. Total fuel is normally planned fuel plus planned extra — until the crew decides on a total fuel figure, entered below as Crew total fuel decided; from then on, that figure is the total, and Crew extra fuel is worked out backwards from it automatically (crew total fuel minus the flight plan's own total). Landing fuel (planned) is total fuel minus taxi and trip fuel — what you'd land with, before any tankering. Most fuel efficient FL and Lowest time FL both come from the OFP's own flight-level correction table (see below): the first reads its lowest ADD.COST, which already balances trip fuel against time; the second is simply whichever level has the shortest time. They're often the same level, but not always. The field in cyan — crew total fuel decided — is the one you set yourself; everything else here is normally filled from the OFP. Round-trip tankering below picks up crew total fuel and the actual ZFW (set under Load) automatically.</p>
@@ -1423,8 +1425,8 @@ function dspHTML(){
    <div class="gr c4">${seg('tk_on','Round-trip tankering',[['Not planned','No'],['Planned: full','Yes'],['Planned: partial','Partial']],'w2')}${fld('tk_next','Next leg total fuel, override (kg)',{num:1,cls:'w2'})}${calc('tk_actual_calc','Actual total fuel decided')}${fld('tk_pen','Burn penalty, optional (% per flight hour) — not used yet',{num:1,cls:'w2',ph:'e.g. 3'})}</div>
    <p class="note">Selecting Full or Partial fills the next leg total fuel from Sector ${state.sec+2}, if that field is still empty. It is still an override you can edit — for example if the next sector is not filled in yet. Actual total fuel decided is no longer typed here: it follows Crew total fuel decided and the actual ZFW automatically, so setting either of those cyan fields is what drives the check below. The burn penalty field is kept for a future update and doesn't affect this check yet.</p>
    <div class="out" id="tankOut"></div>
-   <div class="chks">${['Tankering economics confirmed with Dispatch and the fuel policy (price difference against burn penalty)','Landing performance at the destination checked for the extra weight: runway condition, brake cooling, go-around climb','Take-off performance rechecked at the higher T/O mass: runway, obstacles, climb gradient','Return-leg fuel plan and any uplift at the outstation agreed with Dispatch'].map((t,i)=>chk('dsp.tank.'+i,t)).join('')}</div>`;
-  const req=`${tgs('Requirements for this flight',[['req.er','Extended range'],['req.rvsm','RVSM'],['req.pbn','PBN'],['req.nr','Narrow RWY'],['req.spa','Simultaneous parallel approach'],['req.pic','PIC is pilot flying']])}`;
+   <div class="chks">${['Tankering economics confirmed with Dispatch and the fuel policy (price difference against burn penalty)','Landing performance at the destination checked for the extra weight: runway condition, brake cooling, go-around climb','Take-off performance rechecked at the higher T/O mass: runway, obstacles, climb gradient','Return-leg fuel plan and any uplift at the outstation agreed with Dispatch'].map((t,i)=>chk('dsp.tank.'+i,t)).join('')}</div>`+minBtn;
+  const req=`${tgs('Requirements for this flight',[['req.er','Extended range'],['req.rvsm','RVSM'],['req.pbn','PBN'],['req.nr','Narrow RWY'],['req.spa','Simultaneous parallel approach'],['req.pic','PIC is pilot flying']])}`+minBtn;
   return `<div class="mhead"><h1>Dispatch Briefing</h1><p class="lead">The sequence of the Dispatch Briefing form: technical condition of the aircraft, route planning, weather, NOTAM, load, fuel, company operational requirements, and last your suggested clearance. Sector ${state.sec+1} is open; change sector with the chips above.</p></div>`+imp+
    sec('Flight information / technical condition of the aircraft',info,'fields','dsp.info')+sec('Route planning',route,'fields','dsp.route')+sec('Weather',wxb,'fields','dsp.wx')+sec('NOTAM',ntm,'nt','dsp.notam')+sec('Load',loadBlk,'fields','dsp.load')+sec('Fuel',fuelBlk,'fields','dsp.fuel')+sec('Company operational requirements',req,'checks','dsp.req')+sec('Suggested clearance',clr,'fields','dsp.clr')+
    `<section class="sumbox"><h2>Summary</h2><pre class="sum" data-sum="dsp"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="dsp">Copy summary</button></div></section>`;
@@ -1572,7 +1574,13 @@ function sumDsp(i){
 function sumCab(){
   const A=actSecs(),T=state.trip,L=[];
   L.push(['CABIN CREW BRIEFING',A.length+' sector'+(A.length>1?'s':''),fmtDate(state.secs[A[0]].v.date)].filter(Boolean).join(' | '));
-  if(T.v.names)L.push('Crew: '+T.v.names.replace(/\n/g,' '));if(T.v.crewnote)L.push('Training / checks: '+T.v.crewnote.replace(/\n/g,' '));
+  /* Always at the top, answered or not — the three checks John never wants to lose track of, in the
+     Cabin Crew Briefing form's own wording, so the summary opens with them every time. */
+  L.push('');
+  L.push(CAB_LBL.fit+' '+(T.c.fit?'Yes':'Not confirmed'));
+  L.push(CAB_LBL.docs+': '+(T.c.docs?'Yes':'Not confirmed'));
+  L.push(CAB_LBL.names+': '+(T.v.names?T.v.names.replace(/\n/g,' '):'Not entered'));
+  if(T.v.crewnote)L.push('Training / checks: '+T.v.crewnote.replace(/\n/g,' '));
   A.forEach(i=>{const s=state.secs[i],v=s.v,c=s.c,q=x=>v[x]||'?';
     L.push('');L.push(`S${i+1} ${v.flt||'---'} ${v.dep_icao||'----'}-${v.dest_icao||'----'} | ${[v.reg,v.stand?'stand '+v.stand:''].filter(Boolean).join(', ')||'reg not set'}`);
     L.push('  MEL: '+melText(s)+' | cabin MEL '+q('cab_mel')+(v.cab_melnote?' ('+v.cab_melnote+')':''));
