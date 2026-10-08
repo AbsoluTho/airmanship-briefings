@@ -300,7 +300,7 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.37.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.38.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -651,6 +651,58 @@ function ntShort(it){
   let c=NT_CSHORT[cond]||'';
   if(!c){const k=NT_KW.find(x=>x[0].test(e));if(k)c=k[1]}
   return [s,c].filter(Boolean).join(' ');
+}
+/* Which runway / taxiway / stand a NOTAM is about, read from the first sentence of its E) text, for the
+   one-line summary:
+     RWY   -> {par:'16R/34L', time:'from 0800Z to 1000Z'}   "RWY CLSD (16R/34L) from 0800Z to 1000Z"
+     TWY   -> {dash:'N (N4 - N5)'}                           "TWY CLSD - N (N4 - N5)"  (portion between N4 and N5)
+     STAND -> {dash:'7-12, 7-13, 7-14'}                      "STAND CLSD - 7-12, 7-13, 7-14"
+   Returns null for anything else, or when nothing can be read. */
+const NT_NOTID=new Set(['AND','TO','FM','BTN','VIA','OR','AT','ON','IN','OF']);
+function ntTimeShort(it){
+  const f=ntDT(it.b),t=it.perm?null:ntDT(it.c);if(!f)return '';
+  const hm=x=>x.h+x.mi+'Z',dm=x=>x.d+' '+MON[x.mo-1]+' ';
+  let s;
+  if(it.perm)s='from '+dm(f)+hm(f)+', PERM';
+  else if(!t)s='from '+dm(f)+hm(f);
+  else if(f.y===t.y&&f.mo===t.mo&&f.d===t.d)s='from '+hm(f)+' to '+hm(t);
+  else s='from '+dm(f)+hm(f)+' to '+dm(t)+hm(t);
+  if(it.est)s+=' EST';
+  if(it.d)s+=', '+String(it.d).replace(/\s+/g,' ').trim().replace(/\b(\d{4})-(\d{4})\b/g,'$1-$2Z');
+  return s;
+}
+function ntWhere(it){
+  const q=String(it.q||''),sub=q.slice(1,3),tag=String(it.tag||'').toLowerCase();
+  const first=String(it.e||'').toUpperCase().replace(/\s+/g,' ').trim().split(/\.\s/)[0];
+  const known=!!NT_SHORT[sub];
+  if(sub==='MR'||(!known&&/^rwy/.test(tag))){
+    const m=first.match(/\bRWYS?\s+(\d{2}[LCR]?(?:\/\d{2}[LCR]?)?)\b/);
+    return {par:m?m[1]:'',time:ntTimeShort(it)};
+  }
+  if(sub==='MX'||sub==='MY'||(!known&&/^(twy|txl)/.test(tag))){
+    const ids=[...first.matchAll(/\b(?:TWY|TXL)\s+([A-Z]{1,2}\d{0,3}[A-Z]?)\b/g)].filter(x=>!NT_NOTID.has(x[1]));
+    if(!ids.length)return null;
+    const main=ids[0],rest=first.slice(main.index+main[0].length);
+    const r=rest.match(/\b(?:BTN|FM)\s+(.+?)\s+(?:AND|TO)\s+(.+?)(?=\s+(?:CLSD|LTD|U\/S|AVBL|NOT|DUE|FOR|WIP|SUBJ|EXC|RESTR|WILL|SHALL|CLOSED)\b|[.,;]|$)/);
+    const cl=s=>s.replace(/\b(?:TWY|TXL)\s+/g,'').replace(/\bACFT\s+STAND\b/g,'STAND').trim();
+    if(r)return {dash:main[1]+' ('+cl(r[1])+' - '+cl(r[2])+')'};
+    return {dash:[...new Set(ids.map(x=>x[1]))].join(', ')};
+  }
+  if(sub==='MP'||sub==='MK'||(!known&&/stand/.test(tag))){
+    const all=[...new Set([...first.matchAll(/\bSTANDS?\s+([A-Z]{0,2}\d+[A-Z]?(?:-\d+[A-Z]?)?)\b/g)].map(x=>x[1]))];
+    if(!all.length)return null;
+    return {dash:all.length>6?all.slice(0,6).join(', ')+' (+'+(all.length-6)+' more)':all.join(', ')};
+  }
+  return null;
+}
+/* the whole summary line: "#1 A3232 - RWY CLSD (16R/34L) from 0800Z to 1000Z" */
+function ntSumLine(it,n){
+  const top=ntShort(it),w=top==='AIP SUP'?null:ntWhere(it);
+  let s='#'+n+' '+String(it.id).split('/')[0]+' - '+top;
+  if(w&&w.par)s+=' ('+w.par+')';
+  if(w&&w.dash)s+=' - '+w.dash;
+  if(w&&w.time)s+=' '+w.time;
+  return s;
 }
 const ntKey=(si,it)=>si+':'+it.id;
 /* Nothing is in the briefing by default any more — the pilot taps "Add to brief" on each item they want. */
@@ -1641,7 +1693,7 @@ function sumDsp(i){
         if(!ntFirst)L.push('');
         ntFirst=false;
         L.push('  '+(NT_ROLE[sc.key]||'Airport')+' '+sc.icao+':');
-        sel.forEach(it=>{L.push('   #'+(it.n||sc.items.indexOf(it)+1)+' '+it.id+' — '+ntShort(it))});
+        sel.forEach(it=>{L.push('   '+ntSumLine(it,it.n||sc.items.indexOf(it)+1))});
       }
     });
   }
