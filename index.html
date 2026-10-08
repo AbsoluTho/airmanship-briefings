@@ -300,7 +300,7 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.39.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.40.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1086,6 +1086,7 @@ const xcalc=(l,t,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span>
 const xrows=fn=>actSecs().map(i=>`<div class="xrow"><div class="xh">${secLbl(i)}</div>${fn(i,state.secs[i])}</div>`).join('');
 const tfld=(k,l,o={})=>{const id='t_'+k,val=esc(state.trip.v[k]||'');const ctl=o.area?`<textarea id="${id}" data-tv="${k}" rows="${o.rows||2}" placeholder="${esc(o.ph||'')}">${val}</textarea>`:`<input id="${id}" data-tv="${k}" value="${val}" placeholder="${esc(o.ph||'')}" autocomplete="off">`;return `<div class="fld ${o.cls||''}"><label for="${id}"><span class="fl">${l}</span></label>${ctl}</div>`};
 const YN=[['Y','Yes'],['N','No']];
+const TAXI3=[['Y','Short'],['N','Normal'],['L','Long']];
 const melText=s=>{const v=s.v;if(s.c['mel.no'])return 'No MEL / CDL';const l=[1,2,3].map(n=>{const ref=v['mel'+n+'_ref'],cat=v['mel'+n+'_cat'],title=v['mel'+n+'_title'];if(!ref&&!cat&&!title)return '';return [ref,cat?'CAT '+cat:'',title].filter(Boolean).join(' ')}).filter(Boolean);return l.length?l.join('; '):'Not recorded in Dispatch'};
 /* suggested clearance, as a short one-line summary — shared by the Company summary text and the
    Ground Flow live read-out, so the two can never say something different */
@@ -1112,7 +1113,7 @@ function rwydbBlockHTML(){
    <div id="rwydbList">${list}</div></details>`;
 }
 const cabList=k=>actSecs().filter(i=>state.secs[i].v[k]==='Y').map(i=>'S'+(i+1));
-const CAB_LBL={fit:'Is everyone fit for duty?',docs:'Documents OK',names:'Names and positions',reg:'A/C registration and position',mel:'Cabin technical status: MELs',nsec:'Number of sectors',ftime:'Flight times',fl:'Flight altitudes',refuel:'Refueling operation',refsec:'Refueling sectors',tank:'Tankering sectors',refpax:'Refueling with PAX',taxi:'Taxi (short or not)',wx:'Expected weather and turbulence',hijack:'Hijack code',entry:'Cockpit entry procedure',unruly:'Unruly passenger',emerg:'Emergency procedures',q:'Questions?'};
+const CAB_LBL={fit:'Is everyone fit for duty?',docs:'Documents OK',names:'Names and positions',reg:'A/C registration and position',mel:'Cabin technical status: MELs',nsec:'Number of sectors',ftime:'Flight times',fl:'Flight altitudes',refuel:'Refueling operation',refsec:'Refueling sectors',tank:'Tankering sectors',refpax:'Refueling with PAX',taxi:'Taxi time (short, normal or long)',wx:'Expected weather and turbulence',hijack:'Hijack code',entry:'Cockpit entry procedure',unruly:'Unruly passenger',emerg:'Emergency procedures',q:'Questions?'};
 const calc=(id,l,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="calc" data-calc="${id}">—</div></div>`;
 const mir=(k,l,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="calc" data-mirror="${k}">—</div></div>`;
 const selFld=(k,l,opts,cls)=>{const id='v_'+k.replace(/\W/g,'_'),cur=V(k);return `<div class="fld ${cls||''}"><label for="${id}"><span class="fl">${l}</span></label><select id="${id}" data-v="${k}">${opts.map(o=>`<option value="${esc(o[0])}"${cur===o[0]?' selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`};
@@ -1565,10 +1566,10 @@ function cabHTML(){
   const ac=`<div class="chks">${tchk('reg',CAB_LBL.reg)}${tchk('mel',CAB_LBL.mel)}</div>`+xrows((i,s)=>{const v=s.v;return `<div class="gr c4">${xcalc('Registration',v.reg)}${xcalc('Type',[v.ceoneo,v.acft].filter(Boolean).join(' '))}${xfld(i,'stand','Stand / position',{cls:'w2'})}</div><div class="gr c4" style="margin-top:10px">${xcalc('MEL / CDL (from Dispatch)',melText(s),'w2')}${xseg(i,'cab_mel','MEL in cabin',YN)}${xfld(i,'cab_melnote','Cabin MEL details')}</div>`});
   const sc=`<div class="chks">${tchk('nsec','Number of sectors: '+n)}${tchk('ftime',CAB_LBL.ftime,'',1)}${tchk('fl',CAB_LBL.fl,'',1)}</div>`+xrows((i,s)=>{const v=s.v;return `<div class="gr c4">${xcalc('ETD',v.etd)}${xcalc('ETA',v.eta)}${xcalc('Flight time',v.ftime)}${xcalc('Cruise level',v.fl?'FL'+v.fl:'')}</div>`});
   const rf=`<div class="chks">${tchk('refuel',CAB_LBL.refuel)}${tchk('refsec',CAB_LBL.refsec,'',1)}${tchk('tank',CAB_LBL.tank,'',1)}${tchk('refpax',CAB_LBL.refpax,'',1)}</div>`+xrows((i,s)=>`<div class="gr c4">${xseg(i,'cab_refuel','Refueling',YN)}${xseg(i,'cab_tank','Tankering',YN)}${xseg(i,'cab_refpax','Refueling with PAX',YN)}</div>${s.c['why.tank']?'<p class="xnote">Dispatch: extra fuel due to tankering.</p>':''}`)+`<div class="cabov" id="cabDerive" style="margin-top:12px">${cabDeriveHTML()}</div>`;
-  const tx=`<div class="chks">${tchk('taxi',CAB_LBL.taxi)}</div>`+xrows((i)=>`<div class="gr c4">${xseg(i,'cab_taxi','Short taxi',YN)}</div>`);
+  const tx=`<div class="chks">${tchk('taxi',CAB_LBL.taxi)}</div>`+xrows((i)=>`<div class="gr c4">${xseg(i,'cab_taxi','Taxi time',TAXI3)}</div>`);
   const wx=`<div class="chks">${tchk('wx',CAB_LBL.wx)}</div>`+xrows((i,s)=>{const c=s.c,v=s.v,sw=['ice','cb','turb'].filter(k=>c['sigwx.'+k]);return `<div class="gr c3">${xfld(i,'cab_wx_dep','Departure',{tog:'cab.turb.dep'})}${xfld(i,'cab_wx_rte','Route',{tog:'cab.turb.rte'})}${xfld(i,'cab_wx_arr','Arrival',{tog:'cab.turb.arr'})}</div>${sw.length?`<p class="xnote">Dispatch SIGWX: ${sw.join(', ').toUpperCase()}${v.sigwx_from?' FL'+esc(v.sigwx_from)+(v.sigwx_to?' to FL'+esc(v.sigwx_to):''):''}.</p>`:''}`});
   const sp=`<div class="chks">${tchk('hijack',CAB_LBL.hijack)}${tchk('entry',CAB_LBL.entry,'Agree how the cabin calls the cockpit and how the door is opened.')}${tchk('unruly',CAB_LBL.unruly,'Report early to the flight deck and follow the company procedure.')}${tchk('emerg',CAB_LBL.emerg,'Signals and commands, and the NITS briefing if an emergency occurs.')}</div><div class="gr c2" style="margin-top:8px">${tfld('hijack','Hijack code')}${tfld('special','Other special requirements',{area:1})}</div><p class="note">The prompts are reminders only. The company OM-A wording applies.</p>`;
-  const q=`<div class="chks">${tchk('q',CAB_LBL.q)}</div>`;
+  const q=`<div class="chks">${tchk('q',CAB_LBL.q)}</div><div class="gr c2" style="margin-top:8px">${tfld('techq','Technical questions for the cabin crew to answer',{area:1,cls:'wide',ph:'One per line, e.g. Where is the nearest fire extinguisher to door 1L?'})}</div>`;
   return `<div class="mhead"><h1>Cabin Crew Briefing</h1><p class="lead">One briefing for the whole duty, in the order of the Cabin Crew Briefing list. The data of each sector comes from Dispatch. The cabin-specific fields are filled in here.</p></div>`+ov+
    sec('Crew',crew,'checks','cab.crew')+sec('Aircraft, position and cabin MELs',ac,'checks','cab.ac')+sec('Sectors, flight times and altitudes',sc,'checks','cab.sc')+sec('Refueling operation',rf,'checks','cab.rf')+sec('Taxi',tx,'checks','cab.tx')+sec('Expected weather and turbulence',wx,'checks','cab.wx')+sec('Special requirements',sp,'checks','cab.sp')+sec('Questions',q,'checks','cab.q')+
    `<section class="sumbox"><h2>Summary</h2><pre class="sum" data-sum="cab"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="cab">Copy summary</button></div></section>`;
@@ -1673,7 +1674,8 @@ function sumDsp(i){
     if(!any)return;
     if(!wxFirst)L.push('');
     wxFirst=false;
-    L.push('  '+x[1]+(icao?' '+icao:'')+(v['wx_'+x[0]+'_t']?' — '+v['wx_'+x[0]+'_t']+'Z':''));
+    /* airport label (e.g. "DEP OEJN") in the same bold cyan as the section titles; observation time stays plain */
+    L.push('  '+ttl(x[1]+(icao?' '+icao:''))+(v['wx_'+x[0]+'_t']?' — '+v['wx_'+x[0]+'_t']+'Z':''));
     /* marginal weather (visibility 5,000 m or less, ceiling BKN/OVC/VV below 1,500 ft) in the METAR or the
        forecast around ETD/ETA -> amber warning right under the header, and the report that caused it in amber */
     const mg=wxMargCheck(v,x[0]),hit=k=>mg.some(o=>o.src===k),line=(k,t)=>L.push(hit(k)?amb(t):t);
@@ -1743,16 +1745,26 @@ function sumCab(){
   L.push(CAB_LBL.docs+': '+(T.c.docs?'Yes':'Not confirmed'));
   L.push(CAB_LBL.names+': '+(T.v.names?T.v.names.replace(/\n/g,' '):'Not entered'));
   if(T.v.crewnote)L.push('Training / checks: '+T.v.crewnote.replace(/\n/g,' '));
-  A.forEach(i=>{const s=state.secs[i],v=s.v,c=s.c,q=x=>v[x]||'?';
-    L.push('');L.push(`S${i+1} ${v.flt||'---'} ${v.dep_icao||'----'}-${v.dest_icao||'----'} | ${[v.reg,v.stand?'stand '+v.stand:''].filter(Boolean).join(', ')||'reg not set'}`);
-    L.push('  MEL: '+melText(s)+' | cabin MEL '+q('cab_mel')+(v.cab_melnote?' ('+v.cab_melnote+')':''));
-    L.push('  Times: '+[v.etd?'ETD '+v.etd:'',v.eta?'ETA '+v.eta:'',v.ftime?'flight time '+v.ftime:'',v.fl?'FL'+v.fl:''].filter(Boolean).join(', '));
-    L.push('  Refueling '+q('cab_refuel')+' | tankering '+q('cab_tank')+' | refueling with PAX '+q('cab_refpax'));
-    L.push('  Taxi: '+(v.cab_taxi==='Y'?'short':(v.cab_taxi==='N'?'not short':'not set')));
-    L.push('  WX: '+['dep','rte','arr'].map(k=>k.toUpperCase()+' '+(c['cab.turb.'+k]?'[turb] ':'')+(v['cab_wx_'+k]||'-')).join(' | '))});
+  /* then, in this order: flight times, weather, MEL affecting the cabin, taxi time, refueling sectors,
+     hijack procedures, technical questions for the cabin crew — each topic once, covering every sector */
+  const sl=i=>{const v=state.secs[i].v;return 'S'+(i+1)+' '+(v.flt||'---')+' '+(v.dep_icao||'----')+'-'+(v.dest_icao||'----')};
+  L.push('');L.push('FLIGHT TIMES');
+  A.forEach(i=>{const v=state.secs[i].v;L.push('  '+sl(i)+': '+([v.etd?'ETD '+v.etd:'',v.eta?'ETA '+v.eta:'',v.ftime?'flight time '+v.ftime:'',v.fl?'FL'+v.fl:''].filter(Boolean).join(', ')||'not set')+([v.reg,v.stand?'stand '+v.stand:''].filter(Boolean).length?' ('+[v.reg,v.stand?'stand '+v.stand:''].filter(Boolean).join(', ')+')':''))});
+  L.push('');L.push('WEATHER');
+  A.forEach(i=>{const s=state.secs[i],v=s.v,c=s.c;L.push('  '+sl(i)+': '+['dep','rte','arr'].map(k=>k.toUpperCase()+' '+(c['cab.turb.'+k]?'[turb] ':'')+(v['cab_wx_'+k]||'-')).join(' | '))});
+  L.push('');L.push('MEL AFFECTING THE CABIN');
+  A.forEach(i=>{const v=state.secs[i].v;L.push('  '+sl(i)+': '+(v.cab_mel==='Y'?'Yes'+(v.cab_melnote?' — '+v.cab_melnote:''):v.cab_mel==='N'?'None':'not set'))});
+  L.push('');L.push('TAXI TIME');
+  A.forEach(i=>{const v=state.secs[i].v;L.push('  '+sl(i)+': '+({Y:'Short',N:'Normal',L:'Long'}[v.cab_taxi]||'not set'))});
   const lst=k=>{const l=cabList(k);return l.length?l.join(', '):'none'};
-  L.push('');L.push('Refueling sectors: '+lst('cab_refuel')+' | Tankering sectors: '+lst('cab_tank')+' | Refueling with PAX: '+lst('cab_refpax'));
-  if(T.v.hijack)L.push('Hijack code: '+T.v.hijack);if(T.v.special)L.push('Special requirements: '+T.v.special.replace(/\n/g,' '));
+  L.push('');L.push('REFUELING SECTORS');
+  L.push('  Refueling: '+lst('cab_refuel'));L.push('  Tankering: '+lst('cab_tank'));L.push('  Refueling with PAX: '+lst('cab_refpax'));
+  L.push('');L.push('HIJACK PROCEDURES');
+  L.push('  Hijack code: '+(T.v.hijack||'not set'));
+  L.push('');L.push('TECHNICAL QUESTIONS FOR THE CABIN CREW');
+  const tq=String(T.v.techq||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  if(tq.length)tq.forEach(x=>L.push('  - '+x));else L.push('  none entered');
+  if(T.v.special){L.push('');L.push('Special requirements: '+T.v.special.replace(/\n/g,' '))}
   const pend=CAB_TRIP.filter(k=>!T.c[k]).map(k=>CAB_LBL[k]);
   L.push('');L.push('Done '+(CAB_TRIP.length-pend.length)+'/'+CAB_TRIP.length+(pend.length?'\nOpen: '+pend.join('; '):''));
   return L.join('\n');
