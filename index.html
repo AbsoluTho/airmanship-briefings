@@ -300,7 +300,7 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.38.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.39.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1703,19 +1703,29 @@ function sumDsp(i){
   /* one value per line, right next to its title */
   const kg=x=>{const n=num(x);return n!=null?n0(n)+' kg':(x||'')};
   add('  PAX',v.lf_pax);
-  add('  Payload',kg(v.lf_payload));
   add('  ZF mass',kg(v.lf_zfm));
   add('  T/O mass',kg(v.lf_tom));
   add('  LDG mass',kg(v.lf_ldm));
   add('  Actual ZFW',kg(v.actual_zfm));
   if(lc.under!=null)L.push('  Underload: '+n0(lc.under)+' kg, limited by '+lc.by);
   L.push('');L.push(ttl('FUEL'));
-  add('  Fuel',[v.lf_taxi?'taxi '+v.lf_taxi:'',v.lf_trip?'trip '+v.lf_trip+(v.trip_incl?' (fuel factor '+(/^-/.test(v.trip_incl)?'':'+')+v.trip_incl+'%)':''):'',v.lf_planned?'planned '+v.lf_planned:'',v.lf_pextra?'extra '+v.lf_pextra:'',v.lf_crew_total?'crew total '+v.lf_crew_total+(lc.crew!=null?' (extra '+sgn(lc.crew)+')':''):''].filter(Boolean).join(', ')+' kg');
-  if(lc.total!=null)L.push('  Total fuel: '+n0(lc.total)+' kg');
-  if(lc.total!=null&&lc.taxi!=null&&lc.trip!=null)L.push('  Landing fuel (planned): '+n0(lc.total-lc.taxi-lc.trip)+' kg');
-  const why=['tank','traffic','wx','notam','other'].filter(k=>c['why.'+k]).map(k=>({tank:'tankering',traffic:'traffic',wx:'weather',notam:'NOTAM',other:'other'+(v.why_other?' ('+v.why_other+')':'')}[k]));if(why.length)add('  Extra fuel due to',why.join(', '));
+  /* order: total, trip, minimum fuel required, extra fuel, landing fuel, dispatcher remarks, tankering.
+     Extra = total − minimum required, so a crew-decided total shows up here too (crew part in brackets),
+     with the reason(s) ticked under 'Extra fuel due to'. */
+  const kgv=x=>x!=null?n0(x)+' kg':'';
+  const minReq=num(v.lf_planned);
+  add('  Total',kgv(lc.total));
+  add('  Trip',lc.trip!=null?n0(lc.trip)+' kg'+(v.trip_incl?' (fuel factor '+(/^-/.test(v.trip_incl)?'':'+')+v.trip_incl+'%)':''):'');
+  add('  Minimum fuel required',kgv(minReq));
+  const why=['tank','traffic','wx','notam','other'].filter(k=>c['why.'+k]).map(k=>({tank:'tankering',traffic:'traffic',wx:'weather',notam:'NOTAM',other:'other'+(v.why_other?' ('+v.why_other+')':'')}[k]));
+  const extra=(lc.total!=null&&minReq!=null)?lc.total-minReq:num(v.lf_pextra);
+  add('  Extra fuel',extra!=null?n0(extra)+' kg'+[lc.crew?'crew '+sgn(lc.crew)+' kg':'',why.join(', ')].filter(Boolean).map(x=>' ('+x+')').join(''):'');
+  add('  Landing fuel',(lc.total!=null&&lc.taxi!=null&&lc.trip!=null)?n0(lc.total-lc.taxi-lc.trip)+' kg':'');
   add('  Dispatcher remarks',v.dsp_rmk);
-  const tk=tkActualCheck(s);if(tk&&tk.ready){const same=Math.abs(tk.diff)<=1,legal=tk.mT>=0&&tk.mL>=0;L.push('  Tankering: actual total fuel decided '+n0(tk.actual)+' kg'+(same?' (matches flight plan)':' ('+sgn(tk.diff)+' kg vs flight plan)')+', '+(legal?'within T/O and LDG mass limits':'OVER A MASS LIMIT — check before loading'))}
+  /* tankering: the Round-trip tankering decision (No / Yes / Partial) and whether the decided total keeps
+     T/O and LDG mass within limits — the total itself is already the first fuel line */
+  {const tk=tkActualCheck(s),dec=v.tk_on?tkValLabel(v.tk_on):'',leg=tk&&tk.ready?((tk.mT>=0&&tk.mL>=0)?'within T/O and LDG mass limits':'OVER A MASS LIMIT — check before loading'):'';
+   add('  Tankering',[dec,leg].filter(Boolean).join(' | '))}
   const rq=['er','rvsm','pbn','nr','spa','pic'].filter(k=>c['req.'+k]).map(k=>({er:'Extended range',rvsm:'RVSM',pbn:'PBN',nr:'Narrow RWY',spa:'Simultaneous parallel approach',pic:'PIC is pilot flying'}[k]));
   L.push('');L.push(ttl('COMPANY OPERATIONAL REQUIREMENTS')+': '+(rq.join(', ')||'none ticked'));
   /* suggested clearance comes last: it's only a working guess until the real one is copied in the aircraft */
