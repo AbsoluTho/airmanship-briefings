@@ -278,6 +278,9 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
 .ntf pre{margin:0 0 4px;font:400 11px/1.5 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink2);background:var(--sunk);padding:8px}
 .pill.info{background:var(--sunk);color:var(--ink2)}
 .imp-mini{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ntkey .inner{gap:8px}
+.ntkr{display:grid;grid-template-columns:118px 1fr;gap:10px;align-items:baseline;font-size:13px;color:var(--ink2);max-width:80ch}
+.ntkr .pill{text-align:center}
 /* summary */
 .sumbox{display:flex;flex-direction:column;gap:10px;padding-top:16px;border-top:1px solid var(--line)}
 .sumbox h2{font-size:22px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
@@ -316,7 +319,7 @@ body.sumfull{overflow:hidden}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.41.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.42.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1534,6 +1537,11 @@ function dspHTML(){
   const clr=`<p class="note">Your suggested clearance, not the real one — a working guess to brief yourself with before you copy the actual clearance from ATC. SID and Airway are worked out from the route above (its first fix, and whatever airway follows it) the moment a route is filled in, but only while they're still empty — type over either one any time, and it stays as you left it. RWY offers your saved runways for this airport, same as elsewhere. First alt and SQW are always typed by hand. ATIS isn't tracked here — that one's still quicker on paper.</p>
    <div class="gr c4">${fld('clr_rwy','RWY',{rwy:'dep_icao'})}${fld('clr_sid','SID',{ph:'if any — some airports have none'})}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>`+minBtn;
   const ntm=`<p class="lead">Airport and FIR NOTAMs from the Mission Plus NOTAM PDF, translated into plain English. Mission Plus already limits the search to the flight window, so nothing is filtered by hour here. Nothing is added to the brief by default: tap “Add to brief” on each NOTAM you want in the summary.</p>
+   <details class="paste ntkey" data-seckey="dsp.ntkey"${state.open['dsp.ntkey']?' open':''}><summary>What do the colours mean?</summary><div class="inner">
+    <div class="ntkr"><span class="pill bad">Check first</span><span>Runways, ILS / navaids or lighting out, SID / STAR / approach changes, obstacles, airspace and activity warnings.</span></div>
+    <div class="ntkr"><span class="pill warn">Review</span><span>Taxiways limited, aerodrome services, routes and other changes.</span></div>
+    <div class="ntkr"><span class="pill info">Info</span><span>Stands, aprons, AIS and AIP supplements.</span></div>
+    <p class="note">The app's own rule of thumb, read from each NOTAM's Q-code (not an official classification). It only sets the order: red first, then amber, then grey. Nothing goes into the brief until you tap “Add to brief”.</p></div></details>
    <div class="imp-mini"><label class="btn" for="pdfIn2">Import NOTAM PDF</label><input class="sr" type="file" id="pdfIn2" data-imp="1" accept="application/pdf,.pdf" multiple><span class="note">Or paste the NOTAM text in the box at the top of this tab.</span></div>
    <div class="out" id="ntOut"></div>
    <h3 class="blk">Additional route notes</h3>
