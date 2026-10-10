@@ -325,7 +325,7 @@ body.sumfull{overflow:hidden}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.43.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.44.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -719,6 +719,46 @@ function ntWhere(it){
     return {dash:all.length>6?all.slice(0,6).join(', ')+' (+'+(all.length-6)+' more)':all.join(', ')};
   }
   return null;
+}
+/* ---------- NOTAM vs our time of operation ----------
+   Each NOTAM block in the summary is checked against when we are actually at / near that place, from the
+   sector's date, ETD, ETA and alternate flight time (all UTC):
+     Departure      ETD − 15 min → ETD + 1 h  (ETD is off-block time)
+     Destination    ETA ± 1 h
+     Alternate      ETA → ETA + alternate flight time (2 h if not known) + 1 h
+     FIR / en-route ETD → ETA
+   A NOTAM counts as active when its B)–C) validity overlaps that window and, if it has a D) daily schedule
+   with times (e.g. 1530-0245), one of those daily periods overlaps it too. A D) schedule without readable
+   times is treated as active (better to look twice). No date or ETD -> no check.
+   Only TIME-LIMITED NOTAMs are flagged: valid for 24 h or less, or with a D) schedule. Mission Plus already
+   sends only NOTAMs valid around the flight, so the long-term ones (stands closed for weeks, AIP SUPs, FIR
+   routes) always overlap; flagging those too would turn nearly every line amber and nothing would stand out. */
+function opWindow(v,key){
+  const dm=String(v.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!dm)return null;
+  const hm=x=>{const m=String(x||'').trim().match(/^(\d{1,2}):?(\d{2})$/);return m?((+m[1])*60+(+m[2]))*60000:null};
+  const H=3600000,base=Date.UTC(+dm[1],+dm[2]-1,+dm[3]),e=hm(v.etd);if(e==null)return null;
+  const etd=base+e;let eta=hm(v.eta);if(eta!=null){eta+=base;if(eta<etd)eta+=24*H}
+  if(key==='dep')return {from:etd-H/4,to:etd+H,lbl:'at ETD '+v.etd+'Z'};
+  if(eta==null)return null;
+  if(key==='arr')return {from:eta-H,to:eta+H,lbl:'at ETA '+v.eta+'Z'};
+  if(key==='alt'){const at=hours(v.alt_time);return {from:eta,to:eta+(at!=null?at:2)*H+H,lbl:'at the alternate ETA'}}
+  return {from:etd,to:eta,lbl:'during the flight'};
+}
+const ntMs=x=>{const d=ntDT(x);return d?Date.UTC(d.y,d.mo-1,d.d,+d.h,+d.mi):null};
+function ntActive(it,w){
+  const b=ntMs(it.b);if(b==null||!w)return false;
+  const c=it.perm?Infinity:(ntMs(it.c)??Infinity);
+  if(!(b<w.to&&w.from<c))return false;
+  const sched=!!String(it.d||'').trim();
+  if(!sched&&!(c-b<=86400000))return false;          // long-term: always in force, not flagged
+  const pairs=[...String(it.d||'').matchAll(/\b(\d{2})(\d{2})-(\d{2})(\d{2})\b/g)];
+  if(!String(it.d||'').trim()||!pairs.length)return true;
+  const D=86400000;
+  for(let day=Math.floor(w.from/D)*D-D;day<=w.to;day+=D)for(const p of pairs){
+    const st=day+((+p[1])*60+(+p[2]))*60000;let en=day+((+p[3])*60+(+p[4]))*60000;if(en<=st)en+=D;
+    if(st<w.to&&w.from<en&&st<c&&b<en)return true;
+  }
+  return false;
 }
 /* the whole summary line: "#1 A3232 - RWY CLSD (16R/34L) from 0800Z to 1000Z" */
 function ntSumLine(it,n){
@@ -1724,8 +1764,11 @@ function sumDsp(i){
       if(sel.length){
         if(!ntFirst)L.push('');
         ntFirst=false;
-        L.push('  '+(NT_ROLE[sc.key]||'Airport')+' '+sc.icao+':');
-        sel.forEach(it=>{L.push('   '+ntSumLine(it,it.n||sc.items.indexOf(it)+1))});
+        /* airport / FIR heading in the same bold cyan as the weather airports, so each block is easy to find */
+        L.push('  '+ttl((NT_ROLE[sc.key]||'Airport')+' '+sc.icao+':'));
+        /* NOTAMs valid during our time at that place are amber, with a note saying when */
+        const win=opWindow(v,sc.key);
+        sel.forEach(it=>{const ln='   '+ntSumLine(it,it.n||sc.items.indexOf(it)+1);L.push(ntActive(it,win)?amb(ln+' — active '+win.lbl):ln)});
       }
     });
   }
