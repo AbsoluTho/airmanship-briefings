@@ -286,6 +286,12 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
 .sumbox h2{font-size:22px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
 /* summary header row + full-screen mode (Expand / ✕) */
 .sumhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sumfoot{justify-content:space-between}
+.sumfs{display:inline-flex;gap:8px}
+.sumfs .btn{min-width:46px;min-height:40px;padding:4px 10px;text-transform:none;letter-spacing:0;font-family:var(--f-body)}
+.sumfs .btn[disabled]{opacity:.4;cursor:default}
+.a-sm{font-size:13px;font-weight:600}
+.a-lg{font-size:21px;font-weight:600;line-height:1}
 .sumsecs{display:none;flex-basis:100%}
 .sumbox.full .sumsecs{display:grid}
 .sumbox.full:has([data-sum="cab"]) .sumsecs{display:none}
@@ -295,8 +301,8 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
 .sumx{display:none;align-items:center;justify-content:center;width:44px;height:44px;flex:0 0 44px;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);font:600 20px/1 var(--f-body);cursor:pointer}
 .sumx:hover{border-color:var(--ink3)}
 .sumbox.full{position:fixed;inset:0;z-index:50;margin:0;border-top:0;background:var(--bg);padding:calc(12px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px))}
-.sumbox.full .sum{flex:1;min-height:0;max-height:none;font-size:15px;line-height:1.6;-webkit-overflow-scrolling:touch}
-@media (min-width:760px){.sumbox.full .sum{font-size:17px;padding:16px 20px}}
+.sumbox.full .sum{flex:1;min-height:0;max-height:none;font-size:calc(15px * var(--sumk,1));line-height:1.6;-webkit-overflow-scrolling:touch}
+@media (min-width:760px){.sumbox.full .sum{font-size:calc(17px * var(--sumk,1));padding:16px 20px}}
 .sumbox.full .sumx{display:inline-flex}
 .sumbox.full [data-act="sum-expand"]{display:none}
 body.sumfull{overflow:hidden}
@@ -304,7 +310,7 @@ body.sumfull{overflow:hidden}
 .sum .sw{color:var(--warn);font-weight:600}
 .wxmarg{padding:8px 12px;border:1px solid var(--warn);border-left-width:4px;background:var(--warn-soft);color:var(--warn);font:600 13px/1.4 var(--f-body)}
 .fld textarea.marg{border-color:var(--warn);box-shadow:inset 4px 0 0 var(--warn)}
-.sum{margin:0;padding:12px;background:var(--sunk);border:1px solid var(--line);font:400 12px/1.55 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto}
+.sum{margin:0;padding:12px;background:var(--sunk);border:1px solid var(--line);font:400 calc(12px * var(--sumk,1))/1.55 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto}
 .foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink3);font-size:12px;max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -319,7 +325,7 @@ body.sumfull{overflow:hidden}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.42.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.43.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1578,7 +1584,7 @@ function dspHTML(){
   const req=`${tgs('Requirements for this flight',[['req.er','Extended range'],['req.rvsm','RVSM'],['req.pbn','PBN'],['req.nr','Narrow RWY'],['req.spa','Simultaneous parallel approach'],['req.pic','PIC is pilot flying']])}`+minBtn;
   return `<div class="mhead"><h1>Dispatch Briefing</h1><p class="lead">The sequence of the Dispatch Briefing form: technical condition of the aircraft, route planning, weather, NOTAM, load, fuel, company operational requirements, and last your suggested clearance. Sector ${state.sec+1} is open; change sector with the chips above.</p></div>`+imp+
    sec('Flight information / technical condition of the aircraft',info,'fields','dsp.info')+sec('Route planning',route,'fields','dsp.route')+sec('Weather',wxb,'fields','dsp.wx')+sec('NOTAM',ntm,'nt','dsp.notam')+sec('Load',loadBlk,'fields','dsp.load')+sec('Fuel',fuelBlk,'fields','dsp.fuel')+sec('Company operational requirements',req,'checks','dsp.req')+sec('Suggested clearance',clr,'fields','dsp.clr')+
-   `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="dsp"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="dsp">Copy summary</button></div></section>`;
+   `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="dsp"></pre><div class="row sumfoot"><button class="btn primary" type="button" data-act="copy" data-mod="dsp">Copy summary</button><span class="sumfs" role="group" aria-label="Summary text size"><button class="btn sm" type="button" data-act="sum-font" data-d="-1" aria-label="Smaller text" title="Smaller text"><span class="a-sm">A</span></button><button class="btn sm" type="button" data-act="sum-font" data-d="1" aria-label="Larger text" title="Larger text"><span class="a-lg">A</span></button></span></div></section>`;
 }
 function cabDeriveHTML(){
   return [['Refueling sectors','cab_refuel'],['Tankering sectors','cab_tank'],['Refueling with PAX','cab_refpax']].map(x=>{const l=cabList(x[1]);return `<div class="r"><span class="m">${x[0]}</span><b>${l.length?l.join(', '):'none'}</b></div>`}).join('');
@@ -1596,7 +1602,7 @@ function cabHTML(){
   const q=`<div class="chks">${tchk('q',CAB_LBL.q)}</div><div class="gr c2" style="margin-top:8px">${tfld('techq','Technical questions for the cabin crew to answer',{area:1,cls:'wide',ph:'One per line, e.g. Where is the nearest fire extinguisher to door 1L?'})}</div>`;
   return `<div class="mhead"><h1>Cabin Crew Briefing</h1><p class="lead">One briefing for the whole duty, in the order of the Cabin Crew Briefing list. The data of each sector comes from Dispatch. The cabin-specific fields are filled in here.</p></div>`+ov+
    sec('Crew',crew,'checks','cab.crew')+sec('Aircraft, position and cabin MELs',ac,'checks','cab.ac')+sec('Sectors, flight times and altitudes',sc,'checks','cab.sc')+sec('Refueling operation',rf,'checks','cab.rf')+sec('Taxi',tx,'checks','cab.tx')+sec('Expected weather and turbulence',wx,'checks','cab.wx')+sec('Special requirements',sp,'checks','cab.sp')+sec('Questions',q,'checks','cab.q')+
-   `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="cab"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="cab">Copy summary</button></div></section>`;
+   `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="cab"></pre><div class="row sumfoot"><button class="btn primary" type="button" data-act="copy" data-mod="cab">Copy summary</button><span class="sumfs" role="group" aria-label="Summary text size"><button class="btn sm" type="button" data-act="sum-font" data-d="-1" aria-label="Smaller text" title="Smaller text"><span class="a-sm">A</span></button><button class="btn sm" type="button" data-act="sum-font" data-d="1" aria-label="Larger text" title="Larger text"><span class="a-lg">A</span></button></span></div></section>`;
 }
 function gfHTML(){
   const s=S();
@@ -1626,7 +1632,7 @@ function depHTML(){
    sec('Steps 3 &amp; 4 · Identified threats and mitigations',tem,'checks','dep.tem')+
    sec('Step 5 · Miscellaneous',misc,'fields','dep.misc')+
    sec('Emergency briefing',emerg,'checks','dep.emerg')+
-   `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="dep"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="dep">Copy summary</button></div></section>`;
+   `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="dep"></pre><div class="row sumfoot"><button class="btn primary" type="button" data-act="copy" data-mod="dep">Copy summary</button><span class="sumfs" role="group" aria-label="Summary text size"><button class="btn sm" type="button" data-act="sum-font" data-d="-1" aria-label="Smaller text" title="Smaller text"><span class="a-sm">A</span></button><button class="btn sm" type="button" data-act="sum-font" data-d="1" aria-label="Larger text" title="Larger text"><span class="a-lg">A</span></button></span></div></section>`;
 }
 function arrHTML(){
   const step1=`<div class="chks">${chk('arr.s1.0','Set an environment with no distraction')}</div>`;
@@ -1638,7 +1644,7 @@ function arrHTML(){
    sec('Step 2 · Plan',plan,'checks','arr.plan')+
    sec('Steps 3 &amp; 4 · Identified threats and mitigations',tem,'checks','arr.tem')+
    sec('Step 5 · Miscellaneous',misc,'fields','arr.misc')+
-   `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="arr"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="arr">Copy summary</button></div></section>`;
+   `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="arr"></pre><div class="row sumfoot"><button class="btn primary" type="button" data-act="copy" data-mod="arr">Copy summary</button><span class="sumfs" role="group" aria-label="Summary text size"><button class="btn sm" type="button" data-act="sum-font" data-d="-1" aria-label="Smaller text" title="Smaller text"><span class="a-sm">A</span></button><button class="btn sm" type="button" data-act="sum-font" data-d="1" aria-label="Larger text" title="Larger text"><span class="a-lg">A</span></button></span></div></section>`;
 }
 function modHTML(mod){
   const M=MODS[mod];
@@ -1654,7 +1660,7 @@ function modHTML(mod){
     if(s.checks&&s.checks.length)body+=`<div class="chks">${s.checks.map((t,i)=>chk(mod+'.'+s.id+'.'+i,t)).join('')}</div>`;
     if(s.note)body+=`<p class="note">${esc(s.note)}</p>`;
     return sec(esc(s.t)+(s.sub?`<span class="sub">${esc(s.sub)}</span>`:''),body,(s.checks&&s.checks.length)?'checks':'fields',mod+'.'+s.id)}).join('');
-  return `<div class="mhead"><h1>${esc(M.title)}</h1><p class="lead">${esc(M.lead)}</p></div>${secs}<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="${mod}"></pre><div class="row"><button class="btn primary" type="button" data-act="copy" data-mod="${mod}">Copy summary</button></div></section>`;
+  return `<div class="mhead"><h1>${esc(M.title)}</h1><p class="lead">${esc(M.lead)}</p></div>${secs}<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="${mod}"></pre><div class="row sumfoot"><button class="btn primary" type="button" data-act="copy" data-mod="${mod}">Copy summary</button><span class="sumfs" role="group" aria-label="Summary text size"><button class="btn sm" type="button" data-act="sum-font" data-d="-1" aria-label="Smaller text" title="Smaller text"><span class="a-sm">A</span></button><button class="btn sm" type="button" data-act="sum-font" data-d="1" aria-label="Larger text" title="Larger text"><span class="a-lg">A</span></button></span></div></section>`;
 }
 
 /* ---------- summaries ---------- */
@@ -1840,6 +1846,13 @@ function syncDom(){
 /* Full-screen summary. The summary box itself is lifted over the whole app (works everywhere, iPhone
    included); where the browser allows it (laptop, Android, iPad) it also goes true full screen so the
    browser bars disappear. ✕, Esc, or leaving browser full screen all bring back the normal view. */
+/* Summary text size: small A / large A step through these, remembered on this device only */
+const SUMFKEY='line-brief.sumfont.v1',SUMK=[0.8,0.9,1,1.15,1.3,1.5,1.75,2];
+let sumKi=2;try{const x=parseInt(localStorage.getItem(SUMFKEY),10);if(x>=0&&x<SUMK.length)sumKi=x}catch(e){}
+function applySumFont(){
+  document.documentElement.style.setProperty('--sumk',String(SUMK[sumKi]));
+  $$('[data-act="sum-font"]').forEach(b=>{const d=+b.dataset.d;b.disabled=(d<0&&sumKi===0)||(d>0&&sumKi===SUMK.length-1)});
+}
 let sumFull=null;
 /* sector buttons shown only in full screen, so you can flip between sectors without closing it */
 const sumSecHTML=()=>`<div class="sectors sumsecs" role="group" aria-label="Sector">${state.secs.map((s,i)=>{const v=s.v,has=!!(v.dep_icao||v.dest_icao||v.flt);
@@ -1861,7 +1874,8 @@ function closeSumFull(){
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sumFull)closeSumFull()});
 ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev,()=>{if(!(document.fullscreenElement||document.webkitFullscreenElement)&&sumFull)closeSumFull()}));
 function render(){renderNav();$('#main').innerHTML=state.tab==='dsp'?dspHTML():state.tab==='cab'?cabHTML():state.tab==='gf'?gfHTML():state.tab==='dep'?depHTML():state.tab==='arr'?arrHTML():modHTML(state.tab);syncDom();renderNt();refreshLive();renderCloud();
-  if(sumFull){const p=$('[data-sum="'+sumFull+'"]');if(p)p.closest('.sumbox').classList.add('full');else closeSumFull()}}
+  if(sumFull){const p=$('[data-sum="'+sumFull+'"]');if(p)p.closest('.sumbox').classList.add('full');else closeSumFull()}
+  applySumFont()}
 function refreshLive(){
   const s=S(),v=s.v,i=state.sec;
   const L0=loadCalc(s);
@@ -2101,6 +2115,7 @@ document.addEventListener('click',e=>{
   if(a==='extract'){importTexts([{name:'pasted text',text:$('#pasteTxt').value}]);return}
   if(a==='copy'){copyText(summary(b.dataset.mod),b);return}
   if(a==='sum-expand'){openSumFull(b.closest('.sumbox'));return}
+  if(a==='sum-font'){sumKi=Math.max(0,Math.min(SUMK.length-1,sumKi+(+b.dataset.d)));try{localStorage.setItem(SUMFKEY,String(sumKi))}catch(e){}applySumFont();return}
   if(a==='sum-close'){closeSumFull();return}
   if(a==='copyraw'){copyText(state.raw[state.sec]||'',b);return}
   if(a==='add-tem'){const tk=b.dataset.temkey||'tem';(s[tk]=s[tk]||[]).push({t:'',c:''});$('#temWrap_'+tk).innerHTML=temHTML(tk);refreshLive();save();return}
