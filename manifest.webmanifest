@@ -1,10 +1,10 @@
 {
   "name": "Airmanship Briefings",
   "short_name": "Airmanship",
-  "description": "Flight preparation aid: OFP and NOTAM import, Dispatch Briefing, tankering check, cabin, departure and jumpseat briefings.",
+  "description": "Flight preparation aid: OFP and NOTAM import, Dispatch Briefing, tankering check, cabin, departure, arrival and jumpseat briefings, and phases of flight.",
   "start_url": "./",
   "scope": "./",
-  "id": "/airmanship-briefings/",
+  "id": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#E8EDF1",

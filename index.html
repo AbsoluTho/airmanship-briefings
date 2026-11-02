@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Airmanship Briefings</title>
-<meta name="description" content="Flight preparation aid: OFP and NOTAM import, Dispatch Briefing, tankering check, cabin, departure and jumpseat briefings.">
+<meta name="description" content="Flight preparation aid: OFP and NOTAM import, Dispatch Briefing, tankering check, cabin, departure, arrival and jumpseat briefings, and phases of flight.">
 <meta name="theme-color" content="#E8EDF1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0B1117" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
@@ -169,14 +169,6 @@ button,input,select,textarea{font:inherit;color:inherit}
 .chk .hint{display:block;margin-top:2px;color:var(--ink3);font-size:12px;line-height:1.4}
 .chk.sub{padding-left:30px;min-height:38px}
 .chk b{font-weight:600}
-.flowi{border-bottom:1px dashed var(--line);padding-bottom:4px}
-.flowi:last-child{border-bottom:0}
-.flowi .chk{border-bottom:0;padding-bottom:2px}
-.flowlive{display:flex;gap:8px 12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:2px 2px 6px 34px;font:500 12px var(--f-mono);color:var(--ink2)}
-.flowd{padding:0 2px 8px 34px}
-.flowd summary{cursor:pointer;color:var(--accent);font-size:12px;list-style:none}
-.flowd summary::-webkit-details-marker{display:none}
-.flowd .inner{padding-top:6px}
 .st .sub{font:400 13px var(--f-body);letter-spacing:0;text-transform:none;color:var(--ink3);margin-left:8px}
 .xrow{padding:12px 0;border-top:1px dashed var(--line)}
 .xrow:first-child{border-top:0;padding-top:4px}
@@ -294,7 +286,7 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
 .a-lg{font-size:21px;font-weight:600;line-height:1}
 .sumsecs{display:none;flex-basis:100%}
 .sumbox.full .sumsecs{display:grid}
-.sumbox.full:has([data-sum="cab"]) .sumsecs{display:none}
+.sumbox.full:has([data-sum="cab"]) .sumsecs,.sumbox.full:has([data-sum="jmp"]) .sumsecs{display:none}
 .sc[disabled]{opacity:.45;cursor:default}
 @media (max-width:480px){.sumsecs .sc{padding:6px 8px}.sumsecs .sc .n{font-size:13px;letter-spacing:.03em;white-space:nowrap}}
 .sumhead h2{flex:1}
@@ -305,13 +297,88 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
 @media (min-width:760px){.sumbox.full .sum{font-size:calc(17px * var(--sumk,1));padding:16px 20px}}
 .sumbox.full .sumx{display:inline-flex}
 .sumbox.full [data-act="sum-expand"]{display:none}
-body.sumfull{overflow:hidden}
+body.sumfull,body.clopen{overflow:hidden}
 .sum .sh{color:var(--accent);font-weight:700}
 .sum .sw{color:var(--warn);font-weight:600}
 .wxmarg{padding:8px 12px;border:1px solid var(--warn);border-left-width:4px;background:var(--warn-soft);color:var(--warn);font:600 13px/1.4 var(--f-body)}
 .fld textarea.marg{border-color:var(--warn);box-shadow:inset 4px 0 0 var(--warn)}
 .sum{margin:0;padding:12px;background:var(--sunk);border:1px solid var(--line);font:400 calc(12px * var(--sumk,1))/1.55 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto}
 .foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink3);font-size:12px;max-width:80ch}
+/* phases of flight: reference tables in time order, PF|PM or CM1|CM2 columns */
+.pof-intro{background:var(--surface);border:1px solid var(--line);padding:10px 12px;font-size:13px;color:var(--ink2);margin-bottom:6px}
+.pof-intro b{color:var(--ink)}
+.pof-tools{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}
+.pt{border:1px solid var(--line);background:var(--surface)}
+.pt-h{display:grid;grid-template-columns:1fr 1fr;background:var(--sunk);border-bottom:1px solid var(--line)}
+.pt-h span{padding:6px 10px;font:700 15px/1 var(--f-display);letter-spacing:.12em;text-align:center}
+.pt-h span+span{border-left:1px solid var(--line)}
+.pt-r{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px dashed var(--line)}
+.pt-r>div{padding:7px 10px;min-height:34px;min-width:0;overflow-wrap:anywhere}
+.pt-r>div+div{border-left:1px solid var(--line)}
+.pt-f{border-bottom:1px dashed var(--line);padding:7px 10px;overflow-wrap:anywhere}
+.pt>:last-child{border-bottom:0}
+.pt-both{text-align:center}
+.pt .tag{font:700 10px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;padding:2px 6px;border-radius:2px;margin-right:6px;vertical-align:1px;background:var(--sunk);color:var(--ink2)}
+.pt-sub{font:600 12px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);background:var(--bg);padding:5px 10px}
+.pt-note{background:var(--bg);color:var(--ink2);font-size:13px}
+.pt-note .tag{background:var(--accent-soft);color:var(--accent)}
+.pt ul{margin:2px 0 0;padding-left:18px}
+.pt ol{margin:4px 0;padding-left:20px}
+.pt-cl{display:block;width:100%;border:0;border-bottom:1px dashed var(--line);background:var(--accent-soft);color:var(--accent);font:700 16px/1.2 var(--f-display);letter-spacing:.07em;text-transform:uppercase;text-align:center;padding:10px 10px;cursor:pointer}
+.pt-cl:hover{box-shadow:inset 0 0 0 1px var(--accent)}
+.pt-cl small{display:block;font:400 12px var(--f-body);letter-spacing:0;text-transform:none;color:var(--ink2);margin-top:2px}
+.pt-plain{border:1px solid var(--line);background:var(--surface);padding:6px 12px 12px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.pt-plain ul{margin:4px 0 0;padding-left:18px}
+.lnk{border:0;background:none;padding:0;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;text-align:inherit}
+@media (max-width:480px){.pt-r>div,.pt-f{padding:6px 8px;font-size:13px}.pt-h span{font-size:14px}}
+/* normal checklist sheet */
+.clsheet{position:fixed;inset:0;z-index:60;background:rgba(4,9,14,.6);display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}
+.clpanel{width:100%;max-width:540px;max-height:100%;overflow:auto;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--accent);padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.clhead{display:flex;align-items:center;gap:10px}
+.clhead h2{flex:1;font:700 24px/1.05 var(--f-display);letter-spacing:.05em;text-transform:uppercase}
+.clsheet .sumx{display:inline-flex}
+.cldraft{font-size:12px;line-height:1.4;color:var(--warn);background:var(--warn-soft);padding:6px 10px;border-left:3px solid var(--warn)}
+.cllist{list-style:none;margin:0;padding:0;font:500 15px/1.35 var(--f-mono)}
+.cllist li{display:flex;align-items:baseline;gap:6px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.cllist li.sb{padding:3px 0 3px 22px;border-bottom:0;font-size:13px;color:var(--ink2)}
+.cllist li.sb::before{content:"–";margin-right:4px}
+.cllist .dt{flex:1 1 18px;min-width:18px;border-bottom:2px dotted var(--ink3);transform:translateY(-4px)}
+.cllist .rs{font-weight:600;color:var(--accent);text-align:right}
+.cllist .who{font:600 11px var(--f-display);letter-spacing:.08em;color:var(--ink3)}
+.clend{font:600 13px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);text-align:center}
+/* briefings: flyadeal card as a Step | PF | PM grid */
+.bt{border:1px solid var(--line);background:var(--surface)}
+.bt-r{display:grid;grid-template-columns:44px 1fr 1fr;border-bottom:1px solid var(--line)}
+.bt-r:last-child{border-bottom:0}
+.bt-r>div{padding:8px 10px;min-width:0}
+.bt-r>div+div{border-left:1px solid var(--line)}
+.bt-st{font:700 15px var(--f-display);text-align:center;color:var(--ink2);background:var(--sunk)}
+.bt-hd{background:var(--sunk)}
+.bt-hd>div{font:700 15px var(--f-display);letter-spacing:.12em;text-align:center}
+.bt-span{grid-column:2/4;display:flex;flex-direction:column;gap:8px}
+.bt-lbl{display:block;font:600 13px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.bt-big{font:700 16px var(--f-display);letter-spacing:.06em;text-transform:uppercase}
+.bt-big small{font:400 12px var(--f-body);letter-spacing:0;text-transform:none;color:var(--ink3);margin-left:6px}
+.eb{border:1px solid var(--line);background:var(--surface)}
+.eb h3{margin:0;padding:7px 10px;background:var(--warn-soft);color:var(--warn);font:700 16px var(--f-display);letter-spacing:.08em;text-transform:uppercase;text-align:center}
+.eb dl{margin:0;padding:4px 12px 4px}
+.eb dt{font-weight:600;margin-top:8px}
+.eb dd{margin:2px 0 0}
+.eb ul{margin:2px 0 0;padding-left:18px}
+.tcats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);width:100%}
+.tcats>div{background:var(--surface);padding:6px 10px 8px}
+.tcats h4{margin:0 0 4px;font:700 14px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.tcats ul{margin:0;padding-left:16px;font-size:13px;color:var(--ink2)}
+.brfseg{max-width:360px;margin:4px 0 2px}
+.brfseg button{font-size:15px}
+@media (max-width:600px){.tcats{grid-template-columns:1fr 1fr}}
+.bt-c{align-items:center;text-align:center}
+.bt-ul{margin:2px 0 0;padding-left:18px}
+.bt-ul li{margin:3px 0}
+.bt+.eb{margin-top:14px}
+.eb dl{padding-bottom:10px}
+.tcap{font:600 14px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin:18px 0 6px}
+@media (max-width:480px){.bt-r{grid-template-columns:38px 1fr 1fr}.bt-hd>div:first-child{font-size:11px;letter-spacing:.02em;padding:8px 2px}.bt-r>div{padding:6px 7px;font-size:13px}.bt-ul{padding-left:15px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -325,7 +392,7 @@ body.sumfull{overflow:hidden}
   <div class="cloudbox" id="cloudBox"></div>
   <div class="nav"><div class="sectors" id="sectors" role="group" aria-label="Sector"></div><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.44.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.45.3.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -825,30 +892,22 @@ function parseNotams(text){
 /*NOTAM_END*/
 
 /* ---------- module content: Departure and Jumpseat ---------- */
-const TEM_PRESETS=[
- ['High temperature, performance limited','Recheck FLEX or TOGA, runway and wind; consider a weight reduction'],
- ['Dust or reduced visibility','Update ATIS; review minima and alternate; confirm lighting and low visibility procedures'],
- ['Wet or contaminated runway','Apply the performance correction; review autobrake and rejection criteria'],
- ['Schedule pressure or delay','No step is skipped; ask for time if needed'],
- ['Busy traffic or single runway','Stay ahead of sequence and clearances; read back runway crossings'],
- ['Fatigue or night departure','State it openly; increase monitoring and standard callouts'],
- ['Crew member under line training','Align roles; the Captain monitors more closely'],
- ['Turbulence or CB on departure','Check radar and routing; cabin informed; consider a hold or deviation'],
- ['Birds or wildlife at the aerodrome','Read NOTAM and ATIS; lights on; decide before V1']
-];
 /* Departure / Arrival Briefing content, transcribed from flyadeal's official DEP AND ARR BRIEFINGS form. */
 const DEP_PF=['Hotspots of the planned taxi route','Stop margin for RTO','EOSID','Return / diversion considerations','Special operations','Non-standard operation'];
 const DEP_PM=['T.O RWY (intersection, if applicable)','SID designator','First cleared altitude','MSA / MORA for the climb trajectory','Extra fuel and time'];
 const ARR_PF=['Guidance for the approach','Landing flaps setting','Stop margin','Use of reverse thrust','Use of autobrake','Planned runway exit','Hotspots for taxi-in','Special operation','Non-standard operation'];
-const ARR_PM=['Arrival / transition designator and trajectory','MORA / MOCA / MSA for the planned trajectory','STAR','Go-around trajectory','Approach minimum','Runway and type of approach','Extra fuel and time'];
+const ARR_PM=['Arrival / transition designator','MORA / MOCA / MSA for the planned trajectory','STAR','Runway and type of approach','Approach minimum','Go-around trajectory','Extra fuel and time'];
+/* Emergency briefing, as printed under the departure card: [when, what] — what is a string or a list */
 const DEP_EMERG=[
- 'For any failure before V1: CAPT will call “STOP” or “GO”.',
- 'In case of failure after V1: continue T/O, no actions before 400 ft AGL except gear up.',
- 'Reaching EO ACC altitude: if the engine is secure, level off, accelerate and clean up; otherwise continue climbing until the engine is secure (but not above the EO maximum acceleration altitude).',
- 'At green dot: OP CLB, MCT, resume ECAM, acceleration flow pattern, ENG OUT routing status.',
- 'ENG OUT routing: EOSID, SID, radar vector, or immediate return.'
+ ['For any failure before V1:','CAPT will call “STOP” or “GO”'],
+ ['In case of failure after V1:','Continue takeoff, no actions before 400 ft AGL except gear up. Reaching 400 ft AGL, ECAM actions'],
+ ['Reaching EO ACC altitude:',['If the engine is secure, level off, accelerate and clean up','Otherwise continue climbing until the engine is secure (but not above the EO maximum acceleration altitude)']],
+ ['At green dot:','OP CLB, MCT, resume ECAM, acceleration flow pattern, status'],
+ ['ENG OUT routing:','EOSID, SID, radar vector, immediate return']
 ];
-const TEM_SELFCHECK=['Top threats identified, each with a countermeasure','Both pilots invited to speak up if they see a threat or an error'];
+/* Threat categories from the arrival card, used by both briefings: the "+ Add threat" picker and the
+   collapsed reference list at the bottom of the tab */
+const TCATS=[['Airport',['Congestion','Construction','Hotspots','Infrastructure','Runway condition']],['ATC',['Challenging restrictions','Language','Phraseology','Short-term changes of clearance']],['Aircraft',['MEL / CDL','Aircraft defects','Supplementary procedures that are not routine']],['Environment',['Low visibility','Approach / runway lighting','Runway contamination']],['Weather',['Windshear','Convective weather','Cold weather','Precipitation','Unreliable weather reports']],['Operations',['Schedule pressure','Delays','Late crew','Load issues']],['Crew',['Fatigue','Low experience','Complacency','Distraction','Training','Crew that is not standard']],['Terrain',['High terrain','Unfamiliar environment','Complex visual approach']]];
 const MODS={
  jmp:{title:'Jumpseat Briefing',lead:'The JENO–SECS script for anyone on the cockpit jumpseat. Read each point aloud, tick it, and finish with the closing questions. JENO covers Jumpseat, Emergency equipment, No smoking and Oxygen. SECS covers Seatbelts, Entry and exit, Conduct and Safety.',
   sections:[
@@ -874,54 +933,43 @@ const MODS={
  ]}
 };
 const CAB_TRIP=['fit','docs','names','reg','mel','nsec','ftime','fl','refuel','refsec','tank','refpax','taxi','wx','hijack','entry','unruly','emerg','q'];
-/* Ground Flow: the full ground-to-ground sequence, in three phases, as a task checklist. Each entry
-   is [task label, note-or-'' (the exception/detail, tucked behind a "Note" expand — never shown by
-   default), liveKey-or-undefined (a short code telling gfLive() which figure the app already tracks
-   elsewhere to show live next to this task, e.g. 'mel' -> the MEL/CDL entered under Dispatch), so
-   nothing here is ever typed a second time]. Radio-call phraseology is deliberately left out — this
-   tracks the operational task, not the wording. */
-const GF_P1=[
- ['Safety exterior inspection (chocks, gear doors, APU area, aircraft registration)','If the aircraft registration is wrong, call IOCC (FDO) immediately.'],
- ['Request GPU, air conditioning, and start the APU if available','Ask the TRC or the engineer for external power and air conditioning on arrival. Before power-up, check the Technical Logbook pink pages to confirm APU availability, and write down the initial fuel for the ATL entry later.'],
- ['Check documents on board','6 aircraft documents in a folder, plus the Cabin Defect Report (CDR).'],
- ['Power up — preliminary cockpit preparation (CM2 flow)','ENG master levers, ENG mode sel, WX/PWS off, L/G lever, wipers, BATT check, request external power and air conditioning, EXT PWR ON, RMP 1 & 2, ACP, APU fire test, all IR mode sel NAV. If no GPU, start the APU (bleed on).'],
- ['Refueling','Fuel pumps off, seat belts off, PA "Cabin crew, refueling in progress" regardless of boarding. Always confirm the fuel cap is closed — refueling by unauthorized ground personnel can be charged to the pilot.','fuel'],
- ['Preliminary cockpit preparation (eQRH SOP)','Follow the eQRH SOP Preliminary Cockpit Preparation.'],
- ['EFB / ACARS / AOC init','Check EFB version and database (FS Manager and FD Pro); on the first flight of the day, check the spare EFB is charged and updated. Initialize ACARS/AOC and the FMGS pre-init (engine and aircraft type, database valid, flight number, from/to).'],
- ['Aircraft acceptance — ATL checks','Pink MEL & CDL, yellow NEF, white pages, dents/scratches; weekly (8th day), 48-hour and preflight/transit (8-hour) checks — contact MCC if any has expired. Confirm the inbound ATL is filled and signed by the previous crew, check/insert the initial fuel, and review the eQRH config summary and any OEB.','mel'],
- ['ATIS / METAR','Copy the ATIS, print the METAR.','metar'],
- ['Preliminary loading (FlySmart) and LIR','PAX distribution per the Initial Flight Summary Report; test which loading compartment gets THR closest to zero. Fill the LIR and deliver it to the TRC.'],
- ['Preliminary T/O performance (FlySmart)','Add any MEL/CDL items and cross-check the FlySmart outputs.','mel'],
- ['Walkaround and refueling receipt','PM does the walkaround, signs and retrieves the refueling receipt with the fuel density; PF works the overhead/front panel/pedestal and FMS insert. Once refueling finishes (this can happen at any point, out of order): "Cabin crew, refueling completed", refueling panel OVHD off, seat belts on, fuel pumps confirmed on.'],
- ['Fuel receipt and FMS review','PM back from the walkaround — fuel receipt in the cockpit, review the FMS. FCU/LAT — oxygen check, inform ground, PFD/ND/pressurization/STS/FOB check. Fill the outbound ATL with the fuel calculation and receipt number.'],
- ['Request clearance',"The sector's PM requests the clearance and reads it back.",'clr'],
- ['Departure, emergency and jumpseat briefings','','brief'],
- ['Cockpit preparation checklist','GPU disconnect (ground from cockpit, remove power and air conditioning), APU bleed on, confirm fuel pumps on.'],
- ['Security checks with SCCM',"SCCM brings 2 copies — sign both, front and back. Check the header's 4 cabin-crew signatures and the walkaround items on both forms."]
-];
-const GF_P2=[
- ['Final loadsheet and LTS — send loadsheet','Final Flight Summary Report and Load & Trim Sheet (LIR/PAX); export from FlySmart and send to fsloadsheet@flyadeal.com and loadsheet@flyadeal.com.'],
- ['Final T/O performance (FlySmart)','Insert the PERF page.'],
- ['Four documents and the ATL on board','Signed LIR, security form, fuel receipt, final loading manifest; signed ATL (outbound and walkaround).'],
- ['Close doors, arm slides',''],
- ['Ground communication and pushback clearance','Confirm ready for pushback with ground, and release the parking brake once cleared.'],
- ['Request pushback and engine start',''],
- ['Before Start checklist','Confirm heading and parking brake released with ground, get engine-start clearance, start engine one; once pushback is complete, set the parking brakes; once engine start is complete, ground disconnects and gives the hand signal.']
-];
-const GF_P3=[
- ['Parking checklist','Run this once ground personnel indicates chocks are in place and parking brake is off.'],
- ['Close the ATL and generate the general flight report','Generate the PDF.'],
- ['Post-flight: close the Journey Log',''],
- ['Update Mission+ / Jeppesen','Import the flight and accept the dispatch release for the next sector.'],
- ['Set the refueling panel and continue the turnaround sequence','']
-];
-const TABS=[['dsp','Dispatch'],['cab','Cabin'],['jmp','Jumpseat'],['gf','Ground flow'],['dep','Departure Briefing'],['arr','Arrival Briefing']];
-const IDS={
- dep:['dep.s1.0'].concat(DEP_PF.map((_,i)=>'dep.pf.'+i)).concat(DEP_PM.map((_,i)=>'dep.pm.'+i)).concat(['dep.tem.0','dep.tem.1','dep.emerg.0']),
- arr:['arr.s1.0'].concat(ARR_PF.map((_,i)=>'arr.pf.'+i)).concat(ARR_PM.map((_,i)=>'arr.pm.'+i)).concat(['arr.tem.0','arr.tem.1']),
- jmp:[],cab:CAB_TRIP.slice(),
- gf:GF_P1.map((_,i)=>'gf.p1.'+i).concat(GF_P2.map((_,i)=>'gf.p2.'+i)).concat(GF_P3.map((_,i)=>'gf.p3.'+i))
+/* Phases of Flight: a short reference of routine actions and key points, in time order, from the
+   FCOM task sharing plus line-training notes. No tick boxes. Each phase is [title, columns or null,
+   rows]; a row is ['r', left, right] (two columns), ['b', text] (both pilots), ['s', text] (sub-heading),
+   ['n', [items]] (note across both columns) or ['c', checklist title, detail] (tap to open the checklist).
+   Cell text is trusted, fixed HTML written here, never user input. */
+const POF=[["1. Cabin crew briefing", null, [["n", ["Short and specific", "Fit for duty and documents", "Names and positions", "Aircraft registration, cabin reports if any", "Number of sectors and flight times", "Refueling / tankering sectors", "Taxi times", "Weather and turbulence", "Special: unruly passenger, hijack code, cockpit entry", "Emergency: RTO, loss of cabin pressure", "Questions"], "list"]]], ["2. Safety exterior inspection", ["CM1", "CM2"], [["n", ["Hot days: on arrival, ask the TRC for ground power and air conditioning"]], ["n", ["The CM2 items may also be done by the Captain (CA). The Captain must check them during the GACA OBS flight"]], ["r", "", "Chocks in place"], ["r", "", "Landing gear doors closed"], ["r", "", "APU area"], ["r", "", "Aircraft registration"], ["n", ["Wrong aircraft: inform IOCC"]], ["r", "Set the external refueling panel, then go to the cockpit", ""]]], ["3. Preliminary cockpit preparation", ["CM1", "CM2"], [["n", ["Printer paper and LIR forms on board", "Documents on board: the 6 aircraft documents in the folder, plus the Cabin Defect Report (CDR)"]], ["r", "ATL:<ul><li>Pink, yellow and white pages</li><li>Weekly, daily and preflight checks valid</li><li>APU MEL and any open item: call MCC</li></ul>", "Cockpit flow, before the APU:<ul><li>ENG 1, 2 masters OFF</li><li>ENG MODE selector NORM</li><li>WXR / PWS OFF</li><li>L/G lever DOWN</li><li>Wipers OFF</li><li>BAT check / AUTO</li><li>EXT PWR ON</li><li>RMP 1 and 2 ON / SET (CEO: ACP)</li><li>APU fire test</li></ul>"], ["r", "Initial fuel into the ATL once ECAM is available", "Start APU. When APU AVAIL: AIR COND panel set, EXT PWR as required"], ["r", "NEO: refueling panel set", "All IR MODE selectors NAV"], ["n", ["Refueling in progress: seat belts OFF, PA “Cabin crew, refueling in progress”"]], ["b", "Cockpit lights"], ["r", "Aircraft config summary and OEB", ""], ["r", "FMS init: load the stored flight plan (tip for gaining prep time)", ""], ["b", "Weather datalink request, ATIS, preliminary takeoff performance (compute and crosscheck)"], ["b", "Preliminary loading in FlySmart (compute and crosscheck)"], ["n", ["LIR filled and delivered", "Initial load sheet: available at the gate, or when the TRC brings it (printed or a screenshot)"]]]], ["4. Walkaround and cockpit preparation", ["PF", "PM"], [["r", "Cockpit flow (overhead, pedestal)", "Finishes the cockpit check, then the exterior walkaround"], ["r", "FMS insert: insert/verify the full FMS (DIFSRIPP)", ""], ["n", ["<b>Refueling complete (any time):</b> seat belts ON, PA “Cabin crew, refueling completed”", "External panel closed, fuel cap closed and flush"]], ["r", "", "Back with the fuel receipt:<ul><li>ATL fuel calculation</li><li>Outbound ATL complete and signed</li></ul>"], ["r", "", "NEO: refueling panel OFF"], ["r", "FCU set", "FMS preparation crosscheck (check FMS loading and FCU)"], ["b", "Oxygen mask test"], ["n", ["Oxygen amber box: check the crew oxygen limitations table"]], ["r", "", "Request clearance"], ["n", ["A typical KSA clearance gives: destination · as filed or via airway · runway and SID, or runway heading/track to an altitude · first cleared altitude · squawk"]], ["r", "DEPARTURE BRIEFING", ""], ["c", "Cockpit preparation checklist", "If CM1 is PM for the sector, CM1 reads the checklist"]]], ["5. Before pushback or start", ["PF", "PM"], [["n", ["Security checks with the SCCM: the SCCM brings 2 copies. Sign both, front and back. Check the 4 cabin-crew signatures in the header and the walkaround items on both forms"]], ["b", "Final loadsheet check · Fuel on board check"], ["r", "ZFW / ZFWCG check, revise in the FMS", "ZFW / ZFWCG crosscheck"], ["b", "Crosscheck the performance output on FlySmart"], ["n", ["Final loadsheet: passenger count and bag pieces against the LIR", "ATL blue sheet to the TRC", "Documents on board: signed LIR, security form, fuel receipt, final loading manifest, signed ATL (outbound and walkaround)", "SCCM: passengers checked, doors closed", "FlySmart final calculation: check data, export, sign, send to fsloadsheet@flyadeal.com and loadsheet@flyadeal.com"]], ["r", "", "Request pushback and start (stand, POB)"], ["s", "When cleared"], ["r", "Beacon ON", "Transponder AUTO and code set, TCAS ABV"], ["r", "NWS DISC", ""], ["b", "Windows and doors closed · Slides armed"], ["r", "Parking brake ON with pressure", ""], ["c", "Before start checklist", ""]]], ["6. Pushback, engine start and after start", ["PF", "PM"], [["r", "“Ground, cockpit, ready for pushback and start?”", ""], ["r", "Parking brake released when ground asks: “Parking brake released”", ""], ["n", ["Read back ground instructions only, nothing extra, e.g. “Cleared for pushback and start, facing north”"]], ["r", "Engine start in the sequence cleared", ""], ["r", "“Pushback complete, set parking brake”: parking brake ON", ""], ["r", "", "Ground spoilers ARM"], ["r", "", "Rudder trim reset · Flaps set · Pitch trim set"], ["r", "Clear to disconnect", ""], ["c", "After start checklist", "Only once both pilots have seen the hand signal and the ground equipment is removed"]]], ["7. Taxi", ["PF", "PM"], [["r", "", "Taxi clearance"], ["r", "External lights", ""], ["r", "Parking brake off, brake check", "Brake fan as required"], ["n", ["Release the parking brake without adding thrust, feet off the pedals", "Smooth, continuous tiller. No yanking", "Watch taxi speed. Brake more on the cooler side (brake temperatures)"]], ["r", "Flight controls check", "Autobrake MAX"], ["r", "", "Takeoff config test"], ["s", "After “cabin secure” (cabin report)"], ["b", "Clearance check: clearance no changes, CLB, NAV, 1 FD 2, first cleared altitude blue (squawk optional)"], ["b", "TERR on ND as required: MSA above 5,000 ft, set TERR on both sides"], ["c", "Taxi checklist", "Flaps agree on the lever, ECAM and PERF page"], ["n", ["External lights: always keep situational awareness of external light use", "In doubt: stop, check the chart and position, tell ATC. Never taxi in doubt", "Runway or SID changed after cockpit preparation: recompute takeoff performance, revise the FMS, re-brief, then DEPARTURE CHANGE CHECKLIST"]]]], ["8. Before takeoff (line-up)", ["PF", "PM"], [["r", "", "Brake fans OFF if all brakes are below 150 °C"], ["r", "", "Line-up / takeoff clearance"], ["r", "", "TCAS TA/RA"], ["b", "Stop bars off"], ["b", "Approach path and runway clear"], ["b", "<b>RVSM altimeter check: always remember</b>"], ["b", "PROG: GPS PRIMARY, accuracy HIGH"], ["r", "External lights", "Cabin crew advise"], ["c", "Line-up checklist", ""]]], ["9. Takeoff", ["PF", "PM"], [["r", "50 percent N1, then FLX/MCT or TOGA", ""], ["n", ["<b>Controls handover:</b> if CM1 is PM (OM-A), once the thrust levers are in TOGA or FLX/MCT and the aircraft is lined up with the runway, the captain says “You have controls” and the FO replies “I have controls”"]], ["r", "Captain’s hand on the thrust levers until V1", "Thrust set"], ["r", "", "“One hundred knots” · “V1”"], ["r", "", "“Positive climb”, gear up"], ["r", "Thrust reduction altitude: CL", "Flaps on order"]]], ["10. Climb", ["PF", "PM"], [["n", ["High climb rate with traffic restrictions: V/S 1,500 fpm, then 1,000 fpm"]], ["s", "10,000 ft"], ["r", "TERR ND off", "<ul><li>Landing lights off</li><li>Seat belts cycle</li><li>EFIS ARPT</li><li>ECAM memo</li><li>Clear radios and navaids</li><li>Copy SEC FPLN</li><li>PROG check: OPT / REC MAX FL</li></ul>"], ["s", "Transition altitude"], ["r", "“SET STANDARD”", ""], ["r", "", "“STANDARD SET, CROSSCHECK, PASSING FL135 NOW”"], ["r", "“CROSSCHECK, FL190 BLUE”", ""], ["s", "Pitch near 5 degrees"], ["r", "", "Seat belts: NEO AUTO, CEO OFF"], ["r", "", "SCCM calls: allow cockpit entry. Inform the Ihram zone entry time if applicable"], ["s", "Passing FL250: RVSM check"], ["n", ["When PF, focus on flying the aircraft, with no additional tasks. If any information is needed, delegate the task to the PM"]]]], ["11. Cruise", ["PF", "PM"], [["b", "TCAS BLW · ECAM memo and SD pages"], ["r", "", "Flight progress:<ul><li>NAV LOG on Mission+</li><li>Cruise briefing: time of departure (check the delay code if any); time over the next waypoint and fuel: check FUEL and TIME are coherent with the NAV LOG; extra fuel and time at arrival</li></ul>"], ["b", "Step climb (STEP ALTS) · GPS accuracy check"], ["n", ["Unreliable speed: note the actual pitch and thrust, compare with the eQRH table", "Review EMERGENCY DESCENT: en-route MORA", "Smoke (eQRH): relevant items for decision making; fuel gravity feeding time check", "Engine-out level (FlySmart calculations): PROG = standard strategy (EO MAX ALT), PERF = obstacle strategy (EO MAX ALT)"]]]], ["12. Descent preparation", ["PF", "PM"], [["n", ["FMS time marker 10 minutes before TOD"]], ["r", "", "At the marker: PA “Cabin crew prepare for landing”"], ["r", "Hands over controls", ""], ["r", "", "METAR and ATIS"], ["r", "Omega flow and approach charts", ""], ["r", "FMS preparation", "FMS crosscheck"], ["r", "Landing performance", "Landing performance crosscheck"], ["r", "Autobrake · CONF 3 if applicable", ""], ["r", "ARRIVAL BRIEFING", ""], ["r", "", "Descent clearance"], ["r", "Cleared altitude on the FCU", ""], ["r", "", "At TOD: seat belts ON"]]], ["13. Descent", ["PF", "PM"], [["n", ["In the KSA, ATC often authorises a discretionary descent:<br>ATC: “Adeal 320, at pilot’s discretion descend to FL200, fly direct to VEMEM and maintain”<br>PM: “At own discretion descend to FL200, fly direct to VEMEM and maintain, Adeal 320”<br>That’s the trigger to insert the constraint in the FMS FPLN: -FL200 over VEMEM"]], ["s", "Transition level FL150"], ["r", "“SET QNH”", "“QNH XXXX set, crosscheck, passing 14,700 ft now”"], ["r", "“CROSSCHECK, XX THOUSAND FT BLUE”", ""], ["b", "QNH on both PFDs and ISIS, checked against the PERF APPR page"], ["s", "Descending below 10,000 ft AAL"], ["r", "<ul><li>EFIS CSTR</li><li>LS as required</li><li>PROG: GPS PRIMARY, accuracy HIGH (optional)</li></ul>", "<ul><li>Seat belts cycle</li><li>Landing lights ON</li><li>TERR on ND</li></ul>"], ["b", "Identify the localizer, e.g. “IEAL identified”"], ["s", "Cabin secured call"], ["r", "Takes communication", "Transfers communication to PF, then answers the forward cabin:<ul><li>Cockpit: “Cockpit, go ahead”</li><li>SCCM: “Cabin secured”</li><li>Cockpit: “Thank you, temperature is XX °C”</li><li>SCCM: “Thank you, captain”</li></ul>"], ["r", "", "Resumes communication"], ["r", "“No changes”, or states the changes given by ATC, then requests the APPROACH CHECKLIST", ""], ["c", "Approach checklist", ""]]], ["14. Approach", ["PF", "PM"], [["n", ["Sequence the lateral flight plan straight away, with no delays", "“Descend FL160, direct VEMEM”: FL160 at VEMEM in the FMS", "Jeddah Final: callsign only", "3 NM per 1,000 ft, to avoid speed brakes", "Prefer OPEN DES on vectors over a lot of V/S"]], ["r", "Flight plan sequencing", ""], ["r", "About 15 NM out: approach phase activate", ""], ["n", ["Arm APPR only on an intercept heading. LS on ISIS when cleared for the approach", "ILS: report “established” only once LOC is within one dot"]], ["s", "Configuration: PF orders, PM selects"], ["r", "Green dot: “FLAPS 1”", "FLAPS 1"], ["r", "2,000 ft AGL minimum: “FLAPS 2”", "FLAPS 2"], ["r", "FLAPS 2: “GEAR DOWN”", "Gear down · autobrake confirm · ground spoilers ARM · external lights · PA “Cabin crew, thank you very much, be seated for landing”"], ["r", "Gear down: “FLAPS 3”, then “FLAPS FULL”", "FLAPS 3, FULL · ECAM wheel page · LDG memo no blue"], ["b", "Cabin report"], ["c", "Landing checklist", ""], ["r", "", "Cabin crew advise"], ["n", ["Excessive deviation callouts: VOR half a dot or 2.5 degrees, V/DEV half a dot (50 ft)"]], ["n", ["<b>VOR/DME arc, early stabilised</b><ol><li>Before the arc: 250 kt (or as restricted), plan the deceleration. Arc length is about DME distance times degrees of arc, divided by 60 (60 degrees on the 15 DME arc is about 15 NM)</li><li>Arc interception (IAF): clean, green dot (about 210 kt)</li><li>On the arc: descend to the arc minimum altitude. Hold the DME distance and plan to reach the IF at its altitude</li><li>4 NM before the IF: FLAPS 1, S speed</li><li>Final course interception: FLAPS 2, F speed. Confirm capture</li><li>FDP becomes the TO waypoint: arm APPR, descend to the FAF altitude, monitor raw VOR/DME</li><li>4 NM before the FAF: GEAR DOWN</li><li>Before the FAF: FLAPS 3, then FULL, VAPP, stabilised</li><li>At the FAF: set the go-around altitude, confirm the path, altitude/distance crosschecks</li><li>At minima: visual reference, continue; no visual reference, go around. Visual segment: AP OFF, FDs OFF, BIRD ON</li></ol><i>Memory flow:</i> 250 kt, arc at green dot, FLAPS 1 before the IF, FLAPS 2 on final, FDP: arm APPR, gear down, FLAPS 3, FULL and VAPP before the FAF, GA altitude at the FAF"]]]], ["15. Landing", ["PF", "PM"], [["r", "About 30 ft: flare, thrust idle", ""], ["r", "Reverse", "Calls: spoilers · reverse · autobrake / deceleration"], ["r", "70 kt: reversers idle", "“Seventy knots”"], ["r", "Taxi speed: reversers stowed", ""], ["r", "Before 20 kt: autobrake off", ""], ["n", ["Autobrake LO: let it act and manage the runway occupancy time. If required, disarm the autobrake and let the aircraft vacate on a rapid exit at 50 kt ground speed"]]]], ["16. Go-around", ["PF", "PM"], [["r", "TOGA, rotate, “Go around, flaps”", "Flaps one step"], ["r", "FMA", "“Positive climb”"], ["r", "“Gear up”", "Gear up"], ["r", "NAV or HDG", "Go-around altitude check"]]], ["17. After landing and taxi in", ["PF", "PM"], [["r", "Ground spoilers disarm (crossing the runway exit line)", "Flaps retract"], ["r", "External lights", "Radar / PWS off · TCAS STBY"], ["c", "After landing checklist", "Once the runway is vacated"], ["n", ["Apron chart ready before landing. Watch taxi speed"]], ["r", "", "After 3 minutes: “Cooling time elapsed”"], ["r", "On a straight line: ENG 2 shutdown order", "ENG 2 off, yellow electric pump ON"], ["r", "", "Brake temperatures · Brake fan as required"], ["r", "", "Approaching the gate: start APU"], ["n", ["ABBA: APU · Brake fan · Brake pressure · Apron area clear", "Groundspeed 5 kt maximum, then 3 kt near the parking position"]]]], ["18. Parking", ["PF", "PM"], [["r", "Accu pressure check, parking brake ON", "Anti-ice OFF"], ["r", "Yellow electric pump OFF", ""], ["r", "APU or ground power available", ""], ["r", "Engine masters OFF", ""], ["r", "Wing and beacon lights OFF", "Fuel pumps OFF"], ["r", "", "PA “Cabin crew, disarm doors for arrival and crosscheck”"], ["r", "Slides disarmed check", "Transponder STBY"], ["r", "Seat belts OFF", "IRS performance check"], ["r", "Ground contact", "Fuel quantity check"], ["r", "", "Brake fan as required"], ["c", "Parking checklist", ""], ["b", "STATUS page check (CM1) · Logbook complete (CM1) · EFB close flight"], ["s", "Post-flight"], ["n", ["Close the ATL and generate the general flight report (PDF)", "Close the Journey Log", "Mission+ / Jeppesen: import the flight and accept the dispatch release for the next sector", "Next sector: set the refueling panel and continue the turnaround sequence"]]]], ["19. Securing the aircraft", ["CM1", "CM2"], [["n", ["Last flight only"]], ["r", "Parking brake ON", "Crew oxygen OFF"], ["r", "IRs OFF", "External lights OFF"], ["r", "", "APU and ground power OFF"], ["r", "", "Batteries OFF"], ["b", "Windows closed"], ["c", "Securing the aircraft checklist", ""]]]];
+/* Normal checklists, opened by tapping a blue checklist bar. DRAFT: the Airbus standard A320-family
+   normal checklist, until the flyadeal card is entered (one list for now; CEO / NEO differences may
+   be added later). Item: [challenge, response, who] or ['-', sub-item] for the lines under an ECAM
+   memo item. */
+const CL_DRAFT=true;
+const CL={
+ cockpit:{t:'Cockpit preparation',i:[['GEAR PINS & COVERS','REMOVED'],['FUEL QUANTITY','___ KG'],['SEAT BELTS','ON'],['ADIRS','NAV'],['BARO REF','___ SET','BOTH']]},
+ bstart:{t:'Before start',i:[['PARKING BRAKE','___'],['T.O SPEEDS & THRUST','___','BOTH'],['WINDOWS / DOORS','CLOSED','BOTH'],['BEACON','ON']]},
+ astart:{t:'After start',i:[['ANTI ICE','___'],['ECAM STATUS','CHECKED'],['PITCH TRIM','___ %'],['RUDDER TRIM','ZERO']]},
+ taxi:{t:'Taxi',i:[['FLIGHT CONTROLS','CHECKED','BOTH'],['FLAP SETTING','CONF ___','BOTH'],['RADAR & PRED W/S','ON & AUTO'],['ENG MODE SEL','___'],['ECAM MEMO','T.O NO BLUE'],['-','AUTO BRK MAX'],['-','SIGNS ON'],['-','CABIN READY'],['-','SPLRS ARM'],['-','FLAPS T.O'],['-','T.O CONFIG NORM']]},
+ depchg:{t:'Departure change',i:[['RWY & SID','___'],['FLAPS SETTING','CONF ___','BOTH'],['T.O SPEEDS & THRUST','___','BOTH'],['FCU SETTING','___']]},
+ lineup:{t:'Line-up',i:[['T.O RWY','___','BOTH'],['TCAS','TA OR TA/RA'],['PACK 1 & 2','___']]},
+ appr:{t:'Approach',i:[['BARO REF','___ SET','BOTH'],['SEAT BELTS','ON'],['MINIMUM','___'],['AUTO BRAKE','___'],['ENG MODE SEL','___']]},
+ ldg:{t:'Landing',i:[['ECAM MEMO','LDG NO BLUE'],['-','LDG GEAR DN'],['-','SIGNS ON'],['-','CABIN READY'],['-','SPLRS ARM'],['-','FLAPS SET']]},
+ aldg:{t:'After landing',i:[['RADAR & PRED W/S','OFF']]},
+ park:{t:'Parking',i:[['APU BLEED','ON'],['ENGINES','OFF'],['SEAT BELTS','OFF'],['EXT LT','___'],['FUEL PUMPS','OFF'],['PARK BRK & CHOCKS','___']]},
+ secure:{t:'Securing the aircraft',i:[['OXYGEN','OFF'],['EMER EXIT LT','OFF'],['EFBs','OFF'],['BATTERIES','OFF']]}
 };
+const CL_ID={'Cockpit preparation checklist':'cockpit','Before start checklist':'bstart','After start checklist':'astart','Taxi checklist':'taxi','Line-up checklist':'lineup','Approach checklist':'appr','Landing checklist':'ldg','After landing checklist':'aldg','Parking checklist':'park','Securing the aircraft checklist':'secure'};
+const TABS=[['dsp','Dispatch'],['cab','Cabin'],['jmp','Jumpseat'],['pof','Phases of flight'],['brf','Briefings']];
+const IDS={
+ jmp:[],cab:CAB_TRIP.slice()
+};
+/* Briefings tab shows one card at a time (Departure | Arrival); remembered on this device. Old saved
+   tabs (Ground flow, Departure Briefing, Arrival Briefing) open their new home. */
+const BRFKEY='line-brief.brfmode.v1';
+let brfMode='dep';try{if(localStorage.getItem(BRFKEY)==='arr')brfMode='arr'}catch(e){}
+function setBrf(m){brfMode=m==='arr'?'arr':'dep';try{localStorage.setItem(BRFKEY,brfMode)}catch(e){}}
+/* tabs that don't depend on the sector: no flight data strip, sector chips or Clear sector bar */
+const LITE=new Set(['jmp','pof','brf']);
+function normTab(t){if(t==='gf')return 'pof';if(t==='dep'||t==='arr'){setBrf(t);return 'brf'}return TABS.some(x=>x[0]===t)?t:'dsp'}
 ['jmp'].forEach(m=>MODS[m].sections.forEach(s=>(s.checks||[]).forEach((_,i)=>IDS[m].push(m+'.'+s.id+'.'+i))));
 
 /* ---------- state ---------- */
@@ -936,7 +984,7 @@ const EXC0={cab_mel:'N',cab_refuel:'N',cab_tank:'Y',cab_refpax:'N',cab_taxi:'N',
 const EXC1={cab_mel:'N',cab_refuel:'Y',cab_refpax:'Y',cab_tank:'N'};
 const EX1={flt:'FAD124',dom:'DOM',reg:'HZ-XXX',dep_icao:'OETB',dep_iata:'TUU',dest_icao:'OEJN',dest_iata:'JED',etd:'09:40',eta:'10:55',ftime:'1:15',fl:'360',ofp_ramp:'10600'};
 function fresh(ex){const secs=[newSec(),newSec(),newSec(),newSec()];
-  if(ex){Object.assign(secs[0].v,EX0);secs[0].c={'mel.no':true,'why.tank':true,'efb.flysmart':true,'dsp.tank.0':false,'req.rvsm':true,'req.pbn':true};Object.assign(secs[1].v,EX1);Object.assign(secs[0].v,EXC0);Object.assign(secs[1].v,EXC1);secs[0].c['cab.turb.rte']=true;secs[0].nt=parseNotams(EX_NT);secs[0].tem=[{t:TEM_PRESETS[0][0],c:TEM_PRESETS[0][1]},{t:TEM_PRESETS[1][0],c:TEM_PRESETS[1][1]}];secs[0].tem2=[{t:TEM_PRESETS[2][0],c:TEM_PRESETS[2][1]}]}
+  if(ex){Object.assign(secs[0].v,EX0);secs[0].c={'mel.no':true,'why.tank':true,'efb.flysmart':true,'dsp.tank.0':false,'req.rvsm':true,'req.pbn':true};Object.assign(secs[1].v,EX1);Object.assign(secs[0].v,EXC0);Object.assign(secs[1].v,EXC1);secs[0].c['cab.turb.rte']=true;secs[0].nt=parseNotams(EX_NT)}
   const trip=newTrip();if(ex)Object.assign(trip.v,{names:'CM1 Capt. Example, CM2 FO Example. SCCM Example, 4 cabin crew.'});
   return {example:!!ex,sec:0,tab:'dsp',secs,trip,raw:{},impMsg:'',impWarn:false,open:{}}}
 function load(){try{const s=localStorage.getItem(KEY);if(!s)return null;const o=JSON.parse(s);const f=fresh(false);f.example=!!o.example;f.sec=o.sec||0;f.tab=o.tab||'dsp';f.trip=Object.assign(newTrip(),o.trip||{});f.trip.v=f.trip.v||{};f.trip.c=f.trip.c||{};f.open=o.open&&typeof o.open==='object'?o.open:{};(o.secs||[]).slice(0,4).forEach((x,i)=>{f.secs[i]=Object.assign(newSec(),x)});return f}catch(e){return null}}
@@ -1119,27 +1167,6 @@ const seg=(k,l,opts,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}${sr
 const tgs=(l,items,cls)=>`<div class="fld ${cls||''}"><span class="fl">${l}</span><div class="tgs">${items.map(i=>`<button type="button" class="tg" data-tog="${i[0]}" data-clr="${(i[2]||[]).join(',')}" aria-pressed="false">${esc(i[1])}</button>`).join('')}</div></div>`;
 const grp=(l,pre,opts,cls)=>{const keys=opts.map(o=>pre+'.'+o[0]);return tgs(l,opts.map(o=>{const k=pre+'.'+o[0];return [k,o[1],o[0]==='no'?keys.filter(x=>x!==k):[pre+'.no']]}),cls)};
 const chk=(k,text,go)=>{const t=Array.isArray(text)?`<b>${esc(text[0])}</b><span class="say">${esc(text[1])}</span>`:esc(text);return `<label class="chk"><input type="checkbox" data-c="${k}"><span class="box" aria-hidden="true"></span><span class="txt">${t}</span>${go?`<button type="button" class="chip" data-go="${go[0]}">${esc(go[1])}</button>`:''}</label>`};
-/* Ground Flow's live read-outs: given a task's liveKey, returns [{label,val,go}] pulled from wherever
-   that fact is actually entered in the app, so it's never typed a second time here. val is '' when
-   nothing's entered yet (rendered as "not entered yet" with a link to go fill it in). */
-function gfLive(key,s){
-  if(key==='fuel'){const t=loadCalc(s).total;return [{label:'Total fuel',val:t!=null?n0(t)+' kg':'',go:'dsp'}]}
-  if(key==='mel')return [{label:'MEL / CDL',val:melText(s),go:'dsp'}];
-  if(key==='metar'){const m=s.v.wx_dep_metar||'';const val=m?(m.length>28?m.slice(0,28)+'…':m):'';return [{label:'Departure METAR',val,go:'dsp'}]}
-  if(key==='clr')return [{label:'Suggested clearance',val:clrText(s.v),go:'dsp'}];
-  if(key==='brief'){const d=tabProgress('dep',s),j=tabProgress('jmp',s);return [{label:'Departure briefing',val:d[1]?d[0]+'/'+d[1]+' complete':'',go:'dep'},{label:'Jumpseat / emergency briefing',val:j[1]?j[0]+'/'+j[1]+' complete':'',go:'jmp'}]}
-  return [];
-}
-/* A Ground Flow task row: same simple checkbox as chk() by default; a live read-out (if any) sits
-   right underneath, always visible since it's a single short line; the note (the exception/detail
-   text) is tucked behind its own "Note" expand so a task with a long note still reads as one line
-   until tapped open. */
-function flowChk(key,label,note,live){
-  let extra='';
-  (live||[]).forEach(l=>{extra+=`<div class="flowlive"><span>${esc(l.label)}${l.val?': '+esc(l.val):' — not entered yet'}</span>${l.go?`<button type="button" class="chip" data-go="${esc(l.go)}">Open</button>`:''}</div>`});
-  if(note)extra+=`<details class="flowd"><summary>Note</summary><div class="inner"><p class="note">${esc(note)}</p></div></details>`;
-  return `<div class="flowi">${chk(key,label)}${extra}</div>`;
-}
 /* cabin tab: trip-wide checks (data-tk) and per-sector inputs addressed as "sectorIndex:key" */
 const tchk=(k,text,hint,sub)=>`<label class="chk${sub?' sub':''}"><input type="checkbox" data-tk="${k}"><span class="box" aria-hidden="true"></span><span class="txt">${esc(text)}${hint?`<small class="hint">${esc(hint)}</small>`:''}</span></label>`;
 const xs=k=>{const j=k.indexOf(':');return [+k.slice(0,j),k.slice(j+1)]};
@@ -1153,12 +1180,8 @@ const tfld=(k,l,o={})=>{const id='t_'+k,val=esc(state.trip.v[k]||'');const ctl=o
 const YN=[['Y','Yes'],['N','No']];
 const TAXI3=[['Y','Short'],['N','Normal'],['L','Long']];
 const melText=s=>{const v=s.v;if(s.c['mel.no'])return 'No MEL / CDL';const l=[1,2,3].map(n=>{const ref=v['mel'+n+'_ref'],cat=v['mel'+n+'_cat'],title=v['mel'+n+'_title'];if(!ref&&!cat&&!title)return '';return [ref,cat?'CAT '+cat:'',title].filter(Boolean).join(' ')}).filter(Boolean);return l.length?l.join('; '):'Not recorded in Dispatch'};
-/* suggested clearance, as a short one-line summary — shared by the Company summary text and the
-   Ground Flow live read-out, so the two can never say something different */
+/* suggested clearance, as a short one-line summary */
 const clrText=v=>[v.clr_rwy?'RWY '+v.clr_rwy:'',v.clr_sid?'SID '+v.clr_sid:'',v.clr_firstalt?'first alt '+v.clr_firstalt:'',v.clr_awy?'airway '+v.clr_awy:'',v.clr_sqw?'SQW '+v.clr_sqw:''].filter(Boolean).join(', ');
-/* how many of a tab's own checklist items are ticked for this sector — used by Ground Flow to show
-   "12/19 complete" next to the Departure Briefing / Jumpseat links, without re-counting by hand */
-const tabProgress=(tk,s)=>{const ids=IDS[tk]||[];return [ids.filter(x=>s.c[x]).length,ids.length]};
 /* Saved runways: a small personal per-airport reference (see rwyDb near the top of the file). NOTAM
    imports add to it automatically; this lets a runway heading be added by hand too — enter one end
    (e.g. 34), tick which parallel runways exist there (L/C/R, or none for a single runway), and Save
@@ -1644,47 +1667,71 @@ function cabHTML(){
    sec('Crew',crew,'checks','cab.crew')+sec('Aircraft, position and cabin MELs',ac,'checks','cab.ac')+sec('Sectors, flight times and altitudes',sc,'checks','cab.sc')+sec('Refueling operation',rf,'checks','cab.rf')+sec('Taxi',tx,'checks','cab.tx')+sec('Expected weather and turbulence',wx,'checks','cab.wx')+sec('Special requirements',sp,'checks','cab.sp')+sec('Questions',q,'checks','cab.q')+
    `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="cab"></pre><div class="row sumfoot"><button class="btn primary" type="button" data-act="copy" data-mod="cab">Copy summary</button><span class="sumfs" role="group" aria-label="Summary text size"><button class="btn sm" type="button" data-act="sum-font" data-d="-1" aria-label="Smaller text" title="Smaller text"><span class="a-sm">A</span></button><button class="btn sm" type="button" data-act="sum-font" data-d="1" aria-label="Larger text" title="Larger text"><span class="a-lg">A</span></button></span></div></section>`;
 }
-function gfHTML(){
-  const s=S();
-  const phase=(title,key,items)=>{
-    const body=`<div class="chks">${items.map((it,i)=>flowChk('gf.'+key+'.'+i,it[0],it[1],it[2]?gfLive(it[2],s):null)).join('')}</div>`;
-    return sec(title,body,'checks','gf.'+key);
-  };
-  return `<div class="mhead"><h1>Ground Flow</h1><p class="lead">The full ground-to-ground flow, sector ${state.sec+1}: pre-flight ground preparation, before pushback and start, and after landing / post-flight. Tap a task's "Note" to see the exception or detail behind it; a few tasks show a live figure from elsewhere in the app so nothing is entered twice. Change sector with the chips above.</p></div>`+
-   phase('1. Pre-flight / ground preparation','p1',GF_P1)+
-   phase('2. Before pushback and start clearance','p2',GF_P2)+
-   phase('3. After landing and post-flight','p3',GF_P3);
+/* ---------- Phases of Flight ---------- */
+const ulh=a=>'<ul>'+a.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+/* a few fixed words inside the phase text become links to the matching tab or checklist */
+const pofCell=h=>String(h||'')
+  .replace('DEPARTURE BRIEFING','<button type="button" class="lnk" data-act="go-brf" data-m="dep">Departure briefing ▸</button>')
+  .replace('ARRIVAL BRIEFING','<button type="button" class="lnk" data-act="go-brf" data-m="arr">Arrival briefing ▸</button>')
+  .replace('DEPARTURE CHANGE CHECKLIST','<button type="button" class="lnk" data-act="cl" data-cl="depchg">Departure change checklist ▸</button>');
+function pofRow(r){
+  const k=r[0];
+  if(k==='r')return `<div class="pt-r"><div>${pofCell(r[1])}</div><div>${pofCell(r[2])}</div></div>`;
+  if(k==='b')return `<div class="pt-f pt-both"><span class="tag">Both</span>${pofCell(r[1])}</div>`;
+  if(k==='s')return `<div class="pt-f pt-sub">${pofCell(r[1])}</div>`;
+  if(k==='n')return `<div class="pt-f pt-note"><span class="tag">Note</span>${r[1].length===1?pofCell(r[1][0]):ulh(r[1].map(pofCell))}</div>`;
+  if(k==='c'){const id=CL_ID[r[1]]||'';return `<button type="button" class="pt-cl" data-act="cl" data-cl="${id}" aria-label="Open the ${esc(r[1])}">▶ ${esc(r[1])}${r[2]?`<small>${esc(r[2])}</small>`:''}</button>`}
+  return '';
 }
-function temHTML(key){
-  key=key||'tem';
-  const rows=(S()[key]||[]).map((r,i)=>`<div class="tem-row"><div class="fld"><label for="tem_${key}_t${i}"><span class="fl">Threat</span></label><input id="tem_${key}_t${i}" data-tem="${key}.${i}.t" value="${esc(r.t)}"></div><div class="fld"><label for="tem_${key}_c${i}"><span class="fl">Countermeasure</span></label><input id="tem_${key}_c${i}" data-tem="${key}.${i}.c" value="${esc(r.c)}"></div><button class="btn ghost" type="button" data-act="rm-tem" data-temkey="${key}" data-i="${i}" aria-label="Remove threat ${i+1}">Remove</button></div>`).join('');
-  return `<div class="tem">${rows||'<p class="muted">No threats recorded. Tap a suggestion below or add your own.</p>'}<div class="row"><button class="btn" type="button" data-act="add-tem" data-temkey="${key}">Add threat</button></div><div class="chips" role="group" aria-label="Suggested threats">${TEM_PRESETS.map((p,i)=>`<button class="chip" type="button" data-act="preset" data-temkey="${key}" data-i="${i}">${esc(p[0])}</button>`).join('')}</div></div>`;
+function pofHTML(){
+  const ph=POF.map((p,i)=>{const cols=p[1],rows=p[2];let body;
+    if(!cols)body=`<div class="pt-plain">${ulh(rows[0][1])}<button type="button" class="btn sm" data-go="cab">Open the Cabin tab</button></div>`;
+    else body=`<div class="pt"><div class="pt-h"><span>${cols[0]}</span><span>${cols[1]}</span></div>${rows.map(pofRow).join('')}</div>`;
+    return sec(esc(p[0]),body,'ref','pof.'+i)}).join('');
+  return `<div class="mhead"><h1>Phases of Flight</h1><p class="lead">Routine actions and key points, phase by phase, in time order, with the task sharing in two columns. A reference, not a checklist: the FCOM, the eQRH and the company checklist cards apply. Tap a blue bar to open that normal checklist.</p></div>
+  <div class="pof-intro"><b>Checklist callouts:</b> “HOLD CHECKLIST AT ___” / “RESUME CHECKLIST AT ___” · “___ CHECKLIST COMPLETE”.</div>
+  <div class="pof-tools"><button type="button" class="btn sm" data-act="pof-all" data-open="1">Open all</button><button type="button" class="btn sm" data-act="pof-all" data-open="0">Close all</button></div>`+ph;
 }
-function depHTML(){
-  const step1=`<div class="chks">${chk('dep.s1.0','Cockpit door closed — establish a distraction-free environment')}</div>`;
-  const plan=`<div class="two"><div class="chks"><p class="note" style="margin-top:0">Pilot Flying</p>${DEP_PF.map((t,i)=>chk('dep.pf.'+i,t)).join('')}</div><div class="chks"><p class="note" style="margin-top:0">Pilot Monitoring</p>${DEP_PM.map((t,i)=>chk('dep.pm.'+i,t)).join('')}</div></div>`;
-  const tem=`<div class="chks">${chk('dep.tem.0',TEM_SELFCHECK[0])}${chk('dep.tem.1',TEM_SELFCHECK[1])}</div><div id="temWrap_tem">${temHTML('tem')}</div>`;
-  const misc=`<div class="gr c1">${fld('dep_misc','Miscellaneous',{area:1,rows:3,cls:'wide'})}</div>`;
-  const emerg=`<ul class="elist">${DEP_EMERG.map(l=>`<li>${esc(l)}</li>`).join('')}</ul><div class="chks">${chk('dep.emerg.0','Emergency briefing reviewed with the other pilot')}</div>`;
-  return `<div class="mhead"><h1>Departure Briefing</h1><p class="lead">flyadeal's Departure Briefing form, followed top to bottom. Work through the Plan with the Pilot Flying and Pilot Monitoring items side by side, record each identified threat with a countermeasure, then review the Emergency Briefing script together.</p></div>`+
-   sec('Step 1 · Environment',step1,'checks','dep.s1')+
-   sec('Step 2 · Plan',plan,'checks','dep.plan')+
-   sec('Steps 3 &amp; 4 · Identified threats and mitigations',tem,'checks','dep.tem')+
-   sec('Step 5 · Miscellaneous',misc,'fields','dep.misc')+
-   sec('Emergency briefing',emerg,'checks','dep.emerg')+
-   `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="dep"></pre><div class="row sumfoot"><button class="btn primary" type="button" data-act="copy" data-mod="dep">Copy summary</button><span class="sumfs" role="group" aria-label="Summary text size"><button class="btn sm" type="button" data-act="sum-font" data-d="-1" aria-label="Smaller text" title="Smaller text"><span class="a-sm">A</span></button><button class="btn sm" type="button" data-act="sum-font" data-d="1" aria-label="Larger text" title="Larger text"><span class="a-lg">A</span></button></span></div></section>`;
+/* ---------- normal checklist sheet ---------- */
+let clOpen=null;
+function clHTML(){
+  if(!clOpen)return '';
+  const C=CL[clOpen];if(!C)return '';
+  const items=C.i.map(x=>x[0]==='-'?`<li class="sb">${esc(x[1])}</li>`:`<li><span class="ch">${esc(x[0])}</span><span class="dt" aria-hidden="true"></span><span class="rs">${esc(x[1])}</span>${x[2]?`<span class="who">(${esc(x[2])})</span>`:''}</li>`).join('');
+  return `<div class="clsheet" data-act="cl-close" data-bg="1"><div class="clpanel" role="dialog" aria-modal="true" aria-labelledby="clTitle">
+   <div class="clhead"><h2 id="clTitle">${esc(C.t)} checklist</h2><button class="sumx" type="button" data-act="cl-close" aria-label="Close checklist">✕</button></div>
+   ${CL_DRAFT?`<p class="cldraft">Draft: Airbus standard normal checklist. Check it against the flyadeal card.</p>`:''}
+   <ul class="cllist">${items}</ul>
+   <p class="clend">${esc(C.t)} checklist complete</p></div></div>`;
 }
-function arrHTML(){
-  const step1=`<div class="chks">${chk('arr.s1.0','Set an environment with no distraction')}</div>`;
-  const plan=`<div class="two"><div class="chks"><p class="note" style="margin-top:0">Pilot Flying</p>${ARR_PF.map((t,i)=>chk('arr.pf.'+i,t)).join('')}</div><div class="chks"><p class="note" style="margin-top:0">Pilot Monitoring</p>${ARR_PM.map((t,i)=>chk('arr.pm.'+i,t)).join('')}</div></div>`;
-  const tem=`<div class="chks">${chk('arr.tem.0',TEM_SELFCHECK[0])}${chk('arr.tem.1',TEM_SELFCHECK[1])}</div><div id="temWrap_tem2">${temHTML('tem2')}</div>`;
-  const misc=`<div class="gr c1">${fld('arr_misc','Miscellaneous',{area:1,rows:3,cls:'wide'})}</div>`;
-  return `<div class="mhead"><h1>Arrival Briefing</h1><p class="lead">flyadeal's Arrival Briefing form, followed top to bottom. Work through the Plan with the Pilot Flying and Pilot Monitoring items side by side, then record each identified threat with a countermeasure.</p></div>`+
-   sec('Step 1 · Environment',step1,'checks','arr.s1')+
-   sec('Step 2 · Plan',plan,'checks','arr.plan')+
-   sec('Steps 3 &amp; 4 · Identified threats and mitigations',tem,'checks','arr.tem')+
-   sec('Step 5 · Miscellaneous',misc,'fields','arr.misc')+
-   `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="arr"></pre><div class="row sumfoot"><button class="btn primary" type="button" data-act="copy" data-mod="arr">Copy summary</button><span class="sumfs" role="group" aria-label="Summary text size"><button class="btn sm" type="button" data-act="sum-font" data-d="-1" aria-label="Smaller text" title="Smaller text"><span class="a-sm">A</span></button><button class="btn sm" type="button" data-act="sum-font" data-d="1" aria-label="Larger text" title="Larger text"><span class="a-lg">A</span></button></span></div></section>`;
+function renderCl(){
+  let h=$('#clHost');if(!h){h=document.createElement('div');h.id='clHost';document.body.appendChild(h)}
+  h.innerHTML=clHTML();document.body.classList.toggle('clopen',!!clOpen);
+  if(clOpen){const x=h.querySelector('.sumx');if(x)try{x.focus({preventScroll:true})}catch(e){}}
+}
+function openCl(id,btn){if(!CL[id])return;clOpen=id;clFrom=btn||null;renderCl()}
+let clFrom=null;
+function closeCl(){clOpen=null;renderCl();if(clFrom&&document.body.contains(clFrom))try{clFrom.focus({preventScroll:true})}catch(e){}clFrom=null}
+/* ---------- Briefings (Departure | Arrival): the flyadeal cards as a reference, nothing to fill in ---------- */
+function brfHTML(){
+  const dep=brfMode==='dep',PF=dep?DEP_PF:ARR_PF,PM=dep?DEP_PM:ARR_PM;
+  const step1=dep?'Cockpit door closed. Establish a distraction-free environment':'Set an environment with no distraction';
+  const li=a=>'<ul class="bt-ul">'+a.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>';
+  const table=`<div class="bt">
+   <div class="bt-r bt-hd"><div>Step</div><div>PF</div><div>PM</div></div>
+   <div class="bt-r"><div class="bt-st">1</div><div class="bt-span bt-c">${esc(step1)}</div></div>
+   <div class="bt-r"><div class="bt-st">2a</div><div></div><div><span class="bt-lbl">Plan</span>${li(PM)}</div></div>
+   <div class="bt-r"><div class="bt-st">2b</div><div><span class="bt-lbl">Plan</span>${li(PF)}</div><div></div></div>
+   <div class="bt-r"><div class="bt-st">3a</div><div></div><div class="bt-big">Identified threats</div></div>
+   <div class="bt-r"><div class="bt-st">3b</div><div class="bt-big">Identified threats</div><div></div></div>
+   <div class="bt-r"><div class="bt-st">4</div><div class="bt-span bt-c bt-big">Mitigations</div></div>
+   <div class="bt-r"><div class="bt-st">5</div><div class="bt-span bt-c bt-big">Miscellaneous</div></div>
+  </div>`;
+  const emerg=dep?`<div class="eb"><h3>Emergency briefing</h3><dl>${DEP_EMERG.map(x=>`<dt>${esc(x[0])}</dt><dd>${Array.isArray(x[1])?'<ul>'+x[1].map(y=>'<li>'+esc(y)+'</li>').join('')+'</ul>':esc(x[1])}</dd>`).join('')}</dl></div>`:'';
+  const cats=`<p class="tcap">Threat categories (steps 3a / 3b)</p><div class="tcats">${TCATS.map(c=>`<div><h4>${esc(c[0])}</h4><ul>${c[1].map(t=>'<li>'+esc(t)+'</li>').join('')}</ul></div>`).join('')}</div>`;
+  return `<div class="mhead"><h1>Briefings</h1><p class="lead">flyadeal's departure and arrival briefing cards.</p>
+   <div class="seg brfseg" role="group" aria-label="Briefing"><button type="button" data-act="brf" data-m="dep" aria-pressed="${dep}">Departure</button><button type="button" data-act="brf" data-m="arr" aria-pressed="${!dep}">Arrival</button></div></div>`+
+   table+emerg+cats;
 }
 function modHTML(mod){
   const M=MODS[mod];
@@ -1695,7 +1742,6 @@ function modHTML(mod){
     return `<div class="fld${f.t==='area'?' wide':(f.w===2?' w2':'')}"><label for="${id}"><span class="fl">${esc(f.l)}</span></label>${ctl}</div>`};
   const secs=M.sections.map(s=>{let body='';
     if(s.special==='fuel')body+='<div class="derive" data-derive></div>';
-    if(s.special==='tem')body+=`<div id="temWrap_tem">${temHTML('tem')}</div>`;
     if(s.fields&&s.fields.length)body+=`<div class="gr c4">${s.fields.map(f=>mf(s,f)).join('')}</div>`;
     if(s.checks&&s.checks.length)body+=`<div class="chks">${s.checks.map((t,i)=>chk(mod+'.'+s.id+'.'+i,t)).join('')}</div>`;
     if(s.note)body+=`<p class="note">${esc(s.note)}</p>`;
@@ -1848,35 +1894,20 @@ function sumMod(mod,i){
   const lc=loadCalc(s);if(mod==='dep'&&lc.total!=null)L.push('Fuel: total '+n0(lc.total)+' kg'+(v.lf_trip?', trip '+v.lf_trip:'')+(v.lf_taxi?', taxi '+v.lf_taxi:''));
   M.sections.forEach(sc=>{const ls=[];
     (sc.fields||[]).forEach(f=>{const x=(v[mod+'.'+sc.id+'.'+f.k]||'').trim();if(x)ls.push('  '+f.l+': '+x)});
-    if(sc.special==='tem')s.tem.filter(r=>r.t||r.c).forEach(r=>ls.push('  '+r.t+' -> '+r.c));
     const pend=(sc.checks||[]).filter((_,j)=>!s.c[mod+'.'+sc.id+'.'+j]).map(x=>Array.isArray(x)?x[0]:x),total=(sc.checks||[]).length;
     if(ls.length||total){L.push('');L.push(sc.t+(sc.sub?' - '+sc.sub:'')+(total?' ['+(total-pend.length)+'/'+total+']':''));ls.forEach(x=>L.push(x));if(pend.length)L.push('  Open: '+pend.join('; '))}});
   return L.join('\n');
 }
-function sumBrief(mod,i){
-  const s=state.secs[i],v=s.v,c=s.c,L=[];
-  L.push(`${(mod==='dep'?'DEPARTURE':'ARRIVAL')+' BRIEFING'} | SECTOR ${i+1} | ${v.flt||'---'} ${(v.dep_icao||'----')}-${(v.dest_icao||'----')} ${fmtDate(v.date)}`.trim());
-  const PF=mod==='dep'?DEP_PF:ARR_PF,PM=mod==='dep'?DEP_PM:ARR_PM;
-  L.push('');L.push('PLAN — PILOT MONITORING');
-  PM.forEach((t,j)=>L.push('  ['+(c[mod+'.pm.'+j]?'x':' ')+'] '+t));
-  L.push('');L.push('PLAN — PILOT FLYING');
-  PF.forEach((t,j)=>L.push('  ['+(c[mod+'.pf.'+j]?'x':' ')+'] '+t));
-  const tk=mod==='dep'?'tem':'tem2',rows=(s[tk]||[]).filter(r=>r.t||r.c);
-  L.push('');L.push('IDENTIFIED THREATS & MITIGATIONS');
-  if(rows.length)rows.forEach(r=>L.push('  '+(r.t||'—')+' -> '+(r.c||'—')));else L.push('  none recorded');
-  const misc=(v[mod+'_misc']||'').trim();
-  if(misc){L.push('');L.push('MISCELLANEOUS');L.push('  '+misc.replace(/\n/g,'\n  '))}
-  if(mod==='dep'){L.push('');L.push('EMERGENCY BRIEFING: '+(c['dep.emerg.0']?'reviewed with the other pilot':'not yet reviewed'))}
-  return L.join('\n');
-}
-const summaryRaw=mod=>mod==='dsp'?sumDsp(state.sec):mod==='cab'?sumCab():(mod==='dep'||mod==='arr')?sumBrief(mod,state.sec):sumMod(mod,state.sec);
+const summaryRaw=mod=>mod==='dsp'?sumDsp(state.sec):mod==='cab'?sumCab():sumMod(mod,state.sec);
 const summary=mod=>sumPlain(summaryRaw(mod));
 
 /* ---------- render ---------- */
 function renderNav(){
   $('#sectors').innerHTML=state.secs.map((s,i)=>`<button type="button" class="sc" data-sec="${i}" aria-pressed="${i===state.sec}"><span class="n">Sector ${i+1}</span><span class="r" data-scr="${i}"></span></button>`).join('');
-  $('#tabs').innerHTML=TABS.map(t=>{const c=IDS[t[0]]?`<span class="cnt" data-tc="${t[0]}"></span>`:'';return `<button class="tab" role="tab" type="button" data-tab="${t[0]}" aria-selected="${state.tab===t[0]}">${t[1]}${c}</button>`}).join('');
+  const tb=$('#tabs');tb.innerHTML=TABS.map(t=>{const c=IDS[t[0]]?`<span class="cnt" data-tc="${t[0]}"></span>`:'';return `<button class="tab" role="tab" type="button" data-tab="${t[0]}" aria-selected="${state.tab===t[0]}">${t[1]}${c}</button>`}).join('');
 }
+/* run after refreshLive has filled the tab counters, which change the tab widths */
+function tabIntoView(){const tb=$('#tabs'),sel=tb&&tb.querySelector('[aria-selected="true"]');if(!sel)return;const l=sel.offsetLeft-tb.offsetLeft,r=l+sel.offsetWidth;if(l<tb.scrollLeft||r>tb.scrollLeft+tb.clientWidth)tb.scrollLeft=Math.max(0,l-16)}
 function syncDom(){
   const s=S();
   $$('[data-c]').forEach(e=>{e.checked=!!s.c[e.dataset.c]});
@@ -1914,11 +1945,11 @@ function closeSumFull(){
     else if(document.webkitFullscreenElement&&document.webkitExitFullscreen)document.webkitExitFullscreen()}catch(e){}
   if(was){const b=$('[data-sum="'+was+'"]');const btn=b&&b.closest('.sumbox').querySelector('[data-act="sum-expand"]');if(btn)try{btn.focus({preventScroll:true})}catch(e){}}
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sumFull)closeSumFull()});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(clOpen){closeCl();return}if(sumFull)closeSumFull()});
 ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev,()=>{if(!(document.fullscreenElement||document.webkitFullscreenElement)&&sumFull)closeSumFull()}));
-function render(){renderNav();$('#main').innerHTML=state.tab==='dsp'?dspHTML():state.tab==='cab'?cabHTML():state.tab==='gf'?gfHTML():state.tab==='dep'?depHTML():state.tab==='arr'?arrHTML():modHTML(state.tab);syncDom();renderNt();refreshLive();renderCloud();
+function render(){state.tab=normTab(state.tab);const lite=LITE.has(state.tab);['#strip','#sectors','#bar'].forEach(q=>{const e=$(q);if(e)e.hidden=lite});renderNav();$('#main').innerHTML=state.tab==='dsp'?dspHTML():state.tab==='cab'?cabHTML():state.tab==='pof'?pofHTML():state.tab==='brf'?brfHTML():modHTML(state.tab);syncDom();renderNt();refreshLive();renderCloud();
   if(sumFull){const p=$('[data-sum="'+sumFull+'"]');if(p)p.closest('.sumbox').classList.add('full');else closeSumFull()}
-  applySumFont()}
+  applySumFont();tabIntoView()}
 function refreshLive(){
   const s=S(),v=s.v,i=state.sec;
   const L0=loadCalc(s);
@@ -2093,7 +2124,6 @@ main.addEventListener('input',e=>{
       if(dt){const tk='wx_'+wm[1]+'_t';s.v[tk]=dt;delete s.src[tk];const tEl=document.getElementById('v_'+tk);if(tEl)tEl.value=dt}
     }
   }
-  else if((k=t.dataset.tem)){const p=k.split('.');s[p[0]][+p[1]][p[2]]=t.value}
   else if((k=t.dataset.tv)){state.trip.v[k]=t.value}
   else if((k=t.dataset.xv)){const p=xs(k);state.secs[p[0]].v[p[1]]=t.value;delete state.secs[p[0]].src[p[1]]}
   else return;
@@ -2161,9 +2191,11 @@ document.addEventListener('click',e=>{
   if(a==='sum-font'){sumKi=Math.max(0,Math.min(SUMK.length-1,sumKi+(+b.dataset.d)));try{localStorage.setItem(SUMFKEY,String(sumKi))}catch(e){}applySumFont();return}
   if(a==='sum-close'){closeSumFull();return}
   if(a==='copyraw'){copyText(state.raw[state.sec]||'',b);return}
-  if(a==='add-tem'){const tk=b.dataset.temkey||'tem';(s[tk]=s[tk]||[]).push({t:'',c:''});$('#temWrap_'+tk).innerHTML=temHTML(tk);refreshLive();save();return}
-  if(a==='rm-tem'){const tk=b.dataset.temkey||'tem';s[tk].splice(+b.dataset.i,1);$('#temWrap_'+tk).innerHTML=temHTML(tk);refreshLive();save();return}
-  if(a==='preset'){const tk=b.dataset.temkey||'tem';const p=TEM_PRESETS[+b.dataset.i];(s[tk]=s[tk]||[]).push({t:p[0],c:p[1]});$('#temWrap_'+tk).innerHTML=temHTML(tk);refreshLive();save();return}
+  if(a==='cl'){openCl(b.dataset.cl,b);return}
+  if(a==='cl-close'){if(b.dataset.bg&&e.target!==b)return;closeCl();return}
+  if(a==='brf'){setBrf(b.dataset.m);render();return}
+  if(a==='go-brf'){setBrf(b.dataset.m);state.tab='brf';render();save();try{window.scrollTo({top:0})}catch(_){}return}
+  if(a==='pof-all'){const o=b.dataset.open==='1';$$('details[data-seckey^="pof."]').forEach(d=>{d.open=o;state.open[d.dataset.seckey]=o});save();return}
   if(a==='wx-dl'){wxDownload(b.dataset.wx);return}
   if(a==='wx-tempo'){wxExtractTempo(b.dataset.wx);return}
   if(a==='tk-apply'){s.v.tk_on=b.dataset.val;delete s.src.tk_on;syncDom();refreshLive();save();return}
@@ -2195,10 +2227,9 @@ document.addEventListener('click',e=>{
   if(a==='cloud-use-remote'){cloudResolveConflict(true);return}
   if(a==='cloud-use-local'){cloudResolveConflict(false);return}
 });
-render();
+render();renderCl();
 })();
 </script>
-
 <script>
 (function(){
   if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return;
