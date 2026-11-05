@@ -1,6 +1,6 @@
 # Airmanship Briefings
 
-A flight preparation aid built on Airbus FCTM concepts. Import the Mission Plus OFP and NOTAM PDFs, work through the Dispatch Briefing in form order, check tankering and underload, run the cabin crew, departure, arrival and jumpseat briefings, keep the phases of flight and normal checklists at hand, and study the SOP key topics with the GACA oral questions. Up to four sectors.
+A flight preparation aid built on Airbus FCTM concepts. Import the Mission Plus OFP and NOTAM PDFs, work through the Dispatch Briefing in form order, check tankering and underload, run the cabin crew, departure, arrival and jumpseat briefings, keep the phases of flight and normal checklists at hand, and study the misc key topics with the GACA oral questions. Up to four sectors.
 
 - Works in any modern browser and installs as an app on iPhone, iPad and Android.
 - Works offline after the first visit.
@@ -15,4 +15,4 @@ A flight preparation aid built on Airbus FCTM concepts. Import the Mission Plus 
 
 This is an unofficial preparation aid. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources.
 
-Version 1.48.0
+Version 1.48.2
