@@ -351,6 +351,16 @@ body.sumfull,body.clopen{overflow:hidden}
 .nbody{font-size:15px;line-height:1.55}
 .nbody ul,.nbody ol{margin:4px 0 8px;padding-left:20px}
 .nbody li{margin:3px 0}
+.cabin-in{margin:0 0 18px}
+.cabin-in .note{margin-top:0}
+.cabin-in textarea{width:100%}
+.jl{margin:0 0 6px}
+.jl .pofg small{display:block;margin-top:2px;font:500 12px var(--f-mono);letter-spacing:0;text-transform:none;color:var(--ink3)}
+.jl-l{margin:0;padding:0 0 0 28px;display:flex;flex-direction:column;gap:12px}
+.jl-l li{padding-left:4px}
+.jl-l li::marker{font:700 16px var(--f-display);color:var(--accent)}
+.jl-l b{display:block;font:700 15px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+.jl-l span{display:block;font-size:16px;line-height:1.5;color:var(--ink)}
 .kt-ref{font:600 12px/1.3 var(--f-mono);color:var(--accent);margin:0}
 .kt-pts{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.45}
 .kt-more{border:1px solid var(--line);background:var(--surface)}
@@ -441,6 +451,7 @@ table.kt-t th{background:var(--sunk);font:600 12px var(--f-display);letter-spaci
 .af-b{display:inline-block;min-width:44px;border-bottom:2px solid var(--ink2);margin:0 3px;vertical-align:-2px;height:1em}
 .af-eg{color:var(--ink3);font-size:13px}
 .af-tag{display:inline-block;margin-left:6px;padding:0 6px;border:1px solid var(--line);border-radius:3px;font:600 11px var(--f-mono);color:var(--accent);vertical-align:1px}
+.af-ul li.af-sub{margin-left:18px;list-style:circle}
 .af-none{margin:0;color:var(--ink3);font-size:14px}
 .af-nav{display:flex;gap:8px;justify-content:space-between;margin-top:4px}
 .af-nav .btn{flex:1;min-height:44px}
@@ -478,7 +489,7 @@ table.kt-t th{background:var(--sunk);font:600 12px var(--f-display);letter-spaci
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="cloudbox" id="cloudBox"></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.49.2.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.50.1.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -995,7 +1006,7 @@ const DEP_EMERG=[
    collapsed reference list at the bottom of the tab */
 const TCATS=[['Airport',['Congestion','Construction','Hotspots','Infrastructure','Runway condition']],['ATC',['Challenging restrictions','Language','Phraseology','Short-term changes of clearance']],['Aircraft',['MEL / CDL','Aircraft defects','Supplementary procedures that are not routine']],['Environment',['Low visibility','Approach / runway lighting','Runway contamination']],['Weather',['Windshear','Convective weather','Cold weather','Precipitation','Unreliable weather reports']],['Operations',['Schedule pressure','Delays','Late crew','Load issues']],['Crew',['Fatigue','Low experience','Complacency','Distraction','Training','Crew that is not standard']],['Terrain',['High terrain','Unfamiliar environment','Complex visual approach']]];
 const MODS={
- jmp:{title:'Jumpseat Briefing',lead:'The JENO–SECS script for anyone on the cockpit jumpseat. Read each point aloud, tick it, and finish with the closing questions. JENO covers Jumpseat, Emergency equipment, No smoking and Oxygen. SECS covers Seatbelts, Entry and exit, Conduct and Safety.',
+ jmp:{title:'Jumpseat Briefing',lead:'The JENO–SECS script for anyone on the cockpit jumpseat. Read each point aloud and finish with the closing questions. JENO covers Jumpseat, Emergency equipment, No smoking and Oxygen. SECS covers Seatbelts, Entry and exit, Conduct and Safety.',
   sections:[
   {id:'occ',t:'Jumpseat occupant',fields:[{k:'name',l:'Name',w:2},{k:'role',l:'Role',t:'sel',o:['Deadhead pilot','Captain (deadhead)','Instructor or check pilot','Observer','Engineer or technician','Other']},{k:'seat',l:'Seat'}]},
   {id:'jeno',t:'JENO',sub:'Jumpseat · Emergency equipment · No smoking · Oxygen',checks:[
@@ -1049,9 +1060,7 @@ const CL={
 };
 const CL_ID={'Cockpit preparation checklist':'cockpit','Before start checklist':'bstart','After start checklist':'astart','Taxi checklist':'taxi','Line-up checklist':'lineup','Approach checklist':'appr','Landing checklist':'ldg','After landing checklist':'aldg','Parking checklist':'park','Securing the aircraft checklist':'secure'};
 const TABS=[['dsp','Dispatch'],['cab','Cabin'],['jmp','Jumpseat'],['pof','Phases of flight'],['brf','Briefings'],['kt','Misc key topics']];
-const IDS={
- jmp:[],cab:CAB_TRIP.slice()
-};
+const IDS={};
 /* Briefings tab shows one card at a time (Departure | Arrival); remembered on this device. Old saved
    tabs (Ground flow, Departure Briefing, Arrival Briefing) open their new home. */
 const BRFKEY='line-brief.brfmode.v1';
@@ -1060,7 +1069,6 @@ function setBrf(m){brfMode=(m==='arr'||m==='app')?m:'dep';try{localStorage.setIt
 /* tabs that don't depend on the sector: no flight data strip, sector chips or Clear sector bar */
 const LITE=new Set(['jmp','pof','brf','kt']);
 function normTab(t){if(t==='gf')return 'pof';if(t==='dep'||t==='arr'){setBrf(t);return 'brf'}return TABS.some(x=>x[0]===t)?t:'dsp'}
-['jmp'].forEach(m=>MODS[m].sections.forEach(s=>(s.checks||[]).forEach((_,i)=>IDS[m].push(m+'.'+s.id+'.'+i))));
 
 /* ---------- state ---------- */
 const newSec=()=>({v:{},c:{'req.rvsm':true,'req.pbn':true},src:{},tem:[],tem2:[],nt:null,fltbl:null});
@@ -1739,23 +1747,73 @@ function dspHTML(){
    sec('Flight information / technical condition of the aircraft',info,'fields','dsp.info')+sec('Route planning',route,'fields','dsp.route')+sec('Weather',wxb,'fields','dsp.wx')+sec('NOTAM',ntm,'nt','dsp.notam')+sec('Load',loadBlk,'fields','dsp.load')+sec('Fuel',fuelBlk,'fields','dsp.fuel')+sec('Company operational requirements',req,'checks','dsp.req')+sec('Suggested clearance',clr,'fields','dsp.clr')+
    `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="dsp"></pre><div class="row sumfoot"><button class="btn primary" type="button" data-act="copy" data-mod="dsp">Copy summary</button><span class="sumfs" role="group" aria-label="Summary text size"><button class="btn sm" type="button" data-act="sum-font" data-d="-1" aria-label="Smaller text" title="Smaller text"><span class="a-sm">A</span></button><button class="btn sm" type="button" data-act="sum-font" data-d="1" aria-label="Larger text" title="Larger text"><span class="a-lg">A</span></button></span></div></section>`;
 }
-function cabDeriveHTML(){
-  return [['Refueling sectors','cab_refuel'],['Tankering sectors','cab_tank'],['Refueling with PAX','cab_refpax']].map(x=>{const l=cabList(x[1]);return `<div class="r"><span class="m">${x[0]}</span><b>${l.length?l.join(', '):'none'}</b></div>`}).join('');
+/* ---------- Cabin crew briefing ----------
+   The Cabin tab has no inputs: its briefing fills itself from Dispatch. The few items Dispatch did not
+   already hold are entered in Dispatch, section "Cabin crew briefing items". */
+const EMQ_DEF='For a rejected takeoff, I will stop on the runway and say “ATTENTION CREW, AT STATIONS” twice. What should you expect after this?\nExpected answer: either “CABIN CREW AND PASSENGERS REMAIN SEATED” or “EVACUATE, EVACUATE”.';
+const emq=()=>('emq' in state.trip.v)?state.trip.v.emq:EMQ_DEF;
+const cabTank=s=>!!(s.c['why.tank']||/^Planned/.test(s.v.tk_on||''));
+function cabWx(s){const c=s.c,v=s.v,o=[];const sw=['ice','cb','turb'].filter(k=>c['sigwx.'+k]);
+  if(sw.length)o.push('SIGWX '+sw.join(', ').toUpperCase()+(v.sigwx_from?' FL'+v.sigwx_from+(v.sigwx_to?'-FL'+v.sigwx_to:''):''));
+  if(v.shear_v)o.push('max shear '+v.shear_v+(v.shear_w?' at '+v.shear_w:''));
+  if(v.sigmet==='YES')o.push('SIGMET');
+  ['dep','rte','arr'].forEach(k=>{if(v['cab_wx_'+k])o.push(k.toUpperCase()+' '+v['cab_wx_'+k])});
+  if(v.cab_wx_note)o.push(v.cab_wx_note);
+  return o.length?o.join('; '):'nothing significant in Dispatch'}
+function cabInHTML(){
+  const em=`<div class="fld"><label for="t_emq"><span class="fl">Emergency procedures question</span></label><textarea id="t_emq" data-tv="emq" rows="5">${esc(emq())}</textarea></div>`;
+  return `<p class="note">Flight times, levels, registration, stand, MEL, tankering and weather come from Dispatch automatically. Enter only what is below.</p>
+   <h3 class="blk">Whole duty</h3>
+   <div class="gr c2">${tfld('names','Crew names and positions',{area:1,ph:'CM1, CM2, SCCM, cabin crew and their positions'})}${tfld('crewnote','Training or checks on board',{area:1})}</div>
+   <div class="gr c2" style="margin-top:8px">${tfld('hijack','Hijack code')}${tfld('special','Other special requirements',{area:1})}</div>
+   <div style="margin-top:8px">${em}</div>
+   <div style="margin-top:8px">${tfld('techq','Other questions for the cabin crew',{area:1,rows:3,ph:'One per line, e.g. Where is the nearest fire extinguisher to door 1L?'})}</div>
+   <h3 class="blk">Each sector</h3>`+
+   xrows((i,s)=>`<div class="gr c4">${xseg(i,'cab_refuel','Refueling',YN)}${xseg(i,'cab_refpax','Refueling with PAX',YN)}${xseg(i,'cab_taxi','Taxi time',TAXI3,'w2')}</div><div class="gr c2" style="margin-top:8px">${xfld(i,'cab_melnote','MEL affecting the cabin',{ph:'Leave blank if none'})}${xfld(i,'cab_wx_note','Weather note for the cabin (optional)')}</div>${cabTank(s)?'<p class="xnote">Dispatch: tankering on this sector.</p>':''}`);
 }
 function cabHTML(){
-  const A=actSecs(),n=A.length;
-  const ov=`<div class="cabov">${A.map(i=>{const v=state.secs[i].v;return `<div class="r"><b>S${i+1}</b><span>${esc(v.flt||'—')}</span><span>${esc((v.dep_icao||'----')+' → '+(v.dest_icao||'----'))}</span><span class="m">${esc([v.reg,fmtDate(v.date)].filter(Boolean).join(' · '))}</span></div>`}).join('')}</div><p class="xnote" style="margin:-4px 0 12px">Every sector with a flight number or airports in Dispatch appears here, up to four. The sector chips above do not change this tab.</p>`;
-  const crew=`<div class="chks">${tchk('fit',CAB_LBL.fit)}${tchk('docs',CAB_LBL.docs)}${tchk('names',CAB_LBL.names)}</div><div class="gr c2" style="margin-top:8px">${tfld('names','Names and positions',{area:1,ph:'CM1, CM2, SCCM, cabin crew and their positions'})}${tfld('crewnote','Training or checks on board',{area:1})}</div>`;
-  const ac=`<div class="chks">${tchk('reg',CAB_LBL.reg)}${tchk('mel',CAB_LBL.mel)}</div>`+xrows((i,s)=>{const v=s.v;return `<div class="gr c4">${xcalc('Registration',v.reg)}${xcalc('Type',[v.ceoneo,v.acft].filter(Boolean).join(' '))}${xfld(i,'stand','Stand / position',{cls:'w2'})}</div><div class="gr c4" style="margin-top:10px">${xcalc('MEL / CDL (from Dispatch)',melText(s),'w2')}${xseg(i,'cab_mel','MEL in cabin',YN)}${xfld(i,'cab_melnote','Cabin MEL details')}</div>`});
-  const sc=`<div class="chks">${tchk('nsec','Number of sectors: '+n)}${tchk('ftime',CAB_LBL.ftime,'',1)}${tchk('fl',CAB_LBL.fl,'',1)}</div>`+xrows((i,s)=>{const v=s.v;return `<div class="gr c4">${xcalc('ETD',v.etd)}${xcalc('ETA',v.eta)}${xcalc('Flight time',v.ftime)}${xcalc('Cruise level',v.fl?'FL'+v.fl:'')}</div>`});
-  const rf=`<div class="chks">${tchk('refuel',CAB_LBL.refuel)}${tchk('refsec',CAB_LBL.refsec,'',1)}${tchk('tank',CAB_LBL.tank,'',1)}${tchk('refpax',CAB_LBL.refpax,'',1)}</div>`+xrows((i,s)=>`<div class="gr c4">${xseg(i,'cab_refuel','Refueling',YN)}${xseg(i,'cab_tank','Tankering',YN)}${xseg(i,'cab_refpax','Refueling with PAX',YN)}</div>${s.c['why.tank']?'<p class="xnote">Dispatch: extra fuel due to tankering.</p>':''}`)+`<div class="cabov" id="cabDerive" style="margin-top:12px">${cabDeriveHTML()}</div>`;
-  const tx=`<div class="chks">${tchk('taxi',CAB_LBL.taxi)}</div>`+xrows((i)=>`<div class="gr c4">${xseg(i,'cab_taxi','Taxi time',TAXI3)}</div>`);
-  const wx=`<div class="chks">${tchk('wx',CAB_LBL.wx)}</div>`+xrows((i,s)=>{const c=s.c,v=s.v,sw=['ice','cb','turb'].filter(k=>c['sigwx.'+k]);return `<div class="gr c3">${xfld(i,'cab_wx_dep','Departure',{tog:'cab.turb.dep'})}${xfld(i,'cab_wx_rte','Route',{tog:'cab.turb.rte'})}${xfld(i,'cab_wx_arr','Arrival',{tog:'cab.turb.arr'})}</div>${sw.length?`<p class="xnote">Dispatch SIGWX: ${sw.join(', ').toUpperCase()}${v.sigwx_from?' FL'+esc(v.sigwx_from)+(v.sigwx_to?' to FL'+esc(v.sigwx_to):''):''}.</p>`:''}`});
-  const sp=`<div class="chks">${tchk('hijack',CAB_LBL.hijack)}${tchk('entry',CAB_LBL.entry,'Agree how the cabin calls the cockpit and how the door is opened.')}${tchk('unruly',CAB_LBL.unruly,'Report early to the flight deck and follow the company procedure.')}${tchk('emerg',CAB_LBL.emerg,'Signals and commands, and the NITS briefing if an emergency occurs.')}</div><div class="gr c2" style="margin-top:8px">${tfld('hijack','Hijack code')}${tfld('special','Other special requirements',{area:1})}</div><p class="note">The prompts are reminders only. The company OM-A wording applies.</p>`;
-  const q=`<div class="chks">${tchk('q',CAB_LBL.q)}</div><div class="gr c2" style="margin-top:8px">${tfld('techq','Technical questions for the cabin crew to answer',{area:1,cls:'wide',ph:'One per line, e.g. Where is the nearest fire extinguisher to door 1L?'})}</div>`;
-  return `<div class="mhead"><h1>Cabin Crew Briefing</h1><p class="lead">One briefing for the whole duty, in the order of the Cabin Crew Briefing list. The data of each sector comes from Dispatch. The cabin-specific fields are filled in here.</p></div>`+ov+
-   sec('Crew',crew,'checks','cab.crew')+sec('Aircraft, position and cabin MELs',ac,'checks','cab.ac')+sec('Sectors, flight times and altitudes',sc,'checks','cab.sc')+sec('Refueling operation',rf,'checks','cab.rf')+sec('Taxi',tx,'checks','cab.tx')+sec('Expected weather and turbulence',wx,'checks','cab.wx')+sec('Special requirements',sp,'checks','cab.sp')+sec('Questions',q,'checks','cab.q')+
-   `<section class="sumbox"><div class="sumhead"><h2>Summary</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand summary to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button>${sumSecHTML()}</div><pre class="sum" data-sum="cab"></pre><div class="row sumfoot"><button class="btn primary" type="button" data-act="copy" data-mod="cab">Copy summary</button><span class="sumfs" role="group" aria-label="Summary text size"><button class="btn sm" type="button" data-act="sum-font" data-d="-1" aria-label="Smaller text" title="Smaller text"><span class="a-sm">A</span></button><button class="btn sm" type="button" data-act="sum-font" data-d="1" aria-label="Larger text" title="Larger text"><span class="a-lg">A</span></button></span></div></section>`;
+  const A=actSecs();
+  const ov=`<div class="cabov">${A.map(i=>{const v=state.secs[i].v;return `<div class="r"><b>S${i+1}</b><span>${esc(v.flt||'—')}</span><span>${esc((v.dep_icao||'----')+' → '+(v.dest_icao||'----'))}</span><span class="m">${esc([v.reg,fmtDate(v.date)].filter(Boolean).join(' · '))}</span></div>`}).join('')}</div>`;
+  return `<div class="mhead"><h1>Cabin Crew Briefing</h1><p class="lead">One briefing for the whole duty. Fill in the cabin items below; everything else comes from Dispatch automatically.</p></div>`+ov+
+   `<section class="cabin-in"><h2 class="pofg">Cabin crew briefing items</h2>${cabInHTML()}</section>`+
+   `<section class="sumbox"><div class="sumhead"><h2>Briefing</h2><button class="btn sm" type="button" data-act="sum-expand" aria-label="Expand to full screen">Expand ⤢</button><button class="sumx" type="button" data-act="sum-close" aria-label="Close full screen">✕</button></div><pre class="sum" data-sum="cab"></pre><div class="row sumfoot"><button class="btn primary" type="button" data-act="copy" data-mod="cab">Copy briefing</button><span class="sumfs" role="group" aria-label="Text size"><button class="btn sm" type="button" data-act="sum-font" data-d="-1" aria-label="Smaller text" title="Smaller text"><span class="a-sm">A</span></button><button class="btn sm" type="button" data-act="sum-font" data-d="1" aria-label="Larger text" title="Larger text"><span class="a-lg">A</span></button></span></div></section>`;
+}
+function sumCab(){
+  const A=actSecs(),T=state.trip,L=[];
+  const sl=i=>{const v=state.secs[i].v;return 'S'+(i+1)+' '+(v.flt||'---')+' '+(v.dep_icao||'----')+'-'+(v.dest_icao||'----')};
+  const one=x=>String(x||'').replace(/\n+/g,' ').trim();
+  L.push(['CABIN CREW BRIEFING',A.length+' sector'+(A.length>1?'s':''),fmtDate(state.secs[A[0]].v.date)].filter(Boolean).join(' | '));
+  L.push('');L.push('CREW');
+  L.push('  Is everyone fit for duty?');L.push('  Documents OK?');
+  L.push('  Names and positions: '+(one(T.v.names)||'not entered'));
+  if(T.v.crewnote)L.push('  Training / checks: '+one(T.v.crewnote));
+  L.push('');L.push('AIRCRAFT AND CABIN MEL');
+  A.forEach(i=>{const s=state.secs[i],v=s.v;L.push('  '+sl(i)+': '+[[v.reg,[v.ceoneo,v.acft].filter(Boolean).join(' ')].filter(Boolean).join(' '),v.stand?'stand '+v.stand:''].filter(Boolean).join(', ')+(v.reg||v.stand?' — ':'')+'MEL: '+melText(s)+(v.cab_melnote?' | Cabin: '+v.cab_melnote:''))});
+  L.push('');L.push('SECTORS, FLIGHT TIMES AND ALTITUDES ('+A.length+')');
+  A.forEach(i=>{const v=state.secs[i].v;L.push('  '+sl(i)+': '+([v.etd?'ETD '+v.etd:'',v.eta?'ETA '+v.eta:'',v.ftime?'flight time '+v.ftime:'',v.fl?'FL'+v.fl:''].filter(Boolean).join(', ')||'not set'))});
+  const lst=k=>{const l=cabList(k);return l.length?l.join(', '):'none'};
+  const tk=A.filter(i=>cabTank(state.secs[i])).map(i=>'S'+(i+1));
+  L.push('');L.push('REFUELING');
+  L.push('  Refueling: '+lst('cab_refuel'));L.push('  Tankering: '+(tk.length?tk.join(', '):'none'));L.push('  Refueling with PAX: '+lst('cab_refpax'));
+  L.push('');L.push('TAXI TIME');
+  A.forEach(i=>{const v=state.secs[i].v;L.push('  '+sl(i)+': '+({Y:'Short',N:'Normal',L:'Long'}[v.cab_taxi]||'not set'))});
+  L.push('');L.push('EXPECTED WEATHER AND TURBULENCE');
+  A.forEach(i=>L.push('  '+sl(i)+': '+cabWx(state.secs[i])));
+  L.push('');L.push('SPECIAL REQUIREMENTS');
+  L.push('  Hijack code: '+(T.v.hijack||'not set'));
+  L.push('  Cockpit entry procedure');L.push('  Unruly passenger');
+  if(T.v.special)L.push('  '+one(T.v.special));
+  const eq=String(emq()).split('\n').map(x=>x.trim()).filter(Boolean);
+  if(eq.length){L.push('');L.push('EMERGENCY PROCEDURES');eq.forEach(x=>L.push('  '+x))}
+  const tq=String(T.v.techq||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  if(tq.length){L.push('');L.push('QUESTIONS FOR THE CABIN CREW');tq.forEach(x=>L.push('  - '+x))}
+  L.push('');L.push('Questions?');
+  return L.join('\n');
+}
+function jmpHTML(){
+  const M=MODS.jmp;let n=0;
+  const body=M.sections.filter(x=>x.checks).map(sc=>`<section class="jl"><h2 class="pofg">${esc(sc.t)}${sc.sub?`<small>${esc(sc.sub)}</small>`:''}</h2><ol class="jl-l">${sc.checks.map(c=>{n++;return `<li value="${n}"><b>${esc(c[0])}</b><span>${esc(c[1])}</span></li>`}).join('')}</ol></section>`).join('');
+  return `<div class="mhead"><h1>${esc(M.title)}</h1><p class="lead">${esc(M.lead)}</p></div>`+body;
 }
 /* ---------- Phases of Flight ---------- */
 const ulh=a=>'<ul>'+a.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
@@ -1836,7 +1894,7 @@ function closeCl(){clOpen=null;noteOpen=null;renderCl();if(clFrom&&document.body
 /* ---------- Approach Flow (Briefings, third part) ----------
    Line practice taught by instructors (not from a manual): the PM gives a short brief first, then the PF briefs
    following the panel flow 1-11 on the drawing (an original schematic, no manual artwork), then closing items 12-14. */
-const AF_STEPS=[[1, "MCDU", "Captain MCDU", [[null, [["CM{} is Pilot Flying (e.g. CM1)", null], ["GPS PRIMARY, accuracy is HIGH", null], ["Type of approach inserted in the FMS", null], ["Decelerated approach (ILS and RNP)", ["ils", "rnp"]], ["Early stabilized approach (LOC or VOR)", ["loc", "vorf", "vors"]]]]]], [2, "ND – top section", "Captain ND", [[null, [["Read the name of the approach (e.g. ILS Z RWY 34R)", null]]]]], [3, "PFD – minimums", "Captain PFD", [[null, [["Minimums BARO {} (e.g. BARO 250), or RA {} for CAT II (e.g. RA 100)", null]]]]], [4, "FD and LS", "Captain EFIS control panel", [[null, [["FD ON", null], ["LS ON as required (ILS or LOC)", ["ils", "loc"]]]]]], [5, "FCU – guidance for the approach", "FCU", [["ILS CAT I or II · RNP · VOR (FINAL APP)", [["It will be a fully managed approach", ["ils", "rnp", "vorf"]], ["ILS: approach will be armed with AP 1 + AP 2 for LOC and G/S", ["ils"]], ["RNP and VOR: approach will be armed with AP 1 (or 2) only when the FDP is the TO waypoint", ["rnp", "vorf"]]]], ["LOC", [["It will be laterally managed and vertically selected, with FPA minus 3.0 degrees", ["loc"]], ["LOC only will be armed with AP 1 (or 2), only when cleared to intercept the LOC and on an intercept course", ["loc"]], ["Please follow me on the final descent path altitude checks on the APP chart and on the PROG page", ["loc"]]]], ["Fully selected VOR", [["It will be a fully selected approach using TRACK and FPA minus 3.0 degrees", ["vors"]], ["No modes armed", ["vors"]], ["Please follow me on the final descent path altitude checks on the APP chart and on the PROG page", ["vors"]]]]]], [6, "Autobrake", "AUTO BRK panel", [[null, [["AUTO BRAKE {} (LO or MED)", null]]]]], [7, "Fuel on board", "Upper ECAM", [[null, [["Fuel on board is {} kilos (e.g. 3 thousand kilos)", null]]]]], [8, "Gross weight", "Lower ECAM", [[null, [["Current gross weight is {} kilos (e.g. 63,000 kilos)", null], ["We are below the maximum landing weight", null]]]]], [9, "Reverse", "Thrust levers", [[null, [["Reverse will be {} (IDLE REVERSE or MAX REVERSE as required)", null]]]]], [10, "Flaps", "Flaps lever", [[null, [["Landing flaps will be {} (FULL or 3 as required)", null], ["Go-around flaps will be {} (3 or 2 as required)", null]]]]], [11, "Speedbrake", "Speedbrake lever", [[null, [["Speedbrake is armed", null]]]]], [12, "Runway exit and taxi", null, [[null, [["We will vacate the runway via {} for the {} taxi route (e.g. via M6 for the M6-X taxi route)", null]]]]], [13, "Threats and mitigation", null, [[null, [["Mention the threats and the mitigation", null]]]]], [14, "Close the briefing", null, [[null, [["“No more to add – Approach checklist”", null]]]]]],AF_PM=["Runway and type of approach", "MSA", "Minimums", "Go-around trajectory", "Extra fuel and time"],AF_TYPES=[["all", "All"], ["ils", "ILS"], ["rnp", "RNP"], ["vorf", "VOR (FINAL APP)"], ["loc", "LOC"], ["vors", "VOR (selected)"]],AF_GEO={"1": [139, 177], "2": [92, 58], "3": [30, 58], "4": [85, 22], "5": [200, 22], "6": [245, 60], "7": [185, 58], "8": [213, 140], "9": [200, 250], "10": [261, 258], "11": [139, 258]};
+const AF_STEPS=[[1, "MCDU", "Captain MCDU", [[null, [["CM{} is Pilot Flying (e.g. CM1)", null], ["GPS PRIMARY, accuracy is HIGH", null], ["Type of approach inserted in the FMS", null], ["Decelerated approach (ILS and RNP)", ["ils", "rnp"]], ["Early stabilized approach (LOC or VOR)", ["loc", "vorf", "vors"]], ["Approach speed set on the FDP", ["loc", "vorf", "vors"], 1], ["Check the angle of the descent path on the FDP versus the approach chart", ["loc", "vorf", "vors"], 1]]]]], [2, "ND – top section", "Captain ND", [[null, [["Read the name of the approach (e.g. ILS Z RWY 34R)", null]]]]], [3, "PFD – minimums", "Captain PFD", [[null, [["Minimums BARO {} (e.g. BARO 250), or RA {} for CAT II (e.g. RA 100)", null]]]]], [4, "FD and LS", "Captain EFIS control panel", [[null, [["FD ON", null], ["LS ON as required (ILS or LOC)", ["ils", "loc"]]]]]], [5, "FCU – guidance for the approach", "FCU", [["ILS CAT I or II · RNP · VOR (FINAL APP)", [["Guidance will be fully managed", ["ils", "rnp", "vorf"]], ["For an ILS, by arming the APPROACH and AP 1 + AP 2, for LOC and G/S blue", ["ils"]], ["For an RNP (or VOR), by arming the APPROACH and AP 1 (or 2) only, for FINAL APP mode, only when the FDP is the TO waypoint", ["rnp", "vorf"]]]], ["LOC only", [["Guidance will be laterally managed and vertically selected", ["loc"]], ["For a LOC and FPA, by arming the LOC and AP 1 (or 2) only when cleared to intercept the LOC and on an intercept course", ["loc"]], ["Please follow me on the final descent path altitude checks on the APP chart and on the PROG page", ["loc"]]]], ["Fully selected VOR", [["Guidance will be fully selected, using TRACK and FPA", ["vors"]], ["No modes armed", ["vors"]], ["Please follow me on the final descent path altitude checks on the APP chart and on the PROG page", ["vors"]]]]]], [6, "Autobrake", "AUTO BRK panel", [[null, [["AUTO BRAKE {} (LO or MED)", null]]]]], [7, "Fuel on board", "Upper ECAM", [[null, [["Fuel on board is {} kilos (e.g. 3 thousand kilos)", null]]]]], [8, "Gross weight", "Lower ECAM", [[null, [["Current gross weight is {} kilos (e.g. 63,000 kilos)", null], ["We are below the maximum landing weight", null]]]]], [9, "Reverse", "Thrust levers", [[null, [["Reverse will be {} (IDLE REVERSE or MAX REVERSE as required)", null]]]]], [10, "Flaps", "Flaps lever", [[null, [["Landing flaps will be {} (FULL or 3 as required)", null], ["Go-around flaps will be {} (3 or 2 as required)", null]]]]], [11, "Speedbrake", "Speedbrake lever", [[null, [["Speedbrake is armed", null]]]]], [12, "Runway exit and taxi", null, [[null, [["We will vacate the runway via {} for the {} taxi route (e.g. via M6 for the M6-X taxi route)", null]]]]], [13, "Threats and mitigation", null, [[null, [["Mention the threats and the mitigation", null]]]]], [14, "Close the briefing", null, [[null, [["“No more to add – Approach checklist”", null]]]]]],AF_PM=["Runway and type of approach", "MSA", "Minimums", "Go-around trajectory", "Extra fuel and time"],AF_TYPES=[["all", "All"], ["ils", "ILS"], ["rnp", "RNP"], ["vorf", "VOR (FINAL APP)"], ["loc", "LOC"], ["vors", "VOR (selected)"]],AF_GEO={"1": [139, 177], "2": [92, 58], "3": [30, 58], "4": [85, 22], "5": [200, 22], "6": [245, 60], "7": [185, 58], "8": [213, 140], "9": [200, 250], "10": [261, 258], "11": [139, 258]};
 const AFKEY=BRFKEY.replace('brfmode','aftype');
 let afType='all',afStep=0;try{const t=localStorage.getItem(AFKEY);if(AF_TYPES.some(x=>x[0]===t))afType=t}catch(e){}
 const afTxt=t=>esc(t).replace(/\{\}/g,'<span class="af-b" aria-label="blank"></span>').replace(/\((e\.g\.[^)]*)\)/g,'<span class="af-eg">($1)</span>');
@@ -1844,7 +1902,7 @@ const afShow=types=>afType==='all'||!types||types.indexOf(afType)>=0;
 const afTag=types=>types&&types.length<5?`<span class="af-tag">${types.map(t=>esc(AF_TYPES.find(x=>x[0]===t)[1])).join(' · ')}</span>`:'';
 function afItems(st,filter){
   return st[3].map(g=>{const it=g[1].filter(x=>!filter||afShow(x[1]));if(!it.length)return '';
-    return (g[0]&&(!filter||afType==='all')?`<p class="af-gh">${esc(g[0])}</p>`:'')+'<ul class="af-ul">'+it.map(x=>`<li>${afTxt(x[0])}${filter?'':afTag(x[1])}</li>`).join('')+'</ul>'}).join('');
+    return (g[0]&&(!filter||afType==='all')?`<p class="af-gh">${esc(g[0])}</p>`:'')+'<ul class="af-ul">'+it.map(x=>`<li${x[2]?' class="af-sub"':''}>${afTxt(x[0])}${filter?'':afTag(x[1])}</li>`).join('')+'</ul>'}).join('');
 }
 function afSvg(){
   const r=(x,y,w,h,c,k)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" class="${c}"${k?` data-afr="${k}"`:''}/>`;
@@ -2040,40 +2098,6 @@ function sumDsp(i){
   if(cl){L.push('');L.push(ttl('SUGGESTED CLEARANCE'));add('  Clearance',cl)}
   return L.join('\n');
 }
-function sumCab(){
-  const A=actSecs(),T=state.trip,L=[];
-  L.push(['CABIN CREW BRIEFING',A.length+' sector'+(A.length>1?'s':''),fmtDate(state.secs[A[0]].v.date)].filter(Boolean).join(' | '));
-  /* Always at the top, answered or not — the three checks John never wants to lose track of, in the
-     Cabin Crew Briefing form's own wording, so the summary opens with them every time. */
-  L.push('');
-  L.push(CAB_LBL.fit+' '+(T.c.fit?'Yes':'Not confirmed'));
-  L.push(CAB_LBL.docs+': '+(T.c.docs?'Yes':'Not confirmed'));
-  L.push(CAB_LBL.names+': '+(T.v.names?T.v.names.replace(/\n/g,' '):'Not entered'));
-  if(T.v.crewnote)L.push('Training / checks: '+T.v.crewnote.replace(/\n/g,' '));
-  /* then, in this order: flight times, weather, MEL affecting the cabin, taxi time, refueling sectors,
-     hijack procedures, technical questions for the cabin crew — each topic once, covering every sector */
-  const sl=i=>{const v=state.secs[i].v;return 'S'+(i+1)+' '+(v.flt||'---')+' '+(v.dep_icao||'----')+'-'+(v.dest_icao||'----')};
-  L.push('');L.push('FLIGHT TIMES');
-  A.forEach(i=>{const v=state.secs[i].v;L.push('  '+sl(i)+': '+([v.etd?'ETD '+v.etd:'',v.eta?'ETA '+v.eta:'',v.ftime?'flight time '+v.ftime:'',v.fl?'FL'+v.fl:''].filter(Boolean).join(', ')||'not set')+([v.reg,v.stand?'stand '+v.stand:''].filter(Boolean).length?' ('+[v.reg,v.stand?'stand '+v.stand:''].filter(Boolean).join(', ')+')':''))});
-  L.push('');L.push('WEATHER');
-  A.forEach(i=>{const s=state.secs[i],v=s.v,c=s.c;L.push('  '+sl(i)+': '+['dep','rte','arr'].map(k=>k.toUpperCase()+' '+(c['cab.turb.'+k]?'[turb] ':'')+(v['cab_wx_'+k]||'-')).join(' | '))});
-  L.push('');L.push('MEL AFFECTING THE CABIN');
-  A.forEach(i=>{const v=state.secs[i].v;L.push('  '+sl(i)+': '+(v.cab_mel==='Y'?'Yes'+(v.cab_melnote?' — '+v.cab_melnote:''):v.cab_mel==='N'?'None':'not set'))});
-  L.push('');L.push('TAXI TIME');
-  A.forEach(i=>{const v=state.secs[i].v;L.push('  '+sl(i)+': '+({Y:'Short',N:'Normal',L:'Long'}[v.cab_taxi]||'not set'))});
-  const lst=k=>{const l=cabList(k);return l.length?l.join(', '):'none'};
-  L.push('');L.push('REFUELING SECTORS');
-  L.push('  Refueling: '+lst('cab_refuel'));L.push('  Tankering: '+lst('cab_tank'));L.push('  Refueling with PAX: '+lst('cab_refpax'));
-  L.push('');L.push('HIJACK PROCEDURES');
-  L.push('  Hijack code: '+(T.v.hijack||'not set'));
-  L.push('');L.push('TECHNICAL QUESTIONS FOR THE CABIN CREW');
-  const tq=String(T.v.techq||'').split('\n').map(x=>x.trim()).filter(Boolean);
-  if(tq.length)tq.forEach(x=>L.push('  - '+x));else L.push('  none entered');
-  if(T.v.special){L.push('');L.push('Special requirements: '+T.v.special.replace(/\n/g,' '))}
-  const pend=CAB_TRIP.filter(k=>!T.c[k]).map(k=>CAB_LBL[k]);
-  L.push('');L.push('Done '+(CAB_TRIP.length-pend.length)+'/'+CAB_TRIP.length+(pend.length?'\nOpen: '+pend.join('; '):''));
-  return L.join('\n');
-}
 function sumMod(mod,i){
   const M=MODS[mod],s=state.secs[i],v=s.v,L=[];
   L.push(`${M.title.toUpperCase()} | SECTOR ${i+1} | ${v.flt||'---'} ${(v.dep_icao||'----')}-${(v.dest_icao||'----')} ${fmtDate(v.date)}`.trim());
@@ -2133,7 +2157,7 @@ function closeSumFull(){
 }
 document.addEventListener('keydown',e=>{const m=e.target&&e.target.closest&&e.target.closest('g[data-act="af-step"]');if(m&&(e.key==='Enter'||e.key===' ')){e.preventDefault();afSet(+m.dataset.i);return}if(e.key!=='Escape')return;if(clOpen||noteOpen){closeCl();return}if(sumFull)closeSumFull()});
 ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev,()=>{if(!(document.fullscreenElement||document.webkitFullscreenElement)&&sumFull)closeSumFull()}));
-function render(){state.tab=normTab(state.tab);const lite=LITE.has(state.tab);['#strip','#sectors','#bar'].forEach(q=>{const e=$(q);if(e)e.hidden=lite});renderNav();$('#main').innerHTML=state.tab==='dsp'?dspHTML():state.tab==='cab'?cabHTML():state.tab==='pof'?pofHTML():state.tab==='brf'?brfHTML():state.tab==='kt'?ktHTML():modHTML(state.tab);syncDom();renderNt();refreshLive();renderCloud();
+function render(){state.tab=normTab(state.tab);const lite=LITE.has(state.tab);['#strip','#sectors','#bar'].forEach(q=>{const e=$(q);if(e)e.hidden=lite});renderNav();$('#main').innerHTML=state.tab==='dsp'?dspHTML():state.tab==='cab'?cabHTML():state.tab==='pof'?pofHTML():state.tab==='brf'?brfHTML():state.tab==='kt'?ktHTML():state.tab==='jmp'?jmpHTML():modHTML(state.tab);syncDom();renderNt();refreshLive();renderCloud();
   if(sumFull){const p=$('[data-sum="'+sumFull+'"]');if(p)p.closest('.sumbox').classList.add('full');else closeSumFull()}
   applySumFont();tabIntoView();if(state.tab==='kt'&&ktQuery)ktFilter(ktQuery)}
 function refreshLive(){
@@ -2171,7 +2195,6 @@ function refreshLive(){
     else{const cs=$$('[data-c],[data-tk]',el);n=cs.length;d=cs.filter(x=>x.checked).length}
     if(!n){b.hidden=true;return}b.hidden=false;b.textContent=d+'/'+n;b.className='scount'+(mode!=='fields'&&d===n?' done':'')});
   $$('[data-tc]').forEach(e=>{const ids=IDS[e.dataset.tc],src=e.dataset.tc==='cab'?state.trip.c:s.c,d=ids.filter(x=>src[x]).length;e.textContent=d+'/'+ids.length;e.className='cnt'+(d===ids.length?' done':'')});
-  const cd=$('#cabDerive');if(cd)cd.innerHTML=cabDeriveHTML();
   $$('[data-sum]').forEach(e=>{e.innerHTML=sumHTML(summaryRaw(e.dataset.sum))});
   /* Weather section: amber banner under each airport with marginal weather, and an amber edge on the
      report(s) that caused it — updated live as METAR / TAF are typed, pasted or downloaded */
