@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Airmanship Briefings</title>
-<meta name="description" content="Flight preparation aid: OFP and NOTAM import, Dispatch Briefing, tankering check, cabin, departure, arrival and jumpseat briefings, approach briefing flow, phases of flight, and misc key topics.">
+<meta name="description" content="Flight preparation aid: OFP and NOTAM import, Dispatch Briefing, tankering check, cabin, departure, arrival and jumpseat briefings, approach briefing flow, phases of flight, and misc key topics, with read aloud.">
 <meta name="theme-color" content="#E8EDF1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0B1117" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
@@ -351,6 +351,36 @@ body.sumfull,body.clopen{overflow:hidden}
 .nbody{font-size:15px;line-height:1.55}
 .nbody ul,.nbody ol{margin:4px 0 8px;padding-left:20px}
 .nbody li{margin:3px 0}
+.tts-sex{flex:0 0 auto;min-height:44px}
+.tts-sex button{min-height:42px;padding:0 12px;font-size:13px;border:0;border-right:1px solid var(--line);border-radius:0;min-width:0}
+.tts-sex button:last-child{border-right:0}
+.tts-sex button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.tts-miss{margin:0;font-size:12px;line-height:1.4;color:var(--warn)}
+@media (min-width:760px){.ttsbar{flex-wrap:wrap}.tts-miss{flex-basis:100%}}
+.tts-msg{margin:0;font-size:14px;line-height:1.45;color:var(--ink)}
+.kt-gh{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.kt-gh .chip,.kt-top .chip{flex:0 0 auto;font:600 12px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border-color:var(--accent)}
+.kt-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.af-listen{margin:0 0 12px;min-height:44px}
+.tts-on{outline:3px solid var(--accent);outline-offset:3px}
+details.tts-on{outline-offset:6px}
+body.tts-pad{padding-bottom:132px}
+.ttsbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--surface);border-top:2px solid var(--accent);box-shadow:0 -4px 18px rgba(0,0,0,.18);padding:8px max(12px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:6px}
+.ttsbar[hidden]{display:none}
+.tts-head{display:flex;align-items:center;gap:10px;min-width:0}
+.tts-now{display:flex;flex-direction:column;min-width:0;flex:1}
+.tts-x{flex:0 0 auto;min-width:44px;min-height:40px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:3px;font-size:16px;cursor:pointer}
+.tts-ctl{flex-wrap:nowrap!important}
+.tts-lbl{font:500 11px var(--f-mono);color:var(--ink3)}
+.tts-t{font:700 14px var(--f-display);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tts-ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tts-ctl button{min-width:44px;min-height:44px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:3px;font-size:16px;cursor:pointer}
+.tts-ctl button:disabled{opacity:.4;cursor:default}
+.tts-ctl .tts-pp{background:var(--accent);border-color:var(--accent);color:var(--on-accent);min-width:56px}
+.tts-ctl select{min-height:44px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:3px;padding:0 6px;font:500 13px var(--f-body);max-width:100%}
+#ttsVoice{flex:1;min-width:0}
+#ttsRate{flex:0 0 auto}
+@media (min-width:760px){.ttsbar{flex-direction:row;align-items:center;justify-content:space-between}.tts-head{flex:1}}
 .cabin-in{margin:0 0 18px}
 .cabin-in .note{margin-top:0}
 .cabin-in textarea{width:100%}
@@ -489,7 +519,7 @@ table.kt-t th{background:var(--sunk);font:600 12px var(--f-display);letter-spaci
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="cloudbox" id="cloudBox"></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.50.1.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.51.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1847,16 +1877,16 @@ function pofHTML(){
 let ktQuery='';
 const ktText=t=>String(t.t+' '+t.ref+' '+t.pts.join(' ')+' '+t.more.map(m=>m[0]+' '+m[1]).join(' ')+' '+t.efb+' '+t.flag).replace(/<[^>]+>/g,' ').toLowerCase();
 function ktHTML(){
-  const body=KT.map((g,gi)=>`<h2 class="pofg" data-ktg="${gi}">${gi+1}. ${esc(g.t)}</h2>`+g.topics.map((t,ti)=>{
+  const body=KT.map((g,gi)=>`<h2 class="pofg kt-gh" data-ktg="${gi}"><span>${gi+1}. ${esc(g.t)}</span><button type="button" class="chip tts-b" data-act="tts-kt" data-g="${gi}" aria-label="Listen to group ${gi+1}">▶ Listen</button></h2>`+g.topics.map((t,ti)=>{
     const more=t.more.map((m,k)=>`<button type="button" class="pt-nb kt-nb" data-act="note" data-n="kt:${gi}.${ti}.${k}" aria-label="Open: ${esc(m[0])}"><span class="tag">More</span><span class="nt">${esc(m[0])}</span><span class="ar" aria-hidden="true">▶</span></button>`).join('');
     const see=(t.see||[]).map(k=>{const p=k.slice(3).split('.').map(Number),x=KT[p[0]]&&KT[p[0]].topics[p[1]];return x?`<button type="button" class="pt-nb kt-go" data-act="kt-go" data-k="${k}"><span class="tag">Topic</span><span class="nt">${p[0]+1}.${p[1]+1} ${esc(x.t)}</span><span class="ar" aria-hidden="true">▶</span></button>`:''}).join('');
-    const inner=`<p class="kt-ref">${esc(t.ref)}</p><ul class="kt-pts">${t.pts.map(p=>'<li>'+p+'</li>').join('')}</ul>${see?`<div class="kt-see">${see}</div>`:''}${more?`<div class="kt-more">${more}</div>`:''}${t.flag?`<p class="kt-flag"><b>Check:</b> ${esc(t.flag)}</p>`:''}${t.efb?`<p class="kt-efb"><b>Find in the EFB:</b> ${esc(t.efb)}</p>`:''}`;
+    const inner=`<div class="kt-top"><p class="kt-ref">${esc(t.ref)}</p><button type="button" class="chip tts-b" data-act="tts-kt" data-from="kt.${gi}.${ti}" aria-label="Listen from this topic">▶ Listen</button></div><ul class="kt-pts">${t.pts.map(p=>'<li>'+p+'</li>').join('')}</ul>${see?`<div class="kt-see">${see}</div>`:''}${more?`<div class="kt-more">${more}</div>`:''}${t.flag?`<p class="kt-flag"><b>Check:</b> ${esc(t.flag)}</p>`:''}${t.efb?`<p class="kt-efb"><b>Find in the EFB:</b> ${esc(t.efb)}</p>`:''}`;
     return sec(`${gi+1}.${ti+1} ${esc(t.t)}`,inner,'ref','kt.'+gi+'.'+ti).replace('<details class="sec"',`<details class="sec kt-sec" data-ktt="${esc(ktText(t))}" data-ktgi="${gi}"`)}).join('')).join('');
   const n=KT.reduce((a,g)=>a+g.topics.length,0);
   return `<div class="mhead"><h1>Misc Key Topics</h1><p class="lead">Key operational topics from the OM-A, FCOM, FCTM and GACAR, with line training notes. Open a topic for the key points, tap MORE for the full detail, and use the EFB reference to find the original.</p></div>
   ${KT_DRAFT?'<p class="kt-draft"><b>DRAFT for review</b> — all 14 groups. Not yet in the GitHub version.</p>':''}
   <div class="kt-search"><input id="ktSearch" type="search" placeholder="Search topics, e.g. MINIMUM FUEL, readback, OET" value="${esc(ktQuery)}" autocomplete="off" aria-label="Search topics"><span id="ktCount" class="kt-count">${n} topics</span></div>
-  <div class="pof-tools"><button type="button" class="btn sm" data-act="kt-all" data-open="1">Open all</button><button type="button" class="btn sm" data-act="kt-all" data-open="0">Close all</button></div>`+body;
+  <div class="pof-tools"><button type="button" class="btn sm" data-act="kt-all" data-open="1">Open all</button><button type="button" class="btn sm" data-act="kt-all" data-open="0">Close all</button><button type="button" class="btn sm primary tts-b" data-act="tts-kt">▶ Listen to all</button></div>`+body;
 }
 function ktFilter(q){
   ktQuery=q;const words=q.toLowerCase().split(/\s+/).filter(Boolean);let n=0;const vis={};
@@ -1942,7 +1972,7 @@ function afHTML(){
   const chips=AF_TYPES.map(t=>`<button type="button" class="chip af-chip" data-act="af-type" data-t="${t[0]}" aria-pressed="${afType===t[0]}">${esc(t[1])}</button>`).join('');
   const list=AF_STEPS.map((st,i)=>`<li class="af-li${i===afStep?' on':''}" data-afl="${i}"><details class="af-d" data-seckey="af.${i}"${state.open['af.'+i]?' open':''}><summary class="af-lh"><span class="af-n">${st[0]}</span><span class="af-lt">${esc(st[1])}${st[2]?`<small>${esc(st[2])}</small>`:''}</span><span class="af-chev" aria-hidden="true">▸</span></summary><div class="af-lb">${afItems(st,false)}<button type="button" class="btn sm af-show" data-act="af-step" data-i="${i}">${st[2]?'Show on the panel':'Show in the step card'} ▶</button></div></details></li>`).join('');
   return `<p class="af-note">Line practice taught by instructors — not from a manual. The PM gives the short brief first, then the PF briefs following the flow on the panel.</p>
-   <div class="af-pm"><h3>PM — short brief (first)</h3><ol>${AF_PM.map(x=>'<li>'+esc(x)+'</li>').join('')}</ol></div>
+   <button type="button" class="btn sm primary tts-b af-listen" data-act="tts-af">▶ Listen to the briefing flow</button><div class="af-pm"><h3>PM — short brief (first)</h3><ol>${AF_PM.map(x=>'<li>'+esc(x)+'</li>').join('')}</ol></div>
    <h3 class="af-h">PF — approach briefing flow</h3>
    <div class="af-types" role="group" aria-label="Approach type">${chips}</div>
    <div class="af-stage"><div id="afSvg">${afSvg()}</div><div id="afCard" class="af-card" aria-live="polite">${afCardHTML()}</div></div>
@@ -1952,6 +1982,118 @@ function afSet(i){
   afStep=Math.max(0,Math.min(AF_STEPS.length-1,i));
   const c=$('#afCard');if(c)c.innerHTML=afCardHTML();const v=$('#afSvg');if(v)v.innerHTML=afSvg();
   $$('[data-afl]').forEach(l=>l.classList.toggle('on',+l.dataset.afl===afStep));
+}
+/* ---------- Read aloud ----------
+   Audiobook mode for Misc Key Topics and the Approach Flow, using the phone's own voices (speechSynthesis):
+   offline, free, nothing leaves the device. Text is read in short chunks (long utterances get cut off on
+   some browsers); pausing cancels and later restarts the current chunk, which works on every platform.
+   Browsers only speak while the page is open and on screen, so a screen wake lock is held while playing. */
+const TTSKEY=BRFKEY.replace('brfmode','tts');
+const TTS_OK=('speechSynthesis' in window)&&('SpeechSynthesisUtterance' in window);
+let tts={q:[],i:0,c:0,chunks:[],on:false,paused:false,gen:0,rate:1,voice:'',sex:'',lock:null};
+try{const o=JSON.parse(localStorage.getItem(TTSKEY)||'{}');if(o.rate)tts.rate=+o.rate;if(o.voice)tts.voice=o.voice;if(o.sex)tts.sex=o.sex}catch(e){}
+const ttsSave=()=>{try{localStorage.setItem(TTSKEY,JSON.stringify({rate:tts.rate,voice:tts.voice,sex:tts.sex}))}catch(e){}};
+const DIG=['zero','one','two','three','four','five','six','seven','eight','nine'];
+const SPELL='ATC RVR MDA MDH DA DH DH DME MSA FCU FMA ND PFD MCDU EFB OFP FDP CDFA NPA ILS VOR RNP SRS PF PM SIC PIC ETD ETA ZFW MLW MTOW IOCC SCCM VLS VMO MMO OET LVTO LVO LVP IMC VMC AGL AMSL MORA MEA MCT EGT APU GPU PCA PWS GPS GNSS PBN OEB ATL IRS ADR DMC FWC CMC MCC FDO ATZ FIS CTA TMA CTR SSR RVSM ASE TVE GRF RCR OAT TAT SD LMC MEL CDL LDA TDZ TDZE RA EGPWS MSN QNH QFE TA TL SID FMS FMGS ECP STS TOC LS FO CM IR MAP FAF IAF VDP PAPI AAL DOM TOM LDM PBE ISIS TEM AOA FPV FPA EOSID GW FOB MEL SOP RTO OEI ETP VFR IFR ACARS VHF HF UTC NOTAM NDB AIP CRM ATPL PIC MOR LRBL WCHR WCHS WCHC UM YP SVAN CVR FDR ADS IRS MCDU EEC OPT REC FOR OM'.split(' ');
+const SAYW={'A/THR':'auto thrust','G/S':'glide slope','W/S':'windshear','T/D':'top of descent','E/WD':'E W D','F-PLN':'flight plan','OM-A':'O M A','OM-C':'O M C','FCOM':'F com','FCTM':'F C T M','eQRH':'E Q R H','QRH':'Q R H','GACAR':'G A C A R','GACA':'G A C A','AP':'autopilot','FD':'flight director','FDs':'flight directors','APs':'autopilots','RWYCC':'runway condition code','RWY':'runway','TWY':'taxiway','PAX':'passengers','FINAL APP':'final approach','APPR':'approach','APP':'approach','TRK':'track','HDG':'heading','SPD':'speed','OP DES':'open descent','OP CLB':'open climb','DES':'descent','CLB':'climb','ALT CSTR':'altitude constraint','ALT CST':'altitude constraint','STD':'standard','TOD':'top of descent','MED':'medium','LO':'low','CONF':'config','REV':'reverse','FLX':'flex','THR':'thrust','LOC':'localizer','RNAV':'R nav','VAPP':'V app','VREF':'V ref','V1':'V one','V2':'V two','VR':'V R','A320':'A three twenty','A321':'A three twenty-one','A319':'A three nineteen','CEO':'C E O','NEO':'neo','CAT I':'category one','CAT II':'category two','CAT III':'category three','e.g.':'for example','i.e.':'that is','vs':'versus','approx.':'approximately','SIGWX':'sig weather','NAV':'nav','VIS':'visibility','TCAS':'tee cas','ECAM':'ee cam','ISA':'I S A','FOR-DEC':'for dec','N1':'N one','N2':'N two','AUTO/BRK':'autobrake','BRK':'brake','SIGMET':'sigmet','KSA':'K S A','MAYDAY':'mayday','PAN PAN':'pan pan'};
+function ttsSay(t){
+  let x=' '+String(t)+' ';
+  x=x.replace(/(\d)\s?–\s?(\d)/g,'$1 to $2');
+  x=x.replace(/\{\}/g,' … ').replace(/\((e\.g\.[^)]*)\)/g,', $1,');
+  x=x.replace(/\bFL\s?(\d{2,3})\b/g,(m,d)=>'flight level '+d.split('').map(c=>DIG[c]).join(' ')).replace(/\bFL\b/g,'flight level');
+  x=x.replace(/−(?=\d)/g,' minus ').replace(/±/g,' plus or minus ').replace(/≤/g,' at or below ').replace(/≥/g,' at or above ');
+  x=x.replace(/°C\b/g,' degrees Celsius').replace(/°/g,' degrees').replace(/(\d)\s?%/g,'$1 percent').replace(/×/g,' times ').replace(/→/g,', then ').replace(/[·•]/g,', ');
+  x=x.replace(/(\d)\s?fpm\b/g,'$1 feet per minute').replace(/(\d)\s?ft\b/g,'$1 feet').replace(/(\d)\s?kts?\b/g,'$1 knots').replace(/(\d)\s?NM\b/g,'$1 nautical miles').replace(/(\d)\s?SM\b/g,'$1 statute miles').replace(/(\d)\s?kg\b/g,'$1 kilos').replace(/(\d)\s?km\b/g,'$1 kilometres').replace(/(\d)\s?mm\b/g,'$1 millimetres').replace(/(\d)\s?m\b/g,'$1 metres').replace(/(\d)\s?min\b/g,'$1 minutes').replace(/(\d)\s?h\b/g,'$1 hours').replace(/(\d)\s?s\b/g,'$1 seconds');
+  x=x.replace(/\bkts?\b/g,'knots').replace(/\bft\b/g,'feet').replace(/\bNM\b/g,'nautical miles').replace(/\bfpm\b/g,'feet per minute');
+  Object.keys(SAYW).sort((a,b)=>b.length-a.length).forEach(k=>{const re=new RegExp('(^|[^A-Za-z0-9])'+k.replace(/[.*+?^${}()|[\]\\/]/g,'\\$&')+'(?![A-Za-z0-9])','g');x=x.replace(re,(m,p)=>p+SAYW[k])});
+  x=x.replace(/\((H)\)/g,'').replace(/\brunway (\d{2})([LRC])?\b/g,(m,d,s)=>'runway '+d.split('').map(c=>DIG[c]).join(' ')+(s?' '+{L:'left',R:'right',C:'centre'}[s]:''));
+  x=x.replace(/\b([A-Z]{2,6})(s?)(\d?)\b/g,(m,w,pl,d)=>SPELL.indexOf(w)>=0?w.split('').join(' ')+pl+(d?' '+d:''):m);
+  x=x.replace(/\b(ON|OFF|NO|TO|OR|IN|AT|GO|UP|IF|OK)\b/g,m=>m.toLowerCase()).replace(/\b[A-Z]{3,}\b/g,m=>/[AEIOUY]/.test(m)?m.toLowerCase():m);
+  x=x.replace(/([A-Za-z])\/(?=[A-Za-z])/g,'$1 ');
+  x=x.replace(/,\s*([.;:])/g,'$1').replace(/\s+([,.;:])/g,'$1').replace(/([.;:])[.,;:\s]+/g,'$1 ').replace(/,\s*,/g,',').replace(/\s{2,}/g,' ');
+  return x.trim();
+}
+function ttsPlain(h){
+  const d=document.createElement('textarea');
+  d.innerHTML=String(h||'').replace(/<\/(li|p|tr|h\d|div)>/gi,'. ').replace(/<\/t[dh]>/gi,', ').replace(/<br\s*\/?>/gi,'. ').replace(/<[^>]+>/g,' ');
+  return d.value.replace(/\s+/g,' ').replace(/(\s*[.,]\s*){2,}/g,'. ').trim();
+}
+function ttsChunks(t){
+  const out=[];const parts=(t.match(/(?:[^.;:!?]|[.](?=\d))+[.;:!?]*\s*/g)||[]).map(x=>x.trim());let cur='';
+  parts.forEach(p=>{if(p.length>230){(p.match(/[^,]+,?\s*/g)||[]).map(x=>x.trim()).forEach(q=>{if((cur+' '+q).length>230&&cur){out.push(cur);cur=q}else cur=(cur?cur+' ':'')+q})}
+    else if((cur+' '+p).length>230&&cur){out.push(cur);cur=p}else cur=(cur?cur+' ':'')+p});
+  if(cur)out.push(cur);return out.filter(x=>/\w/.test(x));
+}
+const ttsVoices=()=>{try{return speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang))}catch(e){return []}};
+/* Browsers do not report a voice's gender, so it is read from the voice name (Apple, Google, Microsoft and
+   common Android voice names). Unknown names go under "Other voices". */
+const TTS_M=/\b(male|daniel|arthur|aaron|alex|fred|gordon|lee|oliver|rishi|ralph|albert|reed|rocko|eddy|grandpa|junior|tom|ryan|guy|christopher|eric|thomas|george|james|william|liam|brian|matthew|justin|joey|russell|david|mark|richard|evan|andrew|davis|tony|brandon|roger|prabhat|ravi|nathan|noah|jason|steffan|elliot|ethan|alfie|connor|mitchell|duncan|wayne|ken|kenneth)\b/i;
+const TTS_F=/\b(female|samantha|karen|moira|tessa|kate|serena|martha|catherine|nicky|veena|fiona|susan|allison|ava|victoria|zoe|flo|sandy|shelley|grandma|sonia|libby|aria|jenny|michelle|emma|amy|joanna|kendra|kimberly|salli|ivy|olivia|natasha|clara|maisie|hazel|zira|heera|neerja|isla|ellie|mia|abbi|bella|hollie|sara|linda|nancy|ana|emily|molly|rosa|kalpana)\b/i;
+const ttsSex=v=>{const n=String(v&&v.name||'');if(/Google US English$/.test(n))return 'f';return TTS_M.test(n)?'m':TTS_F.test(n)?'f':''};
+const ttsScore=v=>(/en[-_]GB/i.test(v.lang)?3:/en[-_]US/i.test(v.lang)?2:1)+(/enhanced|premium|natural|neural|online/i.test(v.name)?4:0);
+function ttsBest(sex){return ttsVoices().filter(v=>ttsSex(v)===sex).sort((a,b)=>ttsScore(b)-ttsScore(a))[0]||null}
+function ttsVoice(){const vs=ttsVoices();return vs.find(v=>v.voiceURI===tts.voice)||(tts.sex&&ttsBest(tts.sex))||vs.find(v=>v.default)||vs.find(v=>/en[-_]GB/i.test(v.lang))||vs[0]||null}
+function ttsSetSex(sx){const v=ttsBest(sx);if(!v){tts.sexMiss=sx;ttsBar();return}tts.sexMiss='';tts.sex=sx;tts.voice=v.voiceURI;ttsSave();if(tts.on&&!tts.paused)ttsSpeak();else ttsBar()}
+async function ttsLock(on){try{if(on&&!tts.lock&&navigator.wakeLock)tts.lock=await navigator.wakeLock.request('screen');if(!on&&tts.lock){tts.lock.release();tts.lock=null}}catch(e){}}
+function ttsSpeak(){
+  const g=++tts.gen;try{speechSynthesis.cancel()}catch(e){}
+  const it=tts.q[tts.i];if(!it){ttsStop();return}
+  if(tts.c===0&&!tts.chunks.length){tts.chunks=ttsChunks(ttsSay(it.text));try{it.go&&it.go()}catch(e){}}
+  ttsBar();
+  if(tts.c>=tts.chunks.length){tts.i++;tts.c=0;tts.chunks=[];if(tts.i>=tts.q.length){ttsStop();return}setTimeout(()=>{if(g===tts.gen&&tts.on&&!tts.paused)ttsSpeak()},350);return}
+  const u=new SpeechSynthesisUtterance(tts.chunks[tts.c]);const v=ttsVoice();if(v){u.voice=v;u.lang=v.lang}else u.lang='en-GB';u.rate=tts.rate;
+  let started=false;u.onstart=()=>{started=true;tts.ok=true};
+  if(!tts.ok)setTimeout(()=>{if(g===tts.gen&&tts.on&&!tts.paused&&!started&&!tts.ok){tts.gen++;try{speechSynthesis.cancel()}catch(e){}ttsLock(false);ttsNoVoice('silent')}},4000);
+  u.onend=()=>{if(g!==tts.gen||!tts.on||tts.paused)return;tts.c++;ttsSpeak()};
+  u.onerror=e=>{if(g!==tts.gen||!tts.on||tts.paused)return;if(e&&(e.error==='interrupted'||e.error==='canceled'))return;tts.c++;ttsSpeak()};
+  try{speechSynthesis.speak(u)}catch(e){ttsStop()}
+}
+function ttsNoVoice(why){
+  let b=document.getElementById('ttsBar');if(!b){ttsBar();b=document.getElementById('ttsBar')}
+  tts.on=false;document.body.classList.add('tts-pad');b.hidden=false;
+  b.innerHTML=`<div class="tts-head"><p class="tts-msg"><b>Read aloud is not available here.</b> ${why==='silent'?'No voice started speaking. Check that the phone is not on silent and that an English voice is installed, then try again.':'This viewer has no built-in voice. Open the app in Safari (iPhone) or Chrome (Android) from your home-screen icon or its web address, then tap Listen.'}</p><button type="button" class="tts-x" data-tts="stop" aria-label="Close">✕</button></div>`;
+}
+function ttsStart(q,i){if(!TTS_OK){ttsNoVoice();return}if(!q.length)return;tts.q=q;tts.i=Math.max(0,i||0);tts.c=0;tts.chunks=[];tts.on=true;tts.paused=false;ttsLock(true);ttsSpeak()}
+function ttsStop(){tts.gen++;tts.on=false;tts.paused=false;try{TTS_OK&&speechSynthesis.cancel()}catch(e){}ttsLock(false);$$('.tts-on').forEach(e=>e.classList.remove('tts-on'));ttsBar()}
+function ttsPause(){if(!tts.on)return;if(tts.paused){tts.paused=false;ttsLock(true);ttsSpeak()}else{tts.paused=true;tts.gen++;try{speechSynthesis.cancel()}catch(e){}ttsLock(false);ttsBar()}}
+function ttsJump(d){if(!tts.on)return;const n=tts.i+d;if(n<0||n>=tts.q.length)return;tts.i=n;tts.c=0;tts.chunks=[];tts.paused=false;ttsSpeak()}
+function ttsBar(){
+  let b=document.getElementById('ttsBar');
+  if(!b){b=document.createElement('div');b.id='ttsBar';b.className='ttsbar';b.setAttribute('role','region');b.setAttribute('aria-label','Read aloud player');document.body.appendChild(b);
+    b.addEventListener('click',e=>{const x=e.target.closest('[data-tts]');if(!x)return;const a=x.dataset.tts;if(a==='play')ttsPause();else if(a==='prev')ttsJump(-1);else if(a==='next')ttsJump(1);else if(a==='stop')ttsStop();else if(a==='m'||a==='f')ttsSetSex(a)});
+    b.addEventListener('change',e=>{const t=e.target;if(t.id==='ttsRate'){tts.rate=+t.value}else if(t.id==='ttsVoice'){tts.voice=t.value;const v=ttsVoices().find(x=>x.voiceURI===t.value);tts.sex=v?ttsSex(v):'';tts.sexMiss=''}else return;ttsSave();if(tts.on&&!tts.paused)ttsSpeak()});}
+  document.body.classList.toggle('tts-pad',tts.on);b.hidden=!tts.on;if(!tts.on){b.innerHTML='';return}
+  const it=tts.q[tts.i]||{},rates=[0.8,0.9,1,1.1,1.25,1.5],vs=ttsVoices(),cur=ttsVoice(),cs=cur?ttsSex(cur):'';
+  b.innerHTML=`<div class="tts-head"><div class="tts-now"><span class="tts-lbl">${tts.paused?'Paused':'Reading'} · ${tts.i+1} of ${tts.q.length}</span><span class="tts-t">${esc(it.label||'')}</span></div><button type="button" class="tts-x" data-tts="stop" aria-label="Stop reading">✕</button></div>
+   <div class="tts-ctl"><button type="button" data-tts="prev" aria-label="Previous"${tts.i===0?' disabled':''}>⏮</button><button type="button" class="tts-pp" data-tts="play" aria-label="${tts.paused?'Play':'Pause'}">${tts.paused?'▶':'❚❚'}</button><button type="button" data-tts="next" aria-label="Next"${tts.i>=tts.q.length-1?' disabled':''}>⏭</button>
+   <select id="ttsRate" aria-label="Reading speed">${rates.map(r=>`<option value="${r}"${r===tts.rate?' selected':''}>${r}×</option>`).join('')}</select>
+   </div>
+   <div class="tts-ctl tts-v"><div class="seg tts-sex" role="group" aria-label="Voice type"><button type="button" data-tts="m" aria-pressed="${cs==='m'}">Male</button><button type="button" data-tts="f" aria-pressed="${cs==='f'}">Female</button></div>
+   ${vs.length>1?`<select id="ttsVoice" aria-label="Voice">${[['m','Male voices'],['f','Female voices'],['','Other voices']].map(g=>{const l=vs.filter(v=>ttsSex(v)===g[0]);return l.length?`<optgroup label="${g[1]}">${l.map(v=>`<option value="${esc(v.voiceURI)}"${cur&&cur.voiceURI===v.voiceURI?' selected':''}>${esc(v.name.replace(/\s*\(.*\)\s*$/,''))} (${esc(v.lang)})</option>`).join('')}</optgroup>`:''}).join('')}</select>`:''}</div>
+   ${tts.sexMiss?`<p class="tts-miss">No ${tts.sexMiss==='m'?'male':'female'} English voice is installed on this device. iPhone: Settings › Accessibility › Spoken Content › Voices › English, download one (e.g. ${tts.sexMiss==='m'?'Daniel or Arthur':'Kate or Serena'}). Android: choose the voice in the phone’s text-to-speech settings.</p>`:''}`;
+}
+if(TTS_OK){try{speechSynthesis.addEventListener('voiceschanged',()=>{if(tts.on)ttsBar()})}catch(e){}}
+function ttsShow(el){$$('.tts-on').forEach(e=>e.classList.remove('tts-on'));if(!el)return;el.classList.add('tts-on');
+  const nv=document.querySelector('.nav'),off=nv?nv.getBoundingClientRect().bottom:0;window.scrollTo({top:window.scrollY+el.getBoundingClientRect().top-off-8,behavior:'smooth'})}
+function ttsKtText(gi,ti){const t=KT[gi].topics[ti];
+  const head=gi===13?`Question ${ti+1}. ${t.t} Answer:`:`Topic ${gi+1}.${ti+1}. ${t.t}.`;
+  return [head,...t.pts.map(ttsPlain),...t.more.map(m=>m[0]+'. '+ttsPlain(m[1]))].map(x=>x.replace(/[.\s]*$/,'.')).join(' ')}
+function ttsKt(from,g){
+  const q=[];let lastG=-1,start=0;
+  KT.forEach((gr,gi)=>gr.topics.forEach((t,ti)=>{const k='kt.'+gi+'.'+ti,d=document.querySelector(`details[data-seckey="${k}"]`);
+    if(d&&d.hidden)return;if(g!=null&&gi!==+g)return;
+    if(k===from)start=q.length;
+    const intro=gi!==lastG?`Group ${gi+1}. ${gr.t}. `:'';lastG=gi;
+    q.push({label:(gi+1)+'.'+(ti+1)+' '+t.t,text:intro+ttsKtText(gi,ti),go:()=>{const e=document.querySelector(`details[data-seckey="${k}"]`);if(e){e.open=true;state.open[k]=true;ttsShow(e)}}})}));
+  if(from&&!q.some((_,j)=>j===start))start=0;
+  ttsStart(q,start);
+}
+function ttsAf(){
+  const q=[{label:'PM — short brief',text:'Approach briefing flow'+(afType==='all'?'':', '+AF_TYPES.find(x=>x[0]===afType)[1]+' approach')+'. PM short brief, first. '+AF_PM.map((x,j)=>(j+1)+', '+x+'.').join(' '),go:()=>ttsShow(document.querySelector('.af-pm'))}];
+  AF_STEPS.forEach((st,i)=>{const lines=[];st[3].forEach(g=>{const it=g[1].filter(x=>afShow(x[1]));if(!it.length)return;if(g[0]&&afType==='all')lines.push(g[0]+':');it.forEach(x=>lines.push(x[0]))});
+    if(!lines.length)return;
+    q.push({label:'Step '+st[0]+' · '+st[1],text:`Step ${st[0]}. ${st[1]}. `+lines.map(x=>x.replace(/[.\s]*$/,'.').replace(/:\.$/,':')).join(' '),go:()=>{afSet(i);ttsShow(document.querySelector('.af-stage'))}})});
+  ttsStart(q,0);
 }
 function brfHead(){
   const b=(m,l)=>`<button type="button" data-act="brf" data-m="${m}" aria-pressed="${brfMode===m}">${l}</button>`;
@@ -2411,6 +2553,8 @@ document.addEventListener('click',e=>{
   if(a==='af-type'){afType=b.dataset.t;try{localStorage.setItem(AFKEY,afType)}catch(_){}render();return}
   if(a==='go-brf'){setBrf(b.dataset.m);state.tab='brf';render();save();try{window.scrollTo({top:0})}catch(_){}return}
   if(a==='kt-go'){const k=b.dataset.k;if(ktQuery){ktQuery='';const i=$('#ktSearch');if(i)i.value='';ktFilter('')}const d=document.querySelector('details[data-seckey="'+k+'"]');if(d){d.hidden=false;d.open=true;state.open[k]=true;save();const nv=document.querySelector('.nav'),off=nv?nv.getBoundingClientRect().bottom:0;window.scrollTo({top:window.scrollY+d.getBoundingClientRect().top-off-8,behavior:'smooth'});const sm=d.querySelector('summary');if(sm)sm.focus({preventScroll:true})}return}
+  if(a==='tts-kt'){ttsKt(b.dataset.from||null,b.dataset.g!=null?b.dataset.g:null);return}
+  if(a==='tts-af'){ttsAf();return}
   if(a==='kt-all'){const o=b.dataset.open==='1';$$('details.kt-sec').forEach(d=>{if(!d.hidden){d.open=o;state.open[d.dataset.seckey]=o}});save();return}
   if(a==='pof-all'){const o=b.dataset.open==='1';$$('details[data-seckey^="pof."]').forEach(d=>{d.open=o;state.open[d.dataset.seckey]=o});save();return}
   if(a==='wx-dl'){wxDownload(b.dataset.wx);return}
