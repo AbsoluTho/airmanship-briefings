@@ -550,7 +550,7 @@ table.kt-t th{background:var(--sunk);font:600 12px var(--f-display);letter-spaci
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="cloudbox" id="cloudBox"></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.54.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.54.1.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -2470,12 +2470,12 @@ function firstFixAirway(route,dep){
   const nx=toks.slice(n+1).find(t=>t!=='DCT');
   return {sid:fix,awy:nx&&isAwy(nx)?nx:null};
 }
-/* Fills SID and Airway from the route. A value guessed from the route (src 'route') follows the route as it
-   changes; anything the pilot typed (or copied from the real clearance) is never overwritten. */
+/* Fills SID and Airway from the route. Only what the pilot typed into the box (src 'typed') is kept; any other
+   value (a route guess, or one left by an older version of the app) follows the route as it changes. */
 function applyClrSuggest(s){
   const r=firstFixAirway(s.v.route,String(s.v.dep_icao||'').toUpperCase());
   [['clr_sid',r.sid],['clr_awy',r.awy]].forEach(([k,x])=>{
-    const mine=s.v[k]&&s.src[k]!=='route';if(mine)return;
+    const mine=s.v[k]&&s.src[k]==='typed';if(mine)return;
     if(x){s.v[k]=x;s.src[k]='route'}else if(s.src[k]==='route'){delete s.v[k];delete s.src[k]}});
 }
 function applyParsed(idx,p,text){
@@ -2562,6 +2562,7 @@ main.addEventListener('input',e=>{
   if((k=t.dataset.v)){
     s.v[k]=UP.has(k)?t.value.toUpperCase():t.value;delete s.src[k];
     if(k==='etd'||k==='eta'||k==='date'||k==='alt_time')renderNt();
+    if(k==='clr_sid'||k==='clr_awy'){if(t.value.trim())s.src[k]='typed';else delete s.src[k]}
     if(k==='route'||k==='dep_icao'){applyClrSuggest(s);['clr_sid','clr_awy'].forEach(x=>{const el=document.getElementById('v_'+x);if(el&&document.activeElement!==el)el.value=s.v[x]||''})}
     const wm=k.match(/^wx_(dep|arr|alt)_metar$/);
     if(wm){
@@ -2581,6 +2582,7 @@ main.addEventListener('change',e=>{
   else if(t.dataset.imp){handleFiles(t.files);t.value=''}
   else if((k=t.dataset.v)){
     s.v[k]=t.value;delete s.src[k];
+    if((k==='clr_sid'||k==='clr_awy')&&t.value.trim())s.src[k]='typed';
     if(k==='oeb_sel'){
       const o=OEBS.filter(x=>x.n===t.value)[0];
       if(o){s.v.oeb=o.c;s.v.oeb_n='OEB '+o.n+' — '+o.t;s.v.oeb_ecam=o.e}
