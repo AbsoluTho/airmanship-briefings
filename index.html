@@ -576,7 +576,7 @@ table.kt-t th{background:var(--sunk);font:600 12px var(--f-display);letter-spaci
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="cloudbox" id="cloudBox"></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.58.0-draft.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.58.0-draft2.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -2178,7 +2178,7 @@ const recKey=t=>{let h=0x811c9dc5;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i)
 const recItem=it=>{if(!it)return '';if(it.rk===undefined)it.rk=recKey(ttsChunks(ttsSay(it.text)).join(' '));return REC_SET.has(it.rk)?it.rk:''};
 const recVoice=()=>REC_V[(tts.sex||'m')+(tts.acc||'GB')]||REC_V.mGB;
 function recNext(){const g=recG;if(g!==tts.gen||!tts.on||tts.paused)return;recCur='';tts.i++;tts.c=0;tts.chunks=[];if(tts.i>=tts.q.length){ttsStop();return}setTimeout(()=>{if(g===tts.gen&&tts.on&&!tts.paused)ttsSpeak()},350)}
-function recFail(k){const g=recG;if(g!==tts.gen||!tts.on)return;REC_SET.delete(k);recCur='';ttsSpeak()}
+function recFail(k,why){const g=recG;if(g!==tts.gen||!tts.on)return;tts.recErr=recVoice()+'/'+k+'.mp3 – '+(why&&(why.message||why.name)||'error');REC_SET.delete(k);recCur='';ttsSpeak()}
 function recUnlock(){if(!recA){recA=new Audio();recA.preload='auto';recA.addEventListener('ended',()=>{if(recCur)recNext()})}
   try{recCur='';recA.src=REC_SIL;const p=recA.play();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
 function recRate(){try{recA.defaultPlaybackRate=tts.rate;recA.playbackRate=tts.rate;recA.preservesPitch=true;recA.webkitPreservesPitch=true}catch(e){}}
@@ -2187,13 +2187,13 @@ function recPlay(k,g){
   if(!recA)recUnlock();recG=g;const id=recVoice()+'/'+k;
   if(recCur===id&&!recA.ended&&recA.currentTime>0){recRate();const p=recA.play();if(p&&p.catch)p.catch(()=>{});return}
   recCur='';try{recA.pause()}catch(e){}
-  fetch(id+'.mp3').then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>{
+  fetch(id+'.mp3').then(r=>{if(!r.ok)throw new Error('not found on the server (HTTP '+r.status+')');if(!/audio|mpeg|octet/i.test(r.headers.get('content-type')||'audio'))throw new Error('server sent '+r.headers.get('content-type')+' instead of audio');return r.blob()}).then(b=>{
     if(g!==tts.gen||!tts.on||tts.paused)return;
     if(recUrl)URL.revokeObjectURL(recUrl);recUrl=URL.createObjectURL(b);recCur=id;recA.src=recUrl;recRate();
-    const p=recA.play();if(p&&p.catch)p.catch(()=>recFail(k))}).catch(()=>recFail(k));
+    const p=recA.play();if(p&&p.catch)p.catch(e=>recFail(k,e))}).catch(e=>recFail(k,e));
 }
 function recHalt(){recCur='';try{recA&&recA.pause()}catch(e){}}
-function ttsStart(q,i){const hasRec=tts.rec!==false&&q.some(x=>recItem(x));if(!TTS_OK&&!hasRec){ttsNoVoice();return}if(!q.length)return;if(hasRec)recUnlock();tts.q=q;tts.i=Math.max(0,i||0);tts.c=0;tts.chunks=[];tts.on=true;tts.paused=false;ttsLock(true);ttsSpeak();if(hasRec)setTimeout(recPrefetch,1500)}
+function ttsStart(q,i){const hasRec=tts.rec!==false&&q.some(x=>recItem(x));if(!TTS_OK&&!hasRec){ttsNoVoice();return}if(!q.length)return;tts.recErr='';if(hasRec)recUnlock();tts.q=q;tts.i=Math.max(0,i||0);tts.c=0;tts.chunks=[];tts.on=true;tts.paused=false;ttsLock(true);ttsSpeak();if(hasRec)setTimeout(recPrefetch,1500)}
 function ttsStop(){tts.gen++;recHalt();tts.on=false;tts.paused=false;try{TTS_OK&&speechSynthesis.cancel()}catch(e){}ttsLock(false);$$('.tts-on').forEach(e=>e.classList.remove('tts-on'));ttsBar()}
 function ttsPause(){if(!tts.on)return;if(tts.paused){tts.paused=false;ttsLock(true);ttsSpeak()}else{tts.paused=true;tts.gen++;try{recA&&recA.pause()}catch(e){}try{speechSynthesis.cancel()}catch(e){}ttsLock(false);ttsBar()}}
 function ttsJump(d){if(!tts.on)return;const n=tts.i+d;if(n<0||n>=tts.q.length)return;tts.i=n;tts.c=0;tts.chunks=[];tts.paused=false;recHalt();ttsSpeak()}
@@ -2209,7 +2209,7 @@ function ttsBar(){
    <select id="ttsRate" aria-label="Reading speed">${rates.map(r=>`<option value="${r}"${r===tts.rate?' selected':''}>${r}×</option>`).join('')}</select>
    </div>
    <div class="tts-ctl tts-v"><div class="seg tts-sex" role="group" aria-label="Accent"><button type="button" data-tts="GB" aria-pressed="${tts.recNow?(tts.acc||'GB')==='GB':!tts.sexMiss&&ca==='GB'}">UK</button><button type="button" data-tts="US" aria-pressed="${tts.recNow?tts.acc==='US':!tts.sexMiss&&ca==='US'}">US</button></div><div class="seg tts-sex" role="group" aria-label="Voice type"><button type="button" data-tts="m" aria-pressed="${tts.recNow?(tts.sex||'m')==='m':!tts.sexMiss&&cs==='m'}">Male</button><button type="button" data-tts="f" aria-pressed="${tts.recNow?tts.sex==='f':!tts.sexMiss&&cs==='f'}">Female</button></div>
-   ${tts.recNow?`<span class="tts-rec">Natural recorded voice</span><button type="button" class="chip" data-tts="rec">Use device voice</button>`:(tts.rec===false&&recItem(it))?`<button type="button" class="chip" data-tts="rec">Use natural voice</button>`:''}${tts.recNow?'':vs.length>1?`<select id="ttsVoice" aria-label="Voice">${[['mGB','British male'],['fGB','British female'],['mUS','American male'],['fUS','American female'],['','Other voices']].map(g=>{const l=vs.filter(v=>g[0]?(ttsSex(v)+ttsAcc(v))===g[0]:!['mGB','fGB','mUS','fUS'].includes(ttsSex(v)+ttsAcc(v)));return l.length?`<optgroup label="${g[1]}">${l.map(v=>`<option value="${esc(v.voiceURI)}"${cur&&cur.voiceURI===v.voiceURI?' selected':''}>${esc(v.name.replace(/\s*\(.*\)\s*$/,''))} (${esc(v.lang)})</option>`).join('')}</optgroup>`:''}).join('')}</select>`:''}</div>
+   ${tts.recErr&&!tts.recNow?`<p class="tts-miss">Recorded voice not available: ${esc(tts.recErr)}. Using the device voice.</p>`:''}${tts.recNow?`<span class="tts-rec">Natural recorded voice</span><button type="button" class="chip" data-tts="rec">Use device voice</button>`:(tts.rec===false&&recItem(it))?`<button type="button" class="chip" data-tts="rec">Use natural voice</button>`:''}${tts.recNow?'':vs.length>1?`<select id="ttsVoice" aria-label="Voice">${[['mGB','British male'],['fGB','British female'],['mUS','American male'],['fUS','American female'],['','Other voices']].map(g=>{const l=vs.filter(v=>g[0]?(ttsSex(v)+ttsAcc(v))===g[0]:!['mGB','fGB','mUS','fUS'].includes(ttsSex(v)+ttsAcc(v)));return l.length?`<optgroup label="${g[1]}">${l.map(v=>`<option value="${esc(v.voiceURI)}"${cur&&cur.voiceURI===v.voiceURI?' selected':''}>${esc(v.name.replace(/\s*\(.*\)\s*$/,''))} (${esc(v.lang)})</option>`).join('')}</optgroup>`:''}).join('')}</select>`:''}</div>
    ${(()=>{const miss=tts.sexMiss,apple=cur&&/^com\.apple/i.test(cur.voiceURI||'')&&!ttsGood(cur);if(tts.recNow||(!miss&&!apple))return '';
      const k=miss||(cs+ca),who={mGB:'British male',fGB:'British female',mUS:'American male',fUS:'American female'}[k]||'English',ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
      return `<p class="tts-miss">${miss?'No '+who+' voice is available to the app on this device.':'This is the built-in '+who+' voice.'} ${ios?'On iPhone and iPad, Apple lets web apps use only the voices built into iOS. Voices downloaded in Settings (Evan, Nathan, Tom, Ava …) are not offered to web apps, so they cannot be picked here.':'More voices: on Android, the phone’s text-to-speech settings; on a computer, Chrome or Edge.'}</p>`})()}`;
