@@ -1,6 +1,6 @@
 # Airmanship Briefings
 
-A flight preparation aid built on Airbus FCTM concepts. Import the Mission Plus OFP and NOTAM PDFs, work through the Dispatch Briefing in form order, check tankering and underload, run the cabin crew, departure, arrival and jumpseat briefings and the approach briefing flow, keep the phases of flight and normal checklists at hand, and study the misc key topics with the GACA oral questions, with a read-aloud mode that uses the phone’s own voices. Up to four sectors.
+A flight preparation aid built on Airbus FCTM concepts. Import the Mission Plus OFP and NOTAM PDFs, work through the Dispatch Briefing in form order, check tankering and underload, run the cabin crew, departure, arrival and jumpseat briefings and the approach briefing flow, keep the phases of flight and normal checklists at hand, and study the misc key topics with the GACA oral questions, with a read-aloud mode (natural recorded voices for the approach briefing, the phone’s own voices elsewhere). Up to four sectors.
 
 - Works in any modern browser and installs as an app on iPhone, iPad and Android.
 - Works offline after the first visit.
@@ -17,4 +17,6 @@ This is an unofficial preparation aid. It does not replace the FCOM, FCTM, the o
 
 Flight deck image in the Approach Flow: FlyByWire Simulations, A32NX documentation (docs.flybywiresim.com).
 
-Version 1.57.1
+Recorded voices in the Approach Flow and the Typical ILS briefing: Kokoro-82M (open-source voice model, Apache 2.0 licence).
+
+Version 1.58.0-draft

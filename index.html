@@ -408,6 +408,7 @@ body.sumfull,body.clopen{overflow:hidden}
 .pt-both.pt-xc .pt-x{flex:1;min-width:0}
 .tts-sex{flex:0 0 auto;min-height:44px}
 .tts-v{flex-wrap:wrap!important}
+.tts-rec{font-size:13px;color:var(--ink2);align-self:center}
 .tts-sex button{min-height:42px;padding:0 12px;font-size:13px;border:0;border-right:1px solid var(--line);border-radius:0;min-width:0}
 .tts-sex button:last-child{border-right:0}
 .tts-sex button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
@@ -575,7 +576,7 @@ table.kt-t th{background:var(--sunk);font:600 12px var(--f-display);letter-spaci
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="cloudbox" id="cloudBox"></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.57.1.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.58.0-draft.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -2090,8 +2091,8 @@ function afSet(i){
 const TTSKEY=BRFKEY.replace('brfmode','tts');
 const TTS_OK=('speechSynthesis' in window)&&('SpeechSynthesisUtterance' in window);
 let tts={q:[],i:0,c:0,chunks:[],on:false,paused:false,gen:0,rate:1,voice:'',sex:'',acc:'GB',lock:null};
-try{const o=JSON.parse(localStorage.getItem(TTSKEY)||'{}');if(o.rate)tts.rate=+o.rate;if(o.voice)tts.voice=o.voice;if(o.sex)tts.sex=o.sex;if(o.acc)tts.acc=o.acc}catch(e){}
-const ttsSave=()=>{try{localStorage.setItem(TTSKEY,JSON.stringify({rate:tts.rate,voice:tts.voice,sex:tts.sex,acc:tts.acc}))}catch(e){}};
+try{const o=JSON.parse(localStorage.getItem(TTSKEY)||'{}');if(o.rate)tts.rate=+o.rate;if(o.voice)tts.voice=o.voice;if(o.sex)tts.sex=o.sex;if(o.acc)tts.acc=o.acc;if(o.rec===false)tts.rec=false}catch(e){}
+const ttsSave=()=>{try{localStorage.setItem(TTSKEY,JSON.stringify({rate:tts.rate,voice:tts.voice,sex:tts.sex,acc:tts.acc,rec:tts.rec!==false}))}catch(e){}};
 const DIG=['zero','one','two','three','four','five','six','seven','eight','nine'];
 const SPELL='ATC RVR MDA MDH DA DH DH DME MSA FCU FMA ND PFD MCDU EFB OFP FDP CDFA NPA ILS VOR RNP SRS PF PM SIC PIC ETD ETA ZFW MLW MTOW IOCC SCCM VLS VMO MMO OET LVTO LVO LVP IMC VMC AGL AMSL MORA MEA MCT EGT APU GPU PCA PWS GPS GNSS PBN OEB ATL IRS ADR DMC FWC CMC MCC FDO ATZ FIS CTA TMA CTR SSR RVSM ASE TVE GRF RCR OAT TAT SD LMC MEL CDL LDA TDZ TDZE RA EGPWS MSN QNH QFE TA TL SID FMS FMGS ECP STS TOC LS FO CM IR MAP FAF IAF VDP PAPI AAL DOM TOM LDM PBE ISIS TEM AOA FPV FPA EOSID GW FOB MEL SOP RTO OEI ETP VFR IFR ACARS VHF HF UTC NOTAM NDB AIP CRM ATPL PIC MOR LRBL WCHR WCHS WCHC UM YP SVAN CVR FDR ADS IRS MCDU EEC OPT REC FOR OM'.split(' ');
 const SAYW={'A/THR':'auto thrust','G/S':'glide slope','W/S':'windshear','T/D':'top of descent','E/WD':'E W D','F-PLN':'flight plan','OM-A':'O M A','OM-C':'O M C','FCOM':'F com','FCTM':'F C T M','eQRH':'E Q R H','QRH':'Q R H','GACAR':'G A C A R','GACA':'G A C A','AP':'autopilot','FD':'flight director','FDs':'flight directors','APs':'autopilots','RWYCC':'runway condition code','RWY':'runway','TWY':'taxiway','PAX':'passengers','FINAL APP':'final approach','APPR':'approach','APP':'approach','TRK':'track','HDG':'heading','SPD':'speed','OP DES':'open descent','OP CLB':'open climb','DES':'descent','CLB':'climb','ALT CSTR':'altitude constraint','ALT CST':'altitude constraint','STD':'standard','TOD':'top of descent','MED':'medium','LO':'low','CONF':'config','REV':'reverse','FLX':'flex','THR':'thrust','LOC':'localizer','RNAV':'R nav','VAPP':'V app','VREF':'V ref','V1':'V one','V2':'V two','VR':'V R','A320':'A three twenty','A321':'A three twenty-one','A319':'A three nineteen','CEO':'C E O','NEO':'neo','CAT I':'category one','CAT II':'category two','CAT III':'category three','e.g.':'for example','i.e.':'that is','vs':'versus','approx.':'approximately','SIGWX':'sig weather','NAV':'nav','VIS':'visibility','TCAS':'tee cas','ECAM':'ee cam','ISA':'I S A','FOR-DEC':'for dec','N1':'N one','N2':'N two','AUTO/BRK':'autobrake','BRK':'brake','SIGMET':'sigmet','KSA':'K S A','MAYDAY':'mayday','PAN PAN':'pan pan'};
@@ -2141,14 +2142,18 @@ const ttsGood=v=>/enhanced|premium|natural|neural|online|google/i.test((v.name||
 const ttsScore=v=>(ttsGood(v)?6:0)+(/premium/i.test((v.name||'')+(v.voiceURI||''))?2:0)-(/compact/i.test(v.voiceURI||'')?1:0);
 function ttsBest(sex,acc){return ttsVoices().filter(v=>(!sex||ttsSex(v)===sex)&&(!acc||ttsAcc(v)===acc)).sort((a,b)=>ttsScore(b)-ttsScore(a))[0]||null}
 function ttsVoice(){const vs=ttsVoices();return vs.find(v=>v.voiceURI===tts.voice)||ttsBest(tts.sex,tts.acc)||ttsBest('',tts.acc)||vs.find(v=>v.default)||vs.find(v=>/en[-_]GB/i.test(v.lang))||vs[0]||null}
-function ttsSetSex(sx,ac){ac=ac||tts.acc;const v=ttsBest(sx,ac);tts.sex=sx;tts.acc=ac;if(!v){tts.sexMiss=sx+ac;ttsSave();ttsBar();return}tts.sexMiss='';tts.voice=v.voiceURI;ttsSave();if(tts.on&&!tts.paused)ttsSpeak();else ttsBar()}
+function ttsSetSex(sx,ac){ac=ac||tts.acc;const v=ttsBest(sx,ac);tts.sex=sx;tts.acc=ac;if(!v){tts.sexMiss=sx+ac;ttsSave();if(tts.recNow&&tts.on&&!tts.paused)ttsSpeak();else ttsBar();return}tts.sexMiss='';tts.voice=v.voiceURI;ttsSave();if(tts.on&&!tts.paused)ttsSpeak();else ttsBar()}
 async function ttsLock(on){try{if(on&&!tts.lock&&navigator.wakeLock)tts.lock=await navigator.wakeLock.request('screen');if(!on&&tts.lock){tts.lock.release();tts.lock=null}}catch(e){}}
 function ttsSpeak(){
   const g=++tts.gen;try{speechSynthesis.cancel()}catch(e){}
   const it=tts.q[tts.i];if(!it){ttsStop();return}
   if(tts.c===0&&!tts.chunks.length){tts.chunks=ttsChunks(ttsSay(it.text));try{it.go&&it.go()}catch(e){}}
+  const rk=tts.rec!==false?recItem(it):'';tts.recNow=!!rk;
   ttsBar();
+  if(rk){recPlay(rk,g);return}
+  if(recA&&recCur)recHalt();
   if(tts.c>=tts.chunks.length){tts.i++;tts.c=0;tts.chunks=[];if(tts.i>=tts.q.length){ttsStop();return}setTimeout(()=>{if(g===tts.gen&&tts.on&&!tts.paused)ttsSpeak()},350);return}
+  if(!TTS_OK){tts.i++;tts.c=0;tts.chunks=[];if(tts.i>=tts.q.length){ttsStop();return}ttsSpeak();return}
   const u=new SpeechSynthesisUtterance(tts.chunks[tts.c]);const v=ttsVoice();if(v){u.voice=v;u.lang=v.lang}else u.lang='en-GB';u.rate=tts.rate;
   let started=false;u.onstart=()=>{started=true;tts.ok=true};
   if(!tts.ok)setTimeout(()=>{if(g===tts.gen&&tts.on&&!tts.paused&&!started&&!tts.ok){tts.gen++;try{speechSynthesis.cancel()}catch(e){}ttsLock(false);ttsNoVoice('silent')}},4000);
@@ -2161,14 +2166,41 @@ function ttsNoVoice(why){
   tts.on=false;document.body.classList.add('tts-pad');b.hidden=false;
   b.innerHTML=`<div class="tts-head"><p class="tts-msg"><b>Read aloud is not available here.</b> ${why==='silent'?'No voice started speaking. Check that the phone is not on silent and that an English voice is installed, then try again.':'This viewer has no built-in voice. Open the app in Safari (iPhone) or Chrome (Android) from your home-screen icon or its web address, then tap Listen.'}</p><button type="button" class="tts-x" data-tts="stop" aria-label="Close">✕</button></div>`;
 }
-function ttsStart(q,i){if(!TTS_OK){ttsNoVoice();return}if(!q.length)return;tts.q=q;tts.i=Math.max(0,i||0);tts.c=0;tts.chunks=[];tts.on=true;tts.paused=false;ttsLock(true);ttsSpeak()}
-function ttsStop(){tts.gen++;tts.on=false;tts.paused=false;try{TTS_OK&&speechSynthesis.cancel()}catch(e){}ttsLock(false);$$('.tts-on').forEach(e=>e.classList.remove('tts-on'));ttsBar()}
-function ttsPause(){if(!tts.on)return;if(tts.paused){tts.paused=false;ttsLock(true);ttsSpeak()}else{tts.paused=true;tts.gen++;try{speechSynthesis.cancel()}catch(e){}ttsLock(false);ttsBar()}}
-function ttsJump(d){if(!tts.on)return;const n=tts.i+d;if(n<0||n>=tts.q.length)return;tts.i=n;tts.c=0;tts.chunks=[];tts.paused=false;ttsSpeak()}
+/* ---------- Recorded natural voices (Approach Flow and Typical ILS briefing) ----------
+   Recorded in advance with Kokoro-82M, an open-source voice model (Apache 2.0). Each line is stored as
+   audio-uk|audio-us/male|female/<key>.mp3 (UK: Kokoro George and Emma; US: Michael and Heart), where key is a hash of the exact text that would be spoken, so a line whose text changes
+   simply falls back to the device voice. Files are fetched as blobs (cached by the service worker, so they work
+   offline after the first play). iOS only lets audio start from a tap, so the player is unlocked with a short
+   silence on the Listen tap and then reused for every line. */
+const REC_V={mGB:'audio-uk/male',fGB:'audio-uk/female',mUS:'audio-us/male',fUS:'audio-us/female'},REC_SET=new Set(["095b4d28", "0b9e6e86", "12ad197a", "2829ee47", "28d9b9d9", "311f2280", "3892c8e5", "391dad87", "39c9104d", "3a2e1e2a", "3bb680cb", "416f0b82", "45d98566", "4653fb20", "4a17d2e5", "5b4d521c", "636d7033", "6d65fc5f", "788403b4", "7c71b497", "7e1893b8", "8d62c8ef", "8f42d9b2", "8f9c6b97", "90fcc4c3", "a1f57542", "a7d7800c", "a850ce59", "b02aabd5", "b6c213b5", "bd1304f5", "bf160ffe", "c290ab3a", "c6b8596a", "d22e357c", "d4a25fb5", "d503bc09", "df58ac0d", "e2364377", "e4fbe1d6", "ed9e5287"]),REC_SIL='data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjE2LjEwMAAAAAAAAAAAAAAA//OEwAAAAAAAAAAAAEluZm8AAAAPAAAABwAAA2AAVVVVVVVVVVVVVVVVVVVxcXFxcXFxcXFxcXFxcY6Ojo6Ojo6Ojo6Ojo6Oqqqqqqqqqqqqqqqqqqqqx8fHx8fHx8fHx8fHx8fj4+Pj4+Pj4+Pj4+Pj4///////////////////AAAAAExhdmM2MC4zMQAAAAAAAAAAAAAAACQEIAAAAAAAAANgmVBi7QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//NExAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMu//NExFMAAANIAAAAADEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMu//NExKYAAANIAAAAADEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMu//NExKwAAANIAAAAADEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMu//NExKwAAANIAAAAADEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NExKwAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NExKwAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
+let recA=null,recUrl='',recCur='',recG=0;
+const recKey=t=>{let h=0x811c9dc5;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return ('0000000'+h.toString(16)).slice(-8)};
+const recItem=it=>{if(!it)return '';if(it.rk===undefined)it.rk=recKey(ttsChunks(ttsSay(it.text)).join(' '));return REC_SET.has(it.rk)?it.rk:''};
+const recVoice=()=>REC_V[(tts.sex||'m')+(tts.acc||'GB')]||REC_V.mGB;
+function recNext(){const g=recG;if(g!==tts.gen||!tts.on||tts.paused)return;recCur='';tts.i++;tts.c=0;tts.chunks=[];if(tts.i>=tts.q.length){ttsStop();return}setTimeout(()=>{if(g===tts.gen&&tts.on&&!tts.paused)ttsSpeak()},350)}
+function recFail(k){const g=recG;if(g!==tts.gen||!tts.on)return;REC_SET.delete(k);recCur='';ttsSpeak()}
+function recUnlock(){if(!recA){recA=new Audio();recA.preload='auto';recA.addEventListener('ended',()=>{if(recCur)recNext()})}
+  try{recCur='';recA.src=REC_SIL;const p=recA.play();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
+function recRate(){try{recA.defaultPlaybackRate=tts.rate;recA.playbackRate=tts.rate;recA.preservesPitch=true;recA.webkitPreservesPitch=true}catch(e){}}
+function recPrefetch(){const v=recVoice();tts.q.forEach(it=>{const k=recItem(it);if(k)fetch(v+'/'+k+'.mp3').catch(()=>{})})}
+function recPlay(k,g){
+  if(!recA)recUnlock();recG=g;const id=recVoice()+'/'+k;
+  if(recCur===id&&!recA.ended&&recA.currentTime>0){recRate();const p=recA.play();if(p&&p.catch)p.catch(()=>{});return}
+  recCur='';try{recA.pause()}catch(e){}
+  fetch(id+'.mp3').then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>{
+    if(g!==tts.gen||!tts.on||tts.paused)return;
+    if(recUrl)URL.revokeObjectURL(recUrl);recUrl=URL.createObjectURL(b);recCur=id;recA.src=recUrl;recRate();
+    const p=recA.play();if(p&&p.catch)p.catch(()=>recFail(k))}).catch(()=>recFail(k));
+}
+function recHalt(){recCur='';try{recA&&recA.pause()}catch(e){}}
+function ttsStart(q,i){const hasRec=tts.rec!==false&&q.some(x=>recItem(x));if(!TTS_OK&&!hasRec){ttsNoVoice();return}if(!q.length)return;if(hasRec)recUnlock();tts.q=q;tts.i=Math.max(0,i||0);tts.c=0;tts.chunks=[];tts.on=true;tts.paused=false;ttsLock(true);ttsSpeak();if(hasRec)setTimeout(recPrefetch,1500)}
+function ttsStop(){tts.gen++;recHalt();tts.on=false;tts.paused=false;try{TTS_OK&&speechSynthesis.cancel()}catch(e){}ttsLock(false);$$('.tts-on').forEach(e=>e.classList.remove('tts-on'));ttsBar()}
+function ttsPause(){if(!tts.on)return;if(tts.paused){tts.paused=false;ttsLock(true);ttsSpeak()}else{tts.paused=true;tts.gen++;try{recA&&recA.pause()}catch(e){}try{speechSynthesis.cancel()}catch(e){}ttsLock(false);ttsBar()}}
+function ttsJump(d){if(!tts.on)return;const n=tts.i+d;if(n<0||n>=tts.q.length)return;tts.i=n;tts.c=0;tts.chunks=[];tts.paused=false;recHalt();ttsSpeak()}
 function ttsBar(){
   let b=document.getElementById('ttsBar');
   if(!b){b=document.createElement('div');b.id='ttsBar';b.className='ttsbar';b.setAttribute('role','region');b.setAttribute('aria-label','Read aloud player');document.body.appendChild(b);
-    b.addEventListener('click',e=>{const x=e.target.closest('[data-tts]');if(!x)return;const a=x.dataset.tts;if(a==='play')ttsPause();else if(a==='prev')ttsJump(-1);else if(a==='next')ttsJump(1);else if(a==='stop')ttsStop();else if(a==='m'||a==='f')ttsSetSex(a,tts.acc);else if(a==='GB'||a==='US')ttsSetSex(tts.sex||'m',a)});
+    b.addEventListener('click',e=>{const x=e.target.closest('[data-tts]');if(!x)return;const a=x.dataset.tts;if(a==='play')ttsPause();else if(a==='prev')ttsJump(-1);else if(a==='next')ttsJump(1);else if(a==='stop')ttsStop();else if(a==='m'||a==='f')ttsSetSex(a,tts.acc);else if(a==='GB'||a==='US')ttsSetSex(tts.sex||'m',a);else if(a==='rec'){tts.rec=tts.rec===false;ttsSave();if(tts.on&&!tts.paused)ttsSpeak();else ttsBar()}});
     b.addEventListener('change',e=>{const t=e.target;if(t.id==='ttsRate'){tts.rate=+t.value}else if(t.id==='ttsVoice'){tts.voice=t.value;const v=ttsVoices().find(x=>x.voiceURI===t.value);tts.sex=v?ttsSex(v):'';if(v&&ttsAcc(v))tts.acc=ttsAcc(v);tts.sexMiss=''}else return;ttsSave();if(tts.on&&!tts.paused)ttsSpeak()});}
   document.body.classList.toggle('tts-pad',tts.on);b.hidden=!tts.on;if(!tts.on){b.innerHTML='';return}
   const it=tts.q[tts.i]||{},rates=[0.8,0.9,1,1.1,1.25,1.5],vs=ttsVoices(),cur=ttsVoice(),cs=cur?ttsSex(cur):'',ca=cur?ttsAcc(cur):tts.acc;
@@ -2176,9 +2208,9 @@ function ttsBar(){
    <div class="tts-ctl"><button type="button" data-tts="prev" aria-label="Previous"${tts.i===0?' disabled':''}>⏮</button><button type="button" class="tts-pp" data-tts="play" aria-label="${tts.paused?'Play':'Pause'}">${tts.paused?'▶':'❚❚'}</button><button type="button" data-tts="next" aria-label="Next"${tts.i>=tts.q.length-1?' disabled':''}>⏭</button>
    <select id="ttsRate" aria-label="Reading speed">${rates.map(r=>`<option value="${r}"${r===tts.rate?' selected':''}>${r}×</option>`).join('')}</select>
    </div>
-   <div class="tts-ctl tts-v"><div class="seg tts-sex" role="group" aria-label="Accent"><button type="button" data-tts="GB" aria-pressed="${!tts.sexMiss&&ca==='GB'}">UK</button><button type="button" data-tts="US" aria-pressed="${!tts.sexMiss&&ca==='US'}">US</button></div><div class="seg tts-sex" role="group" aria-label="Voice type"><button type="button" data-tts="m" aria-pressed="${!tts.sexMiss&&cs==='m'}">Male</button><button type="button" data-tts="f" aria-pressed="${!tts.sexMiss&&cs==='f'}">Female</button></div>
-   ${vs.length>1?`<select id="ttsVoice" aria-label="Voice">${[['mGB','British male'],['fGB','British female'],['mUS','American male'],['fUS','American female'],['','Other voices']].map(g=>{const l=vs.filter(v=>g[0]?(ttsSex(v)+ttsAcc(v))===g[0]:!['mGB','fGB','mUS','fUS'].includes(ttsSex(v)+ttsAcc(v)));return l.length?`<optgroup label="${g[1]}">${l.map(v=>`<option value="${esc(v.voiceURI)}"${cur&&cur.voiceURI===v.voiceURI?' selected':''}>${esc(v.name.replace(/\s*\(.*\)\s*$/,''))} (${esc(v.lang)})</option>`).join('')}</optgroup>`:''}).join('')}</select>`:''}</div>
-   ${(()=>{const miss=tts.sexMiss,apple=cur&&/^com\.apple/i.test(cur.voiceURI||'')&&!ttsGood(cur);if(!miss&&!apple)return '';
+   <div class="tts-ctl tts-v"><div class="seg tts-sex" role="group" aria-label="Accent"><button type="button" data-tts="GB" aria-pressed="${tts.recNow?(tts.acc||'GB')==='GB':!tts.sexMiss&&ca==='GB'}">UK</button><button type="button" data-tts="US" aria-pressed="${tts.recNow?tts.acc==='US':!tts.sexMiss&&ca==='US'}">US</button></div><div class="seg tts-sex" role="group" aria-label="Voice type"><button type="button" data-tts="m" aria-pressed="${tts.recNow?(tts.sex||'m')==='m':!tts.sexMiss&&cs==='m'}">Male</button><button type="button" data-tts="f" aria-pressed="${tts.recNow?tts.sex==='f':!tts.sexMiss&&cs==='f'}">Female</button></div>
+   ${tts.recNow?`<span class="tts-rec">Natural recorded voice</span><button type="button" class="chip" data-tts="rec">Use device voice</button>`:(tts.rec===false&&recItem(it))?`<button type="button" class="chip" data-tts="rec">Use natural voice</button>`:''}${tts.recNow?'':vs.length>1?`<select id="ttsVoice" aria-label="Voice">${[['mGB','British male'],['fGB','British female'],['mUS','American male'],['fUS','American female'],['','Other voices']].map(g=>{const l=vs.filter(v=>g[0]?(ttsSex(v)+ttsAcc(v))===g[0]:!['mGB','fGB','mUS','fUS'].includes(ttsSex(v)+ttsAcc(v)));return l.length?`<optgroup label="${g[1]}">${l.map(v=>`<option value="${esc(v.voiceURI)}"${cur&&cur.voiceURI===v.voiceURI?' selected':''}>${esc(v.name.replace(/\s*\(.*\)\s*$/,''))} (${esc(v.lang)})</option>`).join('')}</optgroup>`:''}).join('')}</select>`:''}</div>
+   ${(()=>{const miss=tts.sexMiss,apple=cur&&/^com\.apple/i.test(cur.voiceURI||'')&&!ttsGood(cur);if(tts.recNow||(!miss&&!apple))return '';
      const k=miss||(cs+ca),who={mGB:'British male',fGB:'British female',mUS:'American male',fUS:'American female'}[k]||'English',ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
      return `<p class="tts-miss">${miss?'No '+who+' voice is available to the app on this device.':'This is the built-in '+who+' voice.'} ${ios?'On iPhone and iPad, Apple lets web apps use only the voices built into iOS. Voices downloaded in Settings (Evan, Nathan, Tom, Ava …) are not offered to web apps, so they cannot be picked here.':'More voices: on Android, the phone’s text-to-speech settings; on a computer, Chrome or Edge.'}</p>`})()}`;
 }
