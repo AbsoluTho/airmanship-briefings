@@ -550,7 +550,7 @@ table.kt-t th{background:var(--sunk);font:600 12px var(--f-display);letter-spaci
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="cloudbox" id="cloudBox"></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.53.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.54.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1340,7 +1340,11 @@ const YN=[['Y','Yes'],['N','No']];
 const TAXI3=[['Y','Short'],['N','Normal'],['L','Long']];
 const melText=s=>{const v=s.v;if(s.c['mel.no'])return 'No MEL / CDL';const l=[1,2,3].map(n=>{const ref=v['mel'+n+'_ref'],cat=v['mel'+n+'_cat'],title=v['mel'+n+'_title'];if(!ref&&!cat&&!title)return '';return [ref,cat?'CAT '+cat:'',title].filter(Boolean).join(' ')}).filter(Boolean);return l.length?l.join('; '):'Not recorded in Dispatch'};
 /* suggested clearance, as a short one-line summary */
-const clrText=v=>[v.clr_rwy?'RWY '+v.clr_rwy:'',v.clr_sid?'SID '+v.clr_sid:'',v.clr_firstalt?'first alt '+v.clr_firstalt:'',v.clr_awy?'airway '+v.clr_awy:'',v.clr_sqw?'SQW '+v.clr_sqw:''].filter(Boolean).join(', ');
+/* suggested clearance in the C.R.A.F.T. order: Cleared to · Route · Altitude · Frequency · Transponder */
+const clrCraft=v=>{if(!(v.clr_rwy||v.clr_sid||v.clr_awy||v.clr_firstalt||v.clr_freq||v.clr_sqw))return [];
+  const rt=[v.clr_awy?'via '+v.clr_awy:'',v.clr_rwy?'runway '+v.clr_rwy:'',v.clr_sid?v.clr_sid+' departure':''].filter(Boolean).join(', ');
+  return [['C  Cleared to',v.dest_icao||''],['R  Route',rt],['A  Altitude',v.clr_firstalt||''],['F  Frequency',v.clr_freq||''],['T  Transponder',v.clr_sqw||'']]};
+const clrText=v=>clrCraft(v).filter(x=>x[1]).map(x=>x[1]).join(', ');
 /* Saved runways: a small personal per-airport reference (see rwyDb near the top of the file). NOTAM
    imports add to it automatically; this lets a runway heading be added by hand too — enter one end
    (e.g. 34), tick which parallel runways exist there (L/C/R, or none for a single runway), and Save
@@ -1772,7 +1776,7 @@ async function wxDownload(kind){
 /* a "Minimize" button at the end of every Dispatch section — same action as the section's own chevron,
    just easier to reach after reading through a long section without scrolling back up */
 const minBtn='<div class="row"><button class="btn ghost" type="button" data-act="collapse-sec">Minimize ▲</button></div>';
-function dspHTML(){
+function dspHTML(){applyClrSuggest(S());
   const imp=`<section class="imp"><h2>Import OFP</h2><p class="lead">Drop the Mission Plus OFP PDF. The Computer Flight Plan page (page 3) is read first and fills this sector. Drop several PDFs to fill consecutive sectors, oldest departure first. The NOTAM PDF goes in the same box: it is matched to the sector with the same route. Files stay in your browser.</p>
    <label class="drop" id="drop" for="pdfIn"><strong>Choose OFP or NOTAM PDFs (up to 4)</strong><span>or drop the files here</span></label><input class="sr" type="file" id="pdfIn" data-imp="1" accept="application/pdf,.pdf" multiple>
    <details class="paste" id="paste"><summary>Or paste the OFP text</summary><div class="inner"><textarea id="pasteTxt" rows="6" placeholder="Paste the text of the OFP here"></textarea><button class="btn" type="button" data-act="extract">Extract fields</button></div></details>
@@ -1803,8 +1807,8 @@ function dspHTML(){
    <div class="wxmarg" data-wxmarg="${x[0]}" role="status" hidden></div>
    <div class="gr c4">${fld('wx_'+x[0]+'_t','Time (day / UTC)',{ph:'dd/hhmm'})}${fld('wx_'+x[0]+'_rwy','RWY',{rwy:x[2]})}${calc('wxwind_'+x[0],'Wind component','wide')}</div>${fld('wx_'+x[0]+'_metar','METAR',{area:1,rows:2,cls:'wide'})}${fld('wx_'+x[0]+'_taf','TAF',{area:1,rows:2,cls:'wide'})}
    <div class="fld wide"><label for="v_wx_${x[0]}_tempo"><span class="fl">BECMG / TEMPO relevant to your ${x[0]==='dep'?'ETD':'ETA'}<button type="button" class="chip" data-act="wx-tempo" data-wx="${x[0]}">Work out from TAF</button></span></label><textarea id="v_wx_${x[0]}_tempo" data-v="wx_${x[0]}_tempo" rows="3" placeholder="Filled automatically after a TAF download, or tap “Work out from TAF” after pasting one">${esc(V('wx_'+x[0]+'_tempo'))}</textarea></div>`).join('')+minBtn;
-  const clr=`<p class="note">Your suggested clearance, not the real one — a working guess to brief yourself with before you copy the actual clearance from ATC. SID and Airway are worked out from the route above (its first fix, and whatever airway follows it) the moment a route is filled in, but only while they're still empty — type over either one any time, and it stays as you left it. RWY offers your saved runways for this airport, same as elsewhere. First alt and SQW are always typed by hand. ATIS isn't tracked here — that one's still quicker on paper.</p>
-   <div class="gr c4">${fld('clr_rwy','RWY',{rwy:'dep_icao'})}${fld('clr_sid','SID',{ph:'if any — some airports have none'})}${fld('clr_firstalt','First alt')}${fld('clr_awy','Airway')}${fld('clr_sqw','SQW')}</div>`+minBtn;
+  const clr=`<p class="note">Your suggested clearance, not the real one — a working guess to brief yourself with before you copy the actual clearance from ATC. SID and Airway are filled from the Route Planning route: SID is the first waypoint after DCT, Airway is the airway right after it. They follow the route if it changes — type over either one any time, and it stays as you left it. The summary writes the clearance in the C.R.A.F.T. order (Cleared to, Route, Altitude, Frequency, Transponder). RWY offers your saved runways for this airport, same as elsewhere. First alt, Dep freq and SQW are typed by hand. ATIS isn't tracked here — that one's still quicker on paper.</p>
+   <div class="gr c4">${fld('clr_rwy','RWY',{rwy:'dep_icao'})}${fld('clr_sid','SID',{ph:'if any — some airports have none'})}${fld('clr_awy','Airway')}${fld('clr_firstalt','First alt')}${fld('clr_freq','Dep freq',{ph:'e.g. 124.0'})}${fld('clr_sqw','SQW')}</div>`+minBtn;
   const ntm=`<p class="lead">Airport and FIR NOTAMs from the Mission Plus NOTAM PDF, translated into plain English. Mission Plus already limits the search to the flight window, so nothing is filtered by hour here. Nothing is added to the brief by default: tap “Add to brief” on each NOTAM you want in the summary.</p>
    <details class="paste ntkey" data-seckey="dsp.ntkey"${state.open['dsp.ntkey']?' open':''}><summary>What do the colours mean?</summary><div class="inner">
     <div class="ntkr"><span class="pill bad">Check first</span><span>Runways, ILS / navaids or lighting out, SID / STAR / approach changes, obstacles, airspace and activity warnings.</span></div>
@@ -2318,8 +2322,8 @@ function sumDsp(i){
   const rq=['er','rvsm','pbn','nr','spa','pic'].filter(k=>c['req.'+k]).map(k=>({er:'Extended range',rvsm:'RVSM',pbn:'PBN',nr:'Narrow RWY',spa:'Simultaneous parallel approach',pic:'PIC is pilot flying'}[k]));
   L.push('');L.push(ttl('COMPANY OPERATIONAL REQUIREMENTS')+': '+(rq.join(', ')||'none ticked'));
   /* suggested clearance comes last: it's only a working guess until the real one is copied in the aircraft */
-  const cl=clrText(v);
-  if(cl){L.push('');L.push(ttl('SUGGESTED CLEARANCE'));add('  Clearance',cl)}
+  const cr=clrCraft(v);
+  if(cr.length){L.push('');L.push(ttl('SUGGESTED CLEARANCE (C.R.A.F.T.)'));cr.forEach(x=>L.push('  '+x[0]+': '+(x[1]||'—')))}
   return L.join('\n');
 }
 function sumMod(mod,i){
@@ -2451,23 +2455,28 @@ function setMsg(html,warn){state.impMsg=html;state.impWarn=!!warn;const e=$('#im
    reads as an airway (one or two letters then digits, e.g. L677, UL607, A1) is offered as the airway.
    Neither guess is definitive — some airports have no SID at all, and this is only ever a starting
    point the pilot can overwrite once the real clearance is received. */
-function firstFixAirway(route){
-  const toks=String(route||'').trim().toUpperCase().split(/\s+/).filter(Boolean);
-  let i=0;while(i<toks.length&&toks[i]==='DCT')i++;
-  const fix=toks[i];if(!fix)return {sid:null,awy:null};
-  const sid=/^[A-Z]{5}$/.test(fix)?fix:null;
-  const nxt=toks[i+1];
-  const awy=(nxt&&/^[A-Z]{1,2}\d{1,4}$/.test(nxt))?nxt:null;
-  return {sid,awy};
+/* Route Planning "Route", e.g. "DCT MIGDA L677 WEJ V54 TBK DCT" or "N0450F340 DCT MIGDA L677 ...":
+   the first waypoint right after DCT gives the SID name, and the airway right after that waypoint gives the
+   Airway. Without a DCT, speed/level groups, the departure ICAO and SID designators are skipped and the first
+   plain waypoint is used. A fix written with a speed/level change ("MIGDA/N0450F360") counts as MIGDA. */
+function firstFixAirway(route,dep){
+  const toks=String(route||'').trim().toUpperCase().split(/\s+/).filter(Boolean).map(t=>t.split('/')[0]);
+  const isAwy=t=>/^[A-Z]{1,2}\d{1,4}[A-Z]?$/.test(t);
+  let n=0;
+  while(n<toks.length&&(/^[NMK]\d{3,4}[FASM]\d{3,4}$/.test(toks[n])||toks[n]===dep||/^[A-Z]{4}$/.test(toks[n])&&n===0))n++;
+  while(n<toks.length&&toks[n]==='DCT')n++;
+  while(n<toks.length&&/^[A-Z]{2,5}\d[A-Z]?$/.test(toks[n]))n++;
+  const fix=toks[n];if(!fix||!/^[A-Z]{2,5}$/.test(fix))return {sid:null,awy:null};
+  const nx=toks.slice(n+1).find(t=>t!=='DCT');
+  return {sid:fix,awy:nx&&isAwy(nx)?nx:null};
 }
-/* Fills the Suggested clearance's SID and Airway fields from the route, but only while they're still
-   empty — once the pilot has typed (or the real clearance has overwritten) a value, it's never
-   clobbered by a fresh guess. */
+/* Fills SID and Airway from the route. A value guessed from the route (src 'route') follows the route as it
+   changes; anything the pilot typed (or copied from the real clearance) is never overwritten. */
 function applyClrSuggest(s){
-  if(s.v.clr_sid&&s.v.clr_awy)return;
-  const r=firstFixAirway(s.v.route);
-  if(!s.v.clr_sid&&r.sid)s.v.clr_sid=r.sid;
-  if(!s.v.clr_awy&&r.awy)s.v.clr_awy=r.awy;
+  const r=firstFixAirway(s.v.route,String(s.v.dep_icao||'').toUpperCase());
+  [['clr_sid',r.sid],['clr_awy',r.awy]].forEach(([k,x])=>{
+    const mine=s.v[k]&&s.src[k]!=='route';if(mine)return;
+    if(x){s.v[k]=x;s.src[k]='route'}else if(s.src[k]==='route'){delete s.v[k];delete s.src[k]}});
 }
 function applyParsed(idx,p,text){
   const s=state.secs[idx];
@@ -2553,6 +2562,7 @@ main.addEventListener('input',e=>{
   if((k=t.dataset.v)){
     s.v[k]=UP.has(k)?t.value.toUpperCase():t.value;delete s.src[k];
     if(k==='etd'||k==='eta'||k==='date'||k==='alt_time')renderNt();
+    if(k==='route'||k==='dep_icao'){applyClrSuggest(s);['clr_sid','clr_awy'].forEach(x=>{const el=document.getElementById('v_'+x);if(el&&document.activeElement!==el)el.value=s.v[x]||''})}
     const wm=k.match(/^wx_(dep|arr|alt)_metar$/);
     if(wm){
       const dt=metarDayTime(t.value);
