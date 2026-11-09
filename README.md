@@ -17,4 +17,4 @@ This is an unofficial preparation aid. It does not replace the FCOM, FCTM, the o
 
 Flight deck image in the Approach Flow: FlyByWire Simulations, A32NX documentation (docs.flybywiresim.com).
 
-Version 1.57.0
+Version 1.57.1

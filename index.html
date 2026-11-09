@@ -575,7 +575,7 @@ table.kt-t th{background:var(--sunk);font:600 12px var(--f-display);letter-spaci
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="cloudbox" id="cloudBox"></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.57.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.57.1.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -2126,8 +2126,12 @@ function ttsChunks(t){
 /* Only natural British and American English voices: novelty / effect voices (Apple's Albert, Bad News, Bells,
    Fred, Junior, Ralph …, Eloquence voices) and other accents are left out. If that leaves nothing, any English voice. */
 const TTS_NOVEL=/\b(albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy|grandma|grandpa|rocko|sandy|shelley|eddy|flo|reed|deranged|hysterical)\b/i;
+/* Effect voices are also caught by their system id, because iOS translates their names (Bubbles shows as "Bolhas" in
+   Portuguese, "Burbujas" in Spanish …). On Apple devices a voice whose name is not a person's name is left out too. */
+const TTS_NOVEL_ID=/speech\.synthesis\.voice\.(albert|badnews|bahh|bells|boing|bubbles|cellos|goodnews|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy|deranged|hysterical|princess)/i;
+const TTS_NOVEL_L=/\b(bolhas|sinos|órgão|orgao|violoncelos|sussurro|boas notícias|más notícias|bobo da corte|superestrela|trinóides|burbujas|campanas|órgano|violonchelos|susurro|buenas noticias|malas noticias|bufón|bulles|cloches|orgue|violoncelles|chuchotement)\b/i;
 const ttsAcc=v=>/^en[-_]GB/i.test(v.lang)?'GB':/^en[-_]US/i.test(v.lang)?'US':'';
-const ttsVoices=()=>{try{const all=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));const ok=all.filter(v=>ttsAcc(v)&&!TTS_NOVEL.test(v.name)&&!/eloquence/i.test(v.voiceURI||''));return ok.length?ok:all}catch(e){return []}};
+const ttsVoices=()=>{try{const all=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));const ok=all.filter(v=>ttsAcc(v)&&!TTS_NOVEL.test(v.name)&&!TTS_NOVEL_L.test(v.name)&&!TTS_NOVEL_ID.test(v.voiceURI||'')&&!/eloquence/i.test(v.voiceURI||'')&&!(/^com\.apple/i.test(v.voiceURI||'')&&!ttsSex(v)));return ok.length?ok:all.filter(v=>!TTS_NOVEL_ID.test(v.voiceURI||'')&&!TTS_NOVEL_L.test(v.name))}catch(e){return []}};
 /* Browsers do not report a voice's gender, so it is read from the voice name (Apple, Google, Microsoft and
    common Android voice names). Unknown names go under "Other voices". */
 const TTS_M=/\b(male|malcolm|jamie|evan|nathan|daniel|arthur|aaron|alex|fred|gordon|lee|oliver|rishi|ralph|albert|reed|rocko|eddy|grandpa|junior|tom|ryan|guy|christopher|eric|thomas|george|james|william|liam|brian|matthew|justin|joey|russell|david|mark|richard|evan|andrew|davis|tony|brandon|roger|prabhat|ravi|nathan|noah|jason|steffan|elliot|ethan|alfie|connor|mitchell|duncan|wayne|ken|kenneth)\b/i;
@@ -2175,8 +2179,8 @@ function ttsBar(){
    <div class="tts-ctl tts-v"><div class="seg tts-sex" role="group" aria-label="Accent"><button type="button" data-tts="GB" aria-pressed="${!tts.sexMiss&&ca==='GB'}">UK</button><button type="button" data-tts="US" aria-pressed="${!tts.sexMiss&&ca==='US'}">US</button></div><div class="seg tts-sex" role="group" aria-label="Voice type"><button type="button" data-tts="m" aria-pressed="${!tts.sexMiss&&cs==='m'}">Male</button><button type="button" data-tts="f" aria-pressed="${!tts.sexMiss&&cs==='f'}">Female</button></div>
    ${vs.length>1?`<select id="ttsVoice" aria-label="Voice">${[['mGB','British male'],['fGB','British female'],['mUS','American male'],['fUS','American female'],['','Other voices']].map(g=>{const l=vs.filter(v=>g[0]?(ttsSex(v)+ttsAcc(v))===g[0]:!['mGB','fGB','mUS','fUS'].includes(ttsSex(v)+ttsAcc(v)));return l.length?`<optgroup label="${g[1]}">${l.map(v=>`<option value="${esc(v.voiceURI)}"${cur&&cur.voiceURI===v.voiceURI?' selected':''}>${esc(v.name.replace(/\s*\(.*\)\s*$/,''))} (${esc(v.lang)})</option>`).join('')}</optgroup>`:''}).join('')}</select>`:''}</div>
    ${(()=>{const miss=tts.sexMiss,apple=cur&&/^com\.apple/i.test(cur.voiceURI||'')&&!ttsGood(cur);if(!miss&&!apple)return '';
-     const k=miss||(cs+ca),who={mGB:'British male',fGB:'British female',mUS:'American male',fUS:'American female'}[k]||'English',eg={mGB:'Daniel, Arthur, Malcolm or Jamie',fGB:'Kate, Serena, Martha or Stephanie',mUS:'Evan, Nathan or Tom',fUS:'Ava, Zoe, Allison or Samantha'}[k]||'Daniel or Ava';
-     return `<p class="tts-miss">${miss?'No '+who+' voice is installed on this device.':'This is the basic '+who+' voice.'} For a natural voice on iPhone/iPad: Settings › Accessibility › Spoken Content › Voices › English › download an Enhanced or Premium voice (e.g. ${eg}), then pick it here. Android: the phone’s text-to-speech settings.</p>`})()}`;
+     const k=miss||(cs+ca),who={mGB:'British male',fGB:'British female',mUS:'American male',fUS:'American female'}[k]||'English',ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+     return `<p class="tts-miss">${miss?'No '+who+' voice is available to the app on this device.':'This is the built-in '+who+' voice.'} ${ios?'On iPhone and iPad, Apple lets web apps use only the voices built into iOS. Voices downloaded in Settings (Evan, Nathan, Tom, Ava …) are not offered to web apps, so they cannot be picked here.':'More voices: on Android, the phone’s text-to-speech settings; on a computer, Chrome or Edge.'}</p>`})()}`;
 }
 if(TTS_OK){try{speechSynthesis.addEventListener('voiceschanged',()=>{if(tts.on)ttsBar()})}catch(e){}}
 function ttsShow(el){$$('.tts-on').forEach(e=>e.classList.remove('tts-on'));if(!el)return;el.classList.add('tts-on');
