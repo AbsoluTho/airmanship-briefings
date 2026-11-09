@@ -351,6 +351,14 @@ body.sumfull,body.clopen{overflow:hidden}
 .nbody{font-size:15px;line-height:1.55}
 .nbody ul,.nbody ol{margin:4px 0 8px;padding-left:20px}
 .nbody li{margin:3px 0}
+.ntm .ntv-red{color:var(--bad);font-weight:600}
+.ntm .ntv-red b{color:var(--bad)}
+.ntm .ntv-amber{color:var(--warn);font-weight:600}
+.ntm .ntv-amber b{color:var(--warn)}
+.ntkh{margin:10px 0 4px;font:600 12px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.ntk-v{flex:0 0 auto;min-width:86px;font:600 11px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.ntk-v.ntv-red,.ntk-v.ntv-red b{color:var(--bad)}
+.ntk-v.ntv-amber,.ntk-v.ntv-amber b{color:var(--warn)}
 .pa{color:var(--accent);font-style:italic;font-weight:500}
 .nbody p{margin:0 0 8px}
 .clx-h{margin:12px 0 4px!important;font:700 13px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
@@ -542,7 +550,7 @@ table.kt-t th{background:var(--sunk);font:600 12px var(--f-display);letter-spaci
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="cloudbox" id="cloudBox"></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.52.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.53.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -1493,11 +1501,52 @@ function deriveHTML(s){
   return rows.length?rows.join(''):'<div class="dr"><span class="muted">Enter or import the fuel and mass figures to cross-check the OFP arithmetic.</span></div>';
 }
 
+/* ---------- NOTAM validity vs the flight (Valid line colour) ----------
+   Core time per airport role: departure = ETD; destination = ETA; take-off alternate = ETD to ETD+1 h;
+   alternate / en-route alternate = ETA to ETA + alternate time (1 h if unknown); FIR = ETD to ETA.
+   red   = in force at that time (B)–C) and, if any, the D) daily schedule)
+   amber = in force only within 1 h before or after it
+   else  = "not applicable to current flight". No date or ETD (or ETA where needed) -> no marking. */
+function ntOver(it,from,to){
+  const b=ntMs(it.b);if(b==null)return null;
+  const c=it.perm?Infinity:(ntMs(it.c)??Infinity);
+  if(!(b<=to&&from<c))return false;
+  const pairs=[...String(it.d||'').matchAll(/\b(\d{2})(\d{2})-(\d{2})(\d{2})\b/g)];
+  if(!pairs.length)return true;
+  const D=86400000;
+  for(let day=Math.floor(from/D)*D-D;day<=to;day+=D)for(const p of pairs){
+    const st=day+((+p[1])*60+(+p[2]))*60000;let en=day+((+p[3])*60+(+p[4]))*60000;if(en<=st)en+=D;
+    if(st<=to&&from<en&&st<c&&b<en)return true;
+  }
+  return false;
+}
+function ntCore(v,key){
+  const dm=String(v.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!dm)return null;
+  const hm=x=>{const m=String(x||'').trim().match(/^(\d{1,2}):?(\d{2})$/);return m?((+m[1])*60+(+m[2]))*60000:null};
+  const H=3600000,base=Date.UTC(+dm[1],+dm[2]-1,+dm[3]),e=hm(v.etd);if(e==null)return null;
+  const etd=base+e;let eta=hm(v.eta);if(eta!=null){eta+=base;if(eta<etd)eta+=24*H}
+  if(key==='dep')return [etd,etd,'ETD '+v.etd+'Z'];
+  if(key==='toalt')return [etd,etd+H,'the first hour after departure'];
+  if(eta==null)return null;
+  if(key==='arr')return [eta,eta,'ETA '+v.eta+'Z'];
+  if(key==='alt'||key==='enr'){const at=hours(v.alt_time);return [eta,eta+(at!=null?at:1)*H,'the alternate window']}
+  return [etd,eta,'the flight'];
+}
+function ntVal(it,key,v){
+  const w=ntCore(v,key);if(!w)return null;
+  const H=3600000,r=ntOver(it,w[0],w[1]);if(r==null)return null;
+  if(r)return {c:'red',t:'in force at '+w[2]};
+  if(ntOver(it,w[0]-H,w[1]+H))return {c:'amber',t:'within 1 h of '+w[2]};
+  return {c:'na',t:''};
+}
 /* ---------- NOTAM list view ---------- */
 function ntRowHTML(si,it,nt){
   const tr=ntTr(it),on=ntInc(nt,si,it);
   const pill=tr.lvl>=3?'<span class="pill bad">Check first</span>':tr.lvl===2?'<span class="pill warn">Review</span>':'<span class="pill info">Info</span>';
-  const meta=[['Valid',tr.when],['Schedule',tr.sched],['Vertical',tr.vert]].filter(x=>x[1]).map(x=>`<span><b>${x[0]}</b>${esc(x[1])}</span>`).join('');
+  const sec=nt.secs[si]||{},val=tr.when?ntVal(it,sec.key,S().v):null;
+  const vcls=val&&val.c!=='na'?' class="ntv-'+val.c+'" title="'+esc(val.t)+'"':'';
+  const vtxt=tr.when?esc(tr.when)+(val&&val.c==='na'?' — not applicable to current flight':''):'';
+  const meta=[['Valid',vtxt,1],['Schedule',tr.sched],['Vertical',tr.vert]].filter(x=>x[1]).map(x=>x[2]?`<span${vcls}><b>${x[0]}</b>${x[1]}</span>`:`<span><b>${x[0]}</b>${esc(x[1])}</span>`).join('');
   const kind=it.kind==='R'?'Replaces '+it.ref:it.kind==='C'?'Cancels '+it.ref:'';
   return `<div class="ntr"><div class="nth">${pill}<span class="ntl">${esc(tr.label)}</span>${tr.isNew?'<span class="pill bind">New today</span>':''}<span class="ntid">${esc(it.id)}</span></div>
    <p class="ntt">${esc(tr.text).replace(/\n/g,'<br>')}</p>${meta?`<div class="ntm">${meta}</div>`:''}
@@ -1761,7 +1810,11 @@ function dspHTML(){
     <div class="ntkr"><span class="pill bad">Check first</span><span>Runways, ILS / navaids or lighting out, SID / STAR / approach changes, obstacles, airspace and activity warnings.</span></div>
     <div class="ntkr"><span class="pill warn">Review</span><span>Taxiways limited, aerodrome services, routes and other changes.</span></div>
     <div class="ntkr"><span class="pill info">Info</span><span>Stands, aprons, AIS and AIP supplements.</span></div>
-    <p class="note">The app's own rule of thumb, read from each NOTAM's Q-code (not an official classification). It only sets the order: red first, then amber, then grey. Nothing goes into the brief until you tap “Add to brief”.</p></div></details>
+    <p class="note">The app's own rule of thumb, read from each NOTAM's Q-code (not an official classification). It only sets the order: red first, then amber, then grey. Nothing goes into the brief until you tap “Add to brief”.</p>
+    <p class="ntkh">Valid line (times in UTC, against the Dispatch ETD / ETA)</p>
+    <div class="ntkr"><span class="ntv-red ntk-v"><b>Valid</b></span><span>In force at the time of departure (ETD) or arrival (ETA) — for a FIR, during the flight; for an alternate, in the alternate window.</span></div>
+    <div class="ntkr"><span class="ntv-amber ntk-v"><b>Valid</b></span><span>In force only within 1 hour before or after that time.</span></div>
+    <div class="ntkr"><span class="ntk-v"><b>Valid</b></span><span>Outside that window: marked “not applicable to current flight”.</span></div></div></details>
    <div class="imp-mini"><label class="btn" for="pdfIn2">Import NOTAM PDF</label><input class="sr" type="file" id="pdfIn2" data-imp="1" accept="application/pdf,.pdf" multiple><span class="note">Or paste the NOTAM text in the box at the top of this tab.</span></div>
    <div class="out" id="ntOut"></div>
    <h3 class="blk">Additional route notes</h3>
@@ -2499,6 +2552,7 @@ main.addEventListener('input',e=>{
   if(t.id==='ktSearch'){ktFilter(t.value);return}
   if((k=t.dataset.v)){
     s.v[k]=UP.has(k)?t.value.toUpperCase():t.value;delete s.src[k];
+    if(k==='etd'||k==='eta'||k==='date'||k==='alt_time')renderNt();
     const wm=k.match(/^wx_(dep|arr|alt)_metar$/);
     if(wm){
       const dt=metarDayTime(t.value);
