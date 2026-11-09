@@ -15,4 +15,6 @@ A flight preparation aid built on Airbus FCTM concepts. Import the Mission Plus 
 
 This is an unofficial preparation aid. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources.
 
-Version 1.54.1
+Flight deck image in the Approach Flow: FlyByWire Simulations, A32NX documentation (docs.flybywiresim.com).
+
+Version 1.55.0
