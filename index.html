@@ -26,7 +26,7 @@ body{margin:0}
 :root{
   --bg:#E8EDF1; --surface:#F6F8FA; --sunk:#DCE3E9; --ink:#0E1A25; --ink2:#465868; --ink3:#66788A;
   --line:#C3CED8; --accent:#0A5F92; --accent-soft:#D1E5F1; --on-accent:#FFFFFF;
-  --ok:#1B7A4A; --ok-soft:#D3EADB; --warn:#A45800; --warn-soft:#F5E0C2; --bad:#B02A20; --bad-soft:#F6D8D4;
+  --ok:#1B7A4A; --ok-soft:#D3EADB; --warn:#A45800; --warn-soft:#F5E0C2; --bad:#B02A20;--mag:#A8199A; --bad-soft:#F6D8D4;
   --f-display:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
   --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --f-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
@@ -35,13 +35,13 @@ body{margin:0}
   :root:not([data-theme="light"]){
     --bg:#0B1117; --surface:#131C24; --sunk:#0F171E; --ink:#E3EAF0; --ink2:#9BADBC; --ink3:#7A8C9B;
     --line:#263543; --accent:#5DB7E8; --accent-soft:#16303F; --on-accent:#08202F;
-    --ok:#4CC38A; --ok-soft:#14301F; --warn:#F2A93B; --warn-soft:#3A2A10; --bad:#FF7A70; --bad-soft:#3B1815;
+    --ok:#4CC38A; --ok-soft:#14301F; --warn:#F2A93B; --warn-soft:#3A2A10; --bad:#FF7A70;--mag:#F27FEA; --bad-soft:#3B1815;
   }
 }
 :root[data-theme="dark"]{
   --bg:#0B1117; --surface:#131C24; --sunk:#0F171E; --ink:#E3EAF0; --ink2:#9BADBC; --ink3:#7A8C9B;
   --line:#263543; --accent:#5DB7E8; --accent-soft:#16303F; --on-accent:#08202F;
-  --ok:#4CC38A; --ok-soft:#14301F; --warn:#F2A93B; --warn-soft:#3A2A10; --bad:#FF7A70; --bad-soft:#3B1815;
+  --ok:#4CC38A; --ok-soft:#14301F; --warn:#F2A93B; --warn-soft:#3A2A10; --bad:#FF7A70;--mag:#F27FEA; --bad-soft:#3B1815;
 }
 *,*::before,*::after{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--f-body);-webkit-text-size-adjust:100%}
@@ -302,6 +302,9 @@ table.fltbl tr.best td{color:var(--ok);font-weight:600}
 body.sumfull,body.clopen{overflow:hidden}
 .sum .sh{color:var(--accent);font-weight:700}
 .sum .sw{color:var(--warn);font-weight:600}
+input[data-v="shear_v"]{font-weight:700}
+input[data-v="shear_v"].shear-hi{color:var(--warn)}
+.sum .sb{font-weight:700}
 .wxmarg{padding:8px 12px;border:1px solid var(--warn);border-left-width:4px;background:var(--warn-soft);color:var(--warn);font:600 13px/1.4 var(--f-body)}
 .fld textarea.marg{border-color:var(--warn);box-shadow:inset 4px 0 0 var(--warn)}
 .sum{margin:0;padding:12px;background:var(--sunk);border:1px solid var(--line);font:400 calc(12px * var(--sumk,1))/1.55 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto}
@@ -455,13 +458,13 @@ body.sumfull,body.clopen{overflow:hidden}
 .af-svg2 .af-fo text{fill:#5DB7E8}
 .af-svg2 .af-fo.on .af-dot{fill:#5DB7E8}
 .af-svg2 .af-fo.on text{fill:#08202F}
-.ntm .ntv-red{color:var(--bad);font-weight:600}
-.ntm .ntv-red b{color:var(--bad)}
+.ntm .ntv-red{color:var(--mag);font-weight:600}
+.ntm .ntv-red b{color:var(--mag)}
 .ntm .ntv-amber{color:var(--warn);font-weight:600}
 .ntm .ntv-amber b{color:var(--warn)}
 .ntkh{margin:10px 0 4px;font:600 12px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
 .ntk-v{flex:0 0 auto;min-width:86px;font:600 11px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
-.ntk-v.ntv-red,.ntk-v.ntv-red b{color:var(--bad)}
+.ntk-v.ntv-red,.ntk-v.ntv-red b{color:var(--mag)}
 .ntk-v.ntv-amber,.ntk-v.ntv-amber b{color:var(--warn)}
 .pa{color:var(--accent);font-style:italic;font-weight:500}
 .nbody p{margin:0 0 8px}
@@ -655,14 +658,14 @@ li.ntli{list-style:none;margin:4px 0 0 -16px;padding:4px 8px;background:var(--bg
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand"><span class="mark">Airmanship Briefings</span><span class="appver" id="appVer">version: 1.62.0</span></div>
+    <div class="brand"><span class="mark">Airmanship Briefings</span><span class="appver" id="appVer">version: 1.63.0</span></div>
   </header>
   <div class="nav"><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav><div class="sectors" id="sectors" role="group" aria-label="Sector"></div></div>
   <div class="strip" id="strip" aria-live="polite"></div>
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="cloudbox" id="cloudBox"></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.62.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.63.0.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -761,6 +764,22 @@ function detectCeoNeo(cfp,up){
   return null;
 }
 /* Mission Plus OFP. Page 3, the Computer Flight Plan, is the main source; pages 1 and 2 (Dispatch Release) are only a fallback. */
+/* Phase of flight of the max shear point: before TOC = climb, TOC to TOD = cruise, after TOD = descent.
+   The waypoint is looked up in the flight log, next to the TOC and TOD lines. */
+function ofpShearPhase(L,wp,dep,dest){
+  wp=String(wp||'').toUpperCase().trim();if(!wp)return '';
+  if(wp==='TOC'||wp==='T/C')return 'CLB';if(wp==='TOD'||wp==='T/D')return 'DES';
+  if(dep&&wp===dep)return 'CLB';if(dest&&wp===dest)return 'DES';
+  const tk=(l,t)=>new RegExp('(^|[^A-Z0-9])'+t.replace(/\//g,'\\/')+'([^A-Z0-9]|$)').test(String(l).toUpperCase());
+  const skip=l=>/PLND ROUTE|MAX WNDSH|ROUTE TO ALTERNATE|CLIMB\s*:|DESCENT\s*:|TIME TO/i.test(l);
+  let toc=-1,tod=-1;
+  for(let i=0;i<L.length;i++){if(skip(L[i]))continue;if(toc<0){if(tk(L[i],'TOC')||tk(L[i],'T/C'))toc=i;continue}if(tk(L[i],'TOD')||tk(L[i],'T/D')){tod=i;break}}
+  if(toc<0||tod<0)return '';
+  const hit=[];for(let i=0;i<L.length;i++)if(!skip(L[i])&&tk(L[i],wp))hit.push({i,d:i<toc?toc-i:i>tod?i-tod:0});
+  if(!hit.length)return '';
+  hit.sort((a,b)=>a.d-b.d||a.i-b.i);const h=hit[0];if(h.d>80)return '';
+  return h.i<toc?'CLB':h.i>tod?'DES':'CRZ';
+}
 function parseOFP(text){
   const T=String(text).replace(/ /g,' ').replace(/^=== PAGE \d+ ===$/gm,'');
   const up=T.toUpperCase();
@@ -800,7 +819,7 @@ function parseOFP(text){
   m=cfp.match(/AIR DIST\s*:\s*(\d+)/);if(m)set('air',m[1]);
   m=cfp.match(/GROUND DIST\s*:\s*(\d+)/);if(m)set('grd',m[1]);
   m=cfp.match(/CLIMB\s*:\s*\d+\s*NM\s+IN\s+(\d+)\s*:\s*(\d{2})/);if(m)set('toc',(+m[1])+':'+m[2]);
-  m=cfp.match(/MAX WNDSH\s*:\s*(\d+)\s*\/\s*([A-Z0-9]+)/);if(m){set('shear_v',m[1]);set('shear_w',m[2])}
+  m=cfp.match(/MAX WNDSH\s*:\s*(\d+)\s*\/\s*([A-Z0-9\/]+)/);if(m){set('shear_v',m[1]);set('shear_w',m[2]);set('shear_ph',ofpShearPhase(cfpLines,m[2],v.dep_icao,v.dest_icao))}
   /* cruise temperature from the en-route wind table */
   const hIdx=cfpLines.findIndex(l=>/^\s*IDENT\b.*FL\s*\d{3}/i.test(l));
   if(hIdx>=0&&v.fl){
@@ -1247,7 +1266,7 @@ function normTab(t){if(t==='gf')return 'pof';if(t==='dep'||t==='arr'){setBrf(t);
 const newSec=()=>({v:{},c:{'req.rvsm':true,'req.pbn':true},src:{},tem:[],tem2:[],nt:null,fltbl:null});
 const newTrip=()=>({v:{},c:{}});
 const EX0={flt:'ABC123',dom:'DOM',date:'2026-09-22',reg:'HZ-XXX',ceoneo:'CEO',acft:'A320-214',dep_icao:'OEJN',dep_iata:'JED',dest_icao:'OETB',dest_iata:'TUU',alt_icao:'OEMA',alt_iata:'MED',etd:'07:25',eta:'08:55',ftime:'1:11',pax:'151',
- route:'DCT MIGDA L677 WEJ V54 TBK DCT',altroute:'DCT TBK V54 WEJ M872 BOVET',wind_dir:'TL',wind:'11',isa:'10',grd:'481',air:'469',ci:'20',fl:'340',temp:'-42',toc:'0:27',shear_v:'3',shear_w:'MIGDA',
+ route:'DCT MIGDA L677 WEJ V54 TBK DCT',altroute:'DCT TBK V54 WEJ M872 BOVET',wind_dir:'TL',wind:'11',isa:'10',grd:'481',air:'469',ci:'20',fl:'340',temp:'-42',toc:'0:27',shear_v:'3',shear_w:'MIGDA',shear_ph:'CLB',
  lf_pax:'151',lf_payload:'12693',lf_zfm:'55692',lf_tom:'69000',lf_ldm:'65500',lf_taxi:'168',lf_trip:'3500',trip_incl:'3.6',lf_planned:'8129',lf_pextra:'5348',
  ofp_cont:'203',ofp_alt:'3066',alt_time:'1:04',ofp_fres:'1192',ofp_add:'0',ofp_hold:'0',ofp_mintof:'7961',ofp_ramp:'13477',ofp_dom:'42999',lim_mzfm:'62500',lim_tom:'69500',lim_ldm:'66000',
  dsp_rmk:'TNKRG FUEL ADVZD IF ACTUAL PAYLOAD PERMITS. CHK ZFW PRIOR TO REFUELING.',tk_on:'Planned: partial'};
@@ -1906,7 +1925,8 @@ function dspHTML(){applyClrSuggest(S());
   const route=`${fld('route','Route',{area:1,rows:2,cls:'wide'})}${fld('altroute','Alternate route',{area:1,rows:2,cls:'wide'})}
    <div class="gr c4">${seg('wind_dir','Avg wind',[['HD','HD'],['TL','TL']])}${fld('wind','Avg wind (kt)',{num:1})}${fld('isa','Δ ISA (+/−)',{num:1})}${fld('grd','Grd dist (nm)',{num:1})}</div>
    <div class="gr c4">${fld('air','Air dist (nm)',{num:1})}${fld('ci','CI',{num:1})}${fld('fl','Cruise FL',{ph:'340'})}${fld('temp','Temp at FL (°C)',{num:1})}</div>
-   <div class="gr c4">${fld('toc','Time to TOC (h:mm)',{ph:'0:27'})}${fld('shear_v','Max shear',{num:1})}${fld('shear_w','Shear waypoint')}${fld('tropo','Tropo (FL)',{pilot:1})}</div>
+   <div class="gr c4">${fld('toc','Time to TOC (h:mm)',{ph:'0:27'})}${fld('tropo','Tropo (FL)',{pilot:1})}${fld('shear_v','Max shear',{num:1})}${fld('shear_w','Shear waypoint')}</div>
+   <div class="gr c4">${seg('shear_ph','Max shear phase',[['CLB','Climb'],['CRZ','Cruise'],['DES','Descent']],'w2')}</div>
    <div class="gr c4">${tgs('SIGWX',[['sigwx.ice','Ice'],['sigwx.cb','CB'],['sigwx.turb','Mod / sev turb']],'w2')}${fld('sigwx_from','From FL',{pilot:1})}${fld('sigwx_to','To FL',{pilot:1})}</div>
    <div class="gr c4">${seg('sigmet','SIGMET',[['NO','No'],['YES','Yes']])}${grp('IHRAM ZONE','ihram',[['no','No'],['yes','Yes']])}${fld('ihram','Ihram zone details')}</div>
    <div class="gr c3">${grp('ESCAT','escat',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}${grp('TIBA (122.8 MHz)','tiba',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}${grp('FRS (133.5 MHz)','frs',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}</div>
@@ -1972,12 +1992,13 @@ function dspHTML(){applyClrSuggest(S());
 /* ---------- Cabin crew briefing ----------
    The Cabin tab has no inputs: its briefing fills itself from Dispatch. The few items Dispatch did not
    already hold are entered in Dispatch, section "Cabin crew briefing items". */
-const EMQ_DEF='For a rejected takeoff, I will stop on the runway and say “ATTENTION CREW, AT STATIONS” twice. What should you expect after this?\nExpected answer: either “CABIN CREW AND PASSENGERS REMAIN SEATED” or “EVACUATE, EVACUATE”.';
-const emq=()=>('emq' in state.trip.v)?state.trip.v.emq:EMQ_DEF;
+const EMQ_DEF='• In case of an RTO: “ATTENTION CREW, AT STATIONS” twice.\n• What should you expect after you hear this?\n• Expected answer:\n    ◦ CABIN CREW AND PASSENGERS REMAIN SEATED\n    ◦ EVACUATE, EVACUATE';
+const EMQ_OLD='For a rejected takeoff, I will stop on the runway and say “ATTENTION CREW, AT STATIONS” twice. What should you expect after this?\nExpected answer: either “CABIN CREW AND PASSENGERS REMAIN SEATED” or “EVACUATE, EVACUATE”.';
+const emq=()=>('emq' in state.trip.v&&state.trip.v.emq!==EMQ_OLD)?state.trip.v.emq:EMQ_DEF;
 const cabTank=s=>!!(s.c['why.tank']||/^Planned/.test(s.v.tk_on||''));
 function cabWx(s){const c=s.c,v=s.v,o=[];const sw=['ice','cb','turb'].filter(k=>c['sigwx.'+k]);
   if(sw.length)o.push('SIGWX '+sw.join(', ').toUpperCase()+(v.sigwx_from?' FL'+v.sigwx_from+(v.sigwx_to?'-FL'+v.sigwx_to:''):''));
-  if(v.shear_v)o.push('max shear '+v.shear_v+(v.shear_w?' at '+v.shear_w:''));
+  if(v.shear_v)o.push('max shear '+shearTxt(v));
   if(v.sigmet==='YES')o.push('SIGMET');
   ['dep','rte','arr'].forEach(k=>{if(v['cab_wx_'+k])o.push(k.toUpperCase()+' '+v['cab_wx_'+k])});
   if(v.cab_wx_note)o.push(v.cab_wx_note);
@@ -1995,7 +2016,7 @@ function cabInHTML(){
    xrows((i,s)=>`<div class="gr c2">${xfld(i,'cab_melnote','Cabin reports (if any)',{ph:'Leave blank if none'})}${xfld(i,'cab_wx_note','Weather note for the cabin (optional)')}</div><div class="gr c4" style="margin-top:8px">${xseg(i,'cab_refuel','Refueling',YN)}${xseg(i,'cab_refpax','Refueling with PAX',YN)}${xseg(i,'cab_taxi','Taxi time',TAXI3,'w2')}</div>${cabTank(s)?'<p class="xnote">Dispatch: tankering on this sector.</p>':''}`)+
    `<h3 class="blk">4 · Special and emergency procedures</h3>
    <div class="gr c2">${tfld('hijack','Hijack code')}${tfld('special','Other special requirements',{area:1})}</div>
-   <div class="gr c2" style="margin-top:8px">${ta('t_emq','emq','Emergency: RTO (question and expected answer)',emq(),5)}${ta('t_cpq','cpq','Emergency: loss of cabin pressure',cpq(),5)}</div>
+   <div class="gr c2" style="margin-top:8px">${ta('t_emq','emq','Emergency: RTO (question and expected answer)',emq(),6)}${ta('t_cpq','cpq','Emergency: loss of cabin pressure',cpq(),5)}</div>
    <h3 class="blk">Questions for the cabin crew (GACA observation flight)</h3>
    <div>${tfld('techq','Questions to ask the crew',{area:1,rows:3,ph:'One per line, e.g. Where is the nearest fire extinguisher to door 1L?'})}</div>`;
 }
@@ -2033,7 +2054,7 @@ function sumCab(){
   L.push('    Unruly passenger');L.push('    Hijack code: '+(T.v.hijack||'not set'));L.push('    Cockpit entry');
   if(T.v.special)L.push('    '+one(T.v.special));
   L.push('  Emergency:');
-  const eq=lines(emq());if(eq.length){L.push('    RTO: '+eq[0]);eq.slice(1).forEach(x=>L.push('      '+x))}
+  const eq=String(emq()||'').split('\n').map(y=>y.trimEnd()).filter(y=>y.trim());if(eq.length){L.push('    RTO:');eq.forEach(x=>L.push('      '+x))}
   const cp=lines(cpq());if(cp.length){L.push('    Loss of cabin pressure: '+cp[0]);cp.slice(1).forEach(x=>L.push('      '+x))}
   const tq=lines(T.v.techq);
   if(tq.length){L.push('');L.push(ttl('QUESTIONS FOR THE CABIN CREW (GACA observation flight)'));tq.forEach(x=>L.push('  - '+x))}
@@ -2514,9 +2535,12 @@ function modHTML(mod){
 /* ---------- summaries ---------- */
 /* The Dispatch summary marks its section titles and any marginal-weather lines with invisible control
    characters. On screen they become bold cyan / amber; "Copy summary" strips them, so pasted text is plain. */
-const ttl=t=>'\u0001'+t+'\u0002',amb=t=>'\u0003'+t+'\u0004';
-const sumPlain=s=>String(s).replace(/[\u0001-\u0004]/g,'');
-const sumHTML=s=>esc(s).replace(/\u0001([\s\S]*?)\u0002/g,'<b class="sh">$1</b>').replace(/\u0003([\s\S]*?)\u0004/g,'<span class="sw">$1</span>');
+const ttl=t=>'\u0001'+t+'\u0002',amb=t=>'\u0003'+t+'\u0004',bld=t=>'\u0005'+t+'\u0006';
+const SHEAR_PH={CLB:'CLIMB',CRZ:'CRUISE',DES:'DESCENT'};
+/* max shear: value always bold, amber at 6 or more; waypoint and phase of flight */
+const shearTxt=v=>{if(!v.shear_v)return '';const n=num(v.shear_v);return bld(n!=null&&n>=6?amb(v.shear_v):v.shear_v)+(v.shear_w?' at '+v.shear_w:'')+(SHEAR_PH[v.shear_ph]?' in '+SHEAR_PH[v.shear_ph]:'')};
+const sumPlain=s=>String(s).replace(/[\u0001-\u0006]/g,'');
+const sumHTML=s=>esc(s).replace(/\u0001([\s\S]*?)\u0002/g,'<b class="sh">$1</b>').replace(/\u0003([\s\S]*?)\u0004/g,'<span class="sw">$1</span>').replace(/\u0005([\s\S]*?)\u0006/g,'<b class="sb">$1</b>');
 function sumDsp(i){
   const s=state.secs[i],v=s.v,c=s.c,L=[];const add=(l,x)=>{if(x)L.push(l+': '+x)};
   L.push(ttl(`DISPATCH BRIEFING | SECTOR ${i+1} | ${v.flt||'---'} ${(v.dep_icao||'----')}-${(v.dest_icao||'----')} ${fmtDate(v.date)}`.trim()));
@@ -2539,7 +2563,7 @@ function sumDsp(i){
   /* same for cruise level, temperature at that level and time to top of climb */
   const fll=[v.fl?'FL'+v.fl:'',v.temp?v.temp+'°C':'',v.toc?'TOC '+v.toc:''].filter(Boolean).join(' | ');
   if(fll)L.push('  '+fll);
-  add('  Max shear',[v.shear_v,v.shear_w].filter(Boolean).join(' '));
+  add('  Max shear',shearTxt(v));
   const sw=['ice','cb','turb'].filter(k=>c['sigwx.'+k]);if(sw.length)add('  SIGWX',sw.join(', ').toUpperCase()+(v.sigwx_from?' FL'+v.sigwx_from+(v.sigwx_to?'-FL'+v.sigwx_to:''):''));
   add('  SIGMET',v.sigmet);
   [['ihram','IHRAM ZONE'],['escat','ESCAT'],['tiba','TIBA'],['frs','FRS']].forEach(g=>{const sel=['no','yes','dep','arr','alt'].filter(k=>c[g[0]+'.'+k]);if(sel.length)add('  '+g[1],sel.join(', '))});
@@ -2845,7 +2869,11 @@ const TOOL_SEL={'pof-all':'details.sec[data-seckey^="pof."]','pofx-all':'details
 function toolSync(){$$('.pof-tools button[data-open]').forEach(b=>{const q=TOOL_SEL[b.dataset.act];if(!q)return;
   const d=$$(q),want=b.dataset.open==='1',on=d.length>0&&d.every(x=>x.open===want);
   b.setAttribute('aria-pressed',on?'true':'false');b.classList.toggle('on',on)})}
-let toolRaf=0;const toolKick=()=>{if(!toolRaf)toolRaf=requestAnimationFrame(()=>{toolRaf=0;toolSync()})};
+/* max shear input: bold, amber at 6 or more */
+const shearCls=el=>{const n=num(el.value);el.classList.toggle('shear-hi',n!=null&&n>=6)};
+const shearSync=()=>$$('input[data-v="shear_v"]').forEach(shearCls);
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.dataset&&t.dataset.v==='shear_v')shearCls(t)},true);
+let toolRaf=0;const toolKick=()=>{if(!toolRaf)toolRaf=requestAnimationFrame(()=>{toolRaf=0;toolSync();shearSync()})};
 new MutationObserver(toolKick).observe(main,{subtree:true,childList:true,attributes:true,attributeFilter:['open','hidden']});
 main.addEventListener('toggle',e=>{
   const d=e.target;if(!(d instanceof HTMLDetailsElement))return;
