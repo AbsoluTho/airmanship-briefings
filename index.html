@@ -531,6 +531,7 @@ body.tts-pad{padding-bottom:132px}
 .jl-l li::marker{font:700 16px var(--f-display);color:var(--accent)}
 .jl-l b{display:block;font:700 15px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
 .jl-l span{display:block;font-size:16px;line-height:1.5;color:var(--ink)}
+.jl-l span p{margin:0}.jl-l span ul{margin:4px 0 6px;padding-left:22px}.jl-l span li{margin:2px 0;padding:0}.jl-l span li::marker{font:inherit;color:var(--ink2)}
 .kt-ref{font:600 12px/1.3 var(--f-mono);color:var(--accent);margin:0}
 .kt-pts{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.45}
 .kt-more{border:1px solid var(--line);background:var(--surface)}
@@ -658,14 +659,14 @@ li.ntli{list-style:none;margin:4px 0 0 -16px;padding:4px 8px;background:var(--bg
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand"><span class="mark">Airmanship Briefings</span><span class="appver" id="appVer">version: 1.63.0</span></div>
+    <div class="brand"><span class="mark">Airmanship Briefings</span><span class="appver" id="appVer">version: 1.63.1</span></div>
   </header>
   <div class="nav"><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav><div class="sectors" id="sectors" role="group" aria-label="Sector"></div></div>
   <div class="strip" id="strip" aria-live="polite"></div>
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="cloudbox" id="cloudBox"></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.63.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.63.1.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -766,19 +767,23 @@ function detectCeoNeo(cfp,up){
 /* Mission Plus OFP. Page 3, the Computer Flight Plan, is the main source; pages 1 and 2 (Dispatch Release) are only a fallback. */
 /* Phase of flight of the max shear point: before TOC = climb, TOC to TOD = cruise, after TOD = descent.
    The waypoint is looked up in the flight log, next to the TOC and TOD lines. */
+/* Also the elapsed time from takeoff at that point (ETE): the ACC time on the flight log line below the waypoint. */
 function ofpShearPhase(L,wp,dep,dest){
-  wp=String(wp||'').toUpperCase().trim();if(!wp)return '';
-  if(wp==='TOC'||wp==='T/C')return 'CLB';if(wp==='TOD'||wp==='T/D')return 'DES';
-  if(dep&&wp===dep)return 'CLB';if(dest&&wp===dest)return 'DES';
+  wp=String(wp||'').toUpperCase().trim();if(!wp)return {ph:'',ete:''};
+  if(dep&&wp===dep)return {ph:'CLB',ete:''};if(dest&&wp===dest)return {ph:'DES',ete:''};
+  const look=wp==='T/C'?'TOC':wp==='T/D'?'TOD':wp;
   const tk=(l,t)=>new RegExp('(^|[^A-Z0-9])'+t.replace(/\//g,'\\/')+'([^A-Z0-9]|$)').test(String(l).toUpperCase());
   const skip=l=>/PLND ROUTE|MAX WNDSH|ROUTE TO ALTERNATE|CLIMB\s*:|DESCENT\s*:|TIME TO/i.test(l);
   let toc=-1,tod=-1;
   for(let i=0;i<L.length;i++){if(skip(L[i]))continue;if(toc<0){if(tk(L[i],'TOC')||tk(L[i],'T/C'))toc=i;continue}if(tk(L[i],'TOD')||tk(L[i],'T/D')){tod=i;break}}
-  if(toc<0||tod<0)return '';
-  const hit=[];for(let i=0;i<L.length;i++)if(!skip(L[i])&&tk(L[i],wp))hit.push({i,d:i<toc?toc-i:i>tod?i-tod:0});
-  if(!hit.length)return '';
-  hit.sort((a,b)=>a.d-b.d||a.i-b.i);const h=hit[0];if(h.d>80)return '';
-  return h.i<toc?'CLB':h.i>tod?'DES':'CRZ';
+  if(toc<0||tod<0)return {ph:'',ete:''};
+  const hit=look==='TOC'?[{i:toc,d:0}]:look==='TOD'?[{i:tod,d:0}]:[];
+  if(!hit.length)for(let i=0;i<L.length;i++)if(!skip(L[i])&&tk(L[i],look))hit.push({i,d:i<toc?toc-i:i>tod?i-tod:0});
+  if(!hit.length)return {ph:'',ete:''};
+  hit.sort((a,b)=>a.d-b.d||a.i-b.i);const h=hit[0];if(h.d>80)return {ph:'',ete:''};
+  const ph=look==='TOC'?'CLB':look==='TOD'?'DES':h.i<toc?'CLB':h.i>tod?'DES':'CRZ';
+  let ete='';for(let j=h.i+1;j<=Math.min(L.length-1,h.i+2)&&!ete;j++){const t=String(L[j]).match(/(?:^|\s)(\d{1,2}):(\d{2})(?=\s|$)/);if(t)ete=pad(t[1])+':'+t[2]}
+  return {ph,ete};
 }
 function parseOFP(text){
   const T=String(text).replace(/ /g,' ').replace(/^=== PAGE \d+ ===$/gm,'');
@@ -819,7 +824,7 @@ function parseOFP(text){
   m=cfp.match(/AIR DIST\s*:\s*(\d+)/);if(m)set('air',m[1]);
   m=cfp.match(/GROUND DIST\s*:\s*(\d+)/);if(m)set('grd',m[1]);
   m=cfp.match(/CLIMB\s*:\s*\d+\s*NM\s+IN\s+(\d+)\s*:\s*(\d{2})/);if(m)set('toc',(+m[1])+':'+m[2]);
-  m=cfp.match(/MAX WNDSH\s*:\s*(\d+)\s*\/\s*([A-Z0-9\/]+)/);if(m){set('shear_v',m[1]);set('shear_w',m[2]);set('shear_ph',ofpShearPhase(cfpLines,m[2],v.dep_icao,v.dest_icao))}
+  m=cfp.match(/MAX WNDSH\s*:\s*(\d+)\s*\/\s*([A-Z0-9\/]+)/);if(m){set('shear_v',m[1]);set('shear_w',m[2]);const sp=ofpShearPhase(cfpLines,m[2],v.dep_icao,v.dest_icao);set('shear_ph',sp.ph);set('shear_ete',sp.ete)}
   /* cruise temperature from the en-route wind table */
   const hIdx=cfpLines.findIndex(l=>/^\s*IDENT\b.*FL\s*\d{3}/i.test(l));
   if(hIdx>=0&&v.fl){
@@ -1203,7 +1208,7 @@ const MODS={
   {id:'occ',t:'Jumpseat occupant',fields:[{k:'name',l:'Name',w:2},{k:'role',l:'Role',t:'sel',o:['Deadhead pilot','Captain (deadhead)','Instructor or check pilot','Observer','Engineer or technician','Other']},{k:'seat',l:'Seat'}]},
   {id:'jeno',t:'JENO',sub:'Jumpseat · Emergency equipment · No smoking · Oxygen',checks:[
    ['Jumpseat','Please make sure the jumpseat is fully serviceable. Whenever you are seated, fasten and adjust the seatbelt and safety harness securely.'],
-   ['Emergency equipment','To your right are a fire extinguisher, crash axe, protective breathing equipment (PBE), flashing light, fire gloves, and oxygen masks. A life vest is located under your jumpseat.'],
+   ['Emergency equipment','<p>To your right you will find:</p><ul><li>Fire extinguisher</li><li>Crash axe</li><li>PBE (protective breathing equipment)</li><li>Flashlight</li><li>Fire gloves</li><li>Oxygen masks</li></ul><p>Additionally, a life vest is located under your jumpseat.</p>'],
    ['No smoking','This is a non-smoking flight.'],
    ['Oxygen','We have sufficient oxygen for everyone on the flight deck; I’ll show you the quantity on the ECAM memo. In an emergency descent or depressurization, slide your jumpseat to the right with your left hand, then open the oxygen-mask compartment with your right hand. Your masks are the second set. Hold a mask with one hand and put it on. Let’s check that the masks are operational.']
   ]},
@@ -1266,7 +1271,7 @@ function normTab(t){if(t==='gf')return 'pof';if(t==='dep'||t==='arr'){setBrf(t);
 const newSec=()=>({v:{},c:{'req.rvsm':true,'req.pbn':true},src:{},tem:[],tem2:[],nt:null,fltbl:null});
 const newTrip=()=>({v:{},c:{}});
 const EX0={flt:'ABC123',dom:'DOM',date:'2026-09-22',reg:'HZ-XXX',ceoneo:'CEO',acft:'A320-214',dep_icao:'OEJN',dep_iata:'JED',dest_icao:'OETB',dest_iata:'TUU',alt_icao:'OEMA',alt_iata:'MED',etd:'07:25',eta:'08:55',ftime:'1:11',pax:'151',
- route:'DCT MIGDA L677 WEJ V54 TBK DCT',altroute:'DCT TBK V54 WEJ M872 BOVET',wind_dir:'TL',wind:'11',isa:'10',grd:'481',air:'469',ci:'20',fl:'340',temp:'-42',toc:'0:27',shear_v:'3',shear_w:'MIGDA',shear_ph:'CLB',
+ route:'DCT MIGDA L677 WEJ V54 TBK DCT',altroute:'DCT TBK V54 WEJ M872 BOVET',wind_dir:'TL',wind:'11',isa:'10',grd:'481',air:'469',ci:'20',fl:'340',temp:'-42',toc:'0:27',shear_v:'3',shear_w:'MIGDA',shear_ph:'CLB',shear_ete:'0:12',
  lf_pax:'151',lf_payload:'12693',lf_zfm:'55692',lf_tom:'69000',lf_ldm:'65500',lf_taxi:'168',lf_trip:'3500',trip_incl:'3.6',lf_planned:'8129',lf_pextra:'5348',
  ofp_cont:'203',ofp_alt:'3066',alt_time:'1:04',ofp_fres:'1192',ofp_add:'0',ofp_hold:'0',ofp_mintof:'7961',ofp_ramp:'13477',ofp_dom:'42999',lim_mzfm:'62500',lim_tom:'69500',lim_ldm:'66000',
  dsp_rmk:'TNKRG FUEL ADVZD IF ACTUAL PAYLOAD PERMITS. CHK ZFW PRIOR TO REFUELING.',tk_on:'Planned: partial'};
@@ -1926,7 +1931,7 @@ function dspHTML(){applyClrSuggest(S());
    <div class="gr c4">${seg('wind_dir','Avg wind',[['HD','HD'],['TL','TL']])}${fld('wind','Avg wind (kt)',{num:1})}${fld('isa','Δ ISA (+/−)',{num:1})}${fld('grd','Grd dist (nm)',{num:1})}</div>
    <div class="gr c4">${fld('air','Air dist (nm)',{num:1})}${fld('ci','CI',{num:1})}${fld('fl','Cruise FL',{ph:'340'})}${fld('temp','Temp at FL (°C)',{num:1})}</div>
    <div class="gr c4">${fld('toc','Time to TOC (h:mm)',{ph:'0:27'})}${fld('tropo','Tropo (FL)',{pilot:1})}${fld('shear_v','Max shear',{num:1})}${fld('shear_w','Shear waypoint')}</div>
-   <div class="gr c4">${seg('shear_ph','Max shear phase',[['CLB','Climb'],['CRZ','Cruise'],['DES','Descent']],'w2')}</div>
+   <div class="gr c4">${seg('shear_ph','Max shear phase',[['CLB','Climb'],['CRZ','Cruise'],['DES','Descent']],'w2')}${fld('shear_ete','Max shear ETE (h:mm)',{ph:'0:54'})}</div>
    <div class="gr c4">${tgs('SIGWX',[['sigwx.ice','Ice'],['sigwx.cb','CB'],['sigwx.turb','Mod / sev turb']],'w2')}${fld('sigwx_from','From FL',{pilot:1})}${fld('sigwx_to','To FL',{pilot:1})}</div>
    <div class="gr c4">${seg('sigmet','SIGMET',[['NO','No'],['YES','Yes']])}${grp('IHRAM ZONE','ihram',[['no','No'],['yes','Yes']])}${fld('ihram','Ihram zone details')}</div>
    <div class="gr c3">${grp('ESCAT','escat',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}${grp('TIBA (122.8 MHz)','tiba',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}${grp('FRS (133.5 MHz)','frs',[['no','No'],['dep','Dep'],['arr','Arr'],['alt','Alt']])}</div>
@@ -2063,7 +2068,7 @@ function sumCab(){
 }
 function jmpHTML(){
   const M=MODS.jmp;let n=0;
-  const body=M.sections.filter(x=>x.checks).map(sc=>`<section class="jl"><h2 class="pofg">${esc(sc.t)}${sc.sub?`<small>${esc(sc.sub)}</small>`:''}</h2><ol class="jl-l">${sc.checks.map(c=>{n++;return `<li value="${n}"><b>${esc(c[0])}</b><span>${esc(c[1])}</span></li>`}).join('')}</ol></section>`).join('');
+  const body=M.sections.filter(x=>x.checks).map(sc=>`<section class="jl"><h2 class="pofg">${esc(sc.t)}${sc.sub?`<small>${esc(sc.sub)}</small>`:''}</h2><ol class="jl-l">${sc.checks.map(c=>{n++;return `<li value="${n}"><b>${esc(c[0])}</b><span>${/^</.test(c[1])?c[1]:esc(c[1])}</span></li>`}).join('')}</ol></section>`).join('');
   return `<div class="mhead"><h1>${esc(M.title)}</h1><p class="lead">${esc(M.lead)}</p></div>`+body;
 }
 /* ---------- Phases of Flight ---------- */
@@ -2538,7 +2543,8 @@ function modHTML(mod){
 const ttl=t=>'\u0001'+t+'\u0002',amb=t=>'\u0003'+t+'\u0004',bld=t=>'\u0005'+t+'\u0006';
 const SHEAR_PH={CLB:'CLIMB',CRZ:'CRUISE',DES:'DESCENT'};
 /* max shear: value always bold, amber at 6 or more; waypoint and phase of flight */
-const shearTxt=v=>{if(!v.shear_v)return '';const n=num(v.shear_v);return bld(n!=null&&n>=6?amb(v.shear_v):v.shear_v)+(v.shear_w?' at '+v.shear_w:'')+(SHEAR_PH[v.shear_ph]?' in '+SHEAR_PH[v.shear_ph]:'')};
+const shearTxt=v=>{if(!v.shear_v)return '';const n=num(v.shear_v);return bld(n!=null&&n>=6?amb(v.shear_v):v.shear_v)+(v.shear_w?' at '+v.shear_w:'')+(SHEAR_PH[v.shear_ph]?' in '+SHEAR_PH[v.shear_ph]:'')+(v.shear_ete?' (ETE: '+eteFmt(v.shear_ete)+')':'')};
+const eteFmt=t=>{const m=String(t).trim().match(/^(\d{1,2})[:h.]?(\d{2})$/);return m?pad(m[1])+':'+m[2]:String(t).trim()};
 const sumPlain=s=>String(s).replace(/[\u0001-\u0006]/g,'');
 const sumHTML=s=>esc(s).replace(/\u0001([\s\S]*?)\u0002/g,'<b class="sh">$1</b>').replace(/\u0003([\s\S]*?)\u0004/g,'<span class="sw">$1</span>').replace(/\u0005([\s\S]*?)\u0006/g,'<b class="sb">$1</b>');
 function sumDsp(i){
