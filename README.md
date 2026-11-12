@@ -19,4 +19,4 @@ Flight deck image in the Approach Flow: FlyByWire Simulations, A32NX documentati
 
 Recorded voices in the Approach Flow and the Typical ILS briefing: Kokoro-82M (open-source voice model, Apache 2.0 licence).
 
-Version 1.63.1
+Version 1.64.0
