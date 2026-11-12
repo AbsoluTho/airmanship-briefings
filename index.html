@@ -851,14 +851,14 @@ li.ntli{list-style:none;margin:4px 0 0 -16px;padding:4px 8px;background:var(--bg
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand"><span class="mark">Airmanship Briefings</span><span class="appver" id="appVer">version: 1.66.0</span></div>
+    <div class="brand"><span class="mark">Airmanship Briefings</span><span class="appver" id="appVer">version: 1.66.1</span></div>
   </header>
   <div class="nav"><nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav><div class="sectors" id="sectors" role="group" aria-label="Sector"></div></div>
   <div class="strip" id="strip" aria-live="polite"></div>
   <div class="bar" id="bar"><span id="barMsg"></span><div class="row"><button class="btn sm" id="clrSec" data-act="clear-sec" type="button">Clear sector</button><button class="btn sm" id="clrAll" data-act="clear-all" type="button">Clear all</button></div></div>
   <div class="cloudbox" id="cloudBox"></div>
   <main id="main"></main>
-  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.66.0.</footer>
+  <footer class="foot">Airmanship Briefings is an unofficial preparation aid built on Airbus FCTM concepts. It does not replace the FCOM, FCTM, the operator's OM-A or any company procedure, and it is not affiliated with any airline. Verify every figure against approved sources. Everything you type stays on this device; nothing is uploaded unless you sign in with Cloud sync. Version 1.66.1.</footer>
 </div>
 
 <script src="vendor/pdf.min.js"></script>
@@ -3457,7 +3457,12 @@ render();renderCl();
 <script>
 (function(){
   if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return;
-  window.addEventListener('load',function(){try{navigator.serviceWorker.register('sw.js')}catch(e){}});
+  /* v1.66.1: ask for the newest sw.js every time (no HTTP cache), and when a new version takes over,
+     reload once so the new version shows at the first reopen. A first install (no worker yet) does not reload. */
+  var had=!!navigator.serviceWorker.controller,done=false;
+  navigator.serviceWorker.addEventListener('controllerchange',function(){if(!had||done)return;done=true;location.reload()});
+  window.addEventListener('load',function(){try{navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(r){try{r.update()}catch(e){}}).catch(function(){})}catch(e){}});
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){navigator.serviceWorker.getRegistration().then(function(r){if(r)r.update()}).catch(function(){})}});
 })();
 </script>
 </body>

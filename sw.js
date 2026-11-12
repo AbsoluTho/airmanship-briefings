@@ -1,5 +1,5 @@
-/* Airmanship Briefings service worker. Change CACHE_VERSION on every release so devices drop the old files. */
-const CACHE_VERSION='1.66.0';
+/* Airmanship Briefings service worker (fresh files on update, v1.66.1). Change CACHE_VERSION on every release so devices drop the old files. */
+const CACHE_VERSION='1.66.1';
 const CACHE='airmanship-briefings-'+CACHE_VERSION;
 const ASSETS=[
   "./",
@@ -22,7 +22,7 @@ const ASSETS=[
   "fonts/ibm-plex-sans-latin-600-normal.woff2"
 ];
 self.addEventListener('install',e=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting()));
 });
 self.addEventListener('activate',e=>{
   e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('airmanship-briefings-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
@@ -34,7 +34,7 @@ self.addEventListener('fetch',e=>{
   const u=new URL(r.url);
   if(u.origin!==location.origin)return;
   e.respondWith(caches.match(r,{ignoreSearch:true}).then(hit=>{
-    const net=fetch(r).then(res=>{if(res&&res.ok){const cp=res.clone();caches.open(CACHE).then(c=>c.put(r,cp))}return res}).catch(()=>hit);
+    const net=fetch(r,{cache:'no-cache'}).then(res=>{if(res&&res.ok){const cp=res.clone();caches.open(CACHE).then(c=>c.put(r,cp))}return res}).catch(()=>hit);
     if(hit){e.waitUntil(net.catch(()=>{}));return hit}
     return net;
   }));
